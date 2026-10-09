@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Espace Auteurs | Éditions TBL</title>
+<style>
+:root{--bg:#000;--card:#16181c;--card2:#111317;--line:#34373e;--txt:#f5f5f5;--muted:#b7bac2;--red:#e52530;--redsoft:#5b2126;--ok:#4cc38a}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+html,body{background:var(--bg)} /* noir pur : identique au fond de la page Wix, sans lueur ni bordure visible autour de la composante */
+html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin} /* barre de défilement sombre si elle apparaît */
+body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.55}
+.wrap{width:min(1160px,calc(100% - 28px));margin:auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+main.wrap{padding-top:8px}
+
+/* Cartes */
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+.centre{text-align:center;max-width:640px;margin:10px auto 0}
+.centre svg{width:96px;height:96px;color:var(--red);margin-bottom:8px}
+.centre h2{margin:0 0 8px}
+.sub,.note{color:var(--muted)}
+.note{font-size:.92rem}
+h2{margin:0 0 5px;font-size:1.5rem;line-height:1.15}
+h3{margin:0 0 12px;font-size:1.15rem}
+
+/* Boutons */
+.btn{border:0;border-radius:9px;padding:12px 20px;background:var(--red);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.btn.sec:hover:not(:disabled){border-color:var(--red)}
+.btn.petit{padding:8px 14px;font-size:.92rem}
+.mail{color:var(--red);font-weight:bold;text-decoration:none}
+
+/* Chargement */
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}html{scroll-behavior:auto}}
+
+/* Onglets */
+.onglets{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin-bottom:6px;border-bottom:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.onglet{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:11px 20px;font-weight:bold;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--muted)}
+.onglet:hover{border-color:var(--red);color:var(--txt)}
+.onglet[aria-selected="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.pastille-nb{background:rgba(255,255,255,.14);border-radius:99px;padding:0 8px;font-size:.8rem;min-width:22px;text-align:center}
+.panneau{padding-top:16px}
+
+/* Ventes */
+.barre-mois{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.barre-mois label{color:var(--muted);margin-right:8px}
+select,input[type=text],textarea{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%}
+select{width:auto;min-width:200px}
+select:focus,input:focus,textarea:focus{border-color:var(--red);outline:none}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:20px}
+.kpi .etiquette{color:var(--muted);font-size:.92rem}
+.kpi .valeur{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:bold;margin:4px 0 2px}
+.kpi .detail{color:var(--muted);font-size:.85rem}
+/* Section « Les 12 derniers mois » : environ 163 px de haut (la moitié de l'ancienne, 326 px) */
+.graphique{margin-bottom:16px}
+.card.graphique{padding:14px 26px 12px}
+.graphique h3{margin:0 0 2px;font-size:1rem}
+.graphique svg{width:100%;height:auto;display:block}
+.barre{cursor:pointer}
+.barre rect{fill:var(--redsoft)}
+.barre:hover rect,.barre:focus rect{fill:#9b2b33}
+.barre.actif rect{fill:var(--red)}
+.barre .zone,.barre:hover .zone,.barre:focus .zone,.barre.actif .zone{fill:transparent}
+.graphique text{fill:var(--muted);font-family:Arial,Helvetica,sans-serif;font-size:11px}
+.graphique .barre.actif text.lib{fill:var(--txt);font-weight:bold}
+.vide{color:var(--muted);text-align:center;padding:26px 10px}
+
+/* Listes à hauteur fixe : Ventes par livre (5 lignes) et Documents (10 lignes).
+   Si le contenu dépasse, il défile DANS la zone : la page garde toujours la même hauteur,
+   donc la composante HTML Wix n'affiche jamais de barre de défilement à cause d'une longue liste. */
+:root{--h-entete:40px;--h-ligne:48px;--h-doc:64px}
+.zone-fixe{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card2);scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.zone-ventes{height:calc(var(--h-entete) + 6 * var(--h-ligne) + 2px)} /* en-tête + 5 livres + ligne Total */
+.zone-docs{height:calc(var(--h-entete) + 10 * var(--h-doc) + 2px)}
+.zone-fixe.est-vide{display:flex;align-items:center;justify-content:center}
+.vide-zone{margin:0;padding:0 16px;color:var(--muted);text-align:center}
+.zone-fixe table{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed}
+.zone-ventes table{min-width:560px}
+.zone-fixe th,.zone-fixe td{text-align:left;padding:0 12px;box-sizing:border-box;vertical-align:middle;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.zone-fixe thead th{position:sticky;top:0;z-index:1;height:var(--h-entete);background:var(--card);border-bottom:1px solid var(--line);color:var(--muted);font-weight:600;font-size:.9rem}
+.zone-fixe tbody td{height:var(--h-ligne);border-bottom:1px solid var(--line)}
+.zone-docs tbody td{height:var(--h-doc)}
+.zone-fixe tbody tr:last-child td{border-bottom:0}
+.zone-fixe tfoot td{position:sticky;bottom:0;height:var(--h-ligne);background:var(--card);border-top:1px solid var(--line);font-weight:bold}
+.zone-fixe td.n,.zone-fixe th.n{text-align:right}
+.zone-ventes .c-ex{width:120px}
+.zone-ventes .c-brut{width:130px}
+.zone-ventes .c-liens{width:200px}
+.zone-docs .c-action{width:214px;padding-left:4px;padding-right:10px}
+.zone-docs th.c-action{text-align:right}
+.zone-docs .c-action .action{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.zone-docs .t-titre{font-weight:bold;overflow:hidden;text-overflow:ellipsis}
+.zone-docs .meta{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.zone-docs .meta>*{margin-right:10px}
+.zone-docs .pastille{display:inline-block;line-height:1.4;vertical-align:middle}
+.btn.mini{padding:6px 10px;font-size:.85rem;border-radius:8px}
+
+/* Fiche auteur */
+.fiche{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
+.photo-bloc{text-align:center}
+.photo-cadre{width:180px;height:180px;border-radius:50%;margin:0 auto 14px;border:2px solid var(--line);overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--red);font-family:Georgia,serif}
+.photo-cadre img{width:100%;height:100%;object-fit:cover;display:block}
+.champ{margin-bottom:16px}
+.champ label{display:block;font-weight:bold;margin-bottom:6px}
+.champ .aide{color:var(--muted);font-size:.85rem;margin-top:4px}
+.champ [readonly]{background:var(--card2);color:var(--muted);cursor:not-allowed}
+textarea{min-height:96px;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px}
+.statut{min-height:1.4em;color:var(--muted)}
+.statut.ok{color:var(--ok)}
+.statut.err{color:var(--red)}
+
+/* Livres */
+.livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.livre{padding:16px;display:flex;flex-direction:column;gap:10px}
+.livre .couv{aspect-ratio:2/3;width:100%;border-radius:8px;background:var(--card2);border:1px solid var(--line);object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;text-align:center;padding:8px}
+.livre h3{margin:0;font-size:1.05rem}
+.pastilles{display:flex;flex-wrap:wrap;gap:6px}
+.pastille{border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.8rem;color:var(--muted)}
+.pastille.ok{border-color:var(--ok);color:var(--ok)}
+.pastille.rouge{border-color:var(--red);color:var(--red)}
+.livre .chiffres{color:var(--muted);font-size:.9rem}
+
+/* Documents */
+.colonnes-docs{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.carte-docs{min-width:0}
+.tete-section{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tete-section h3{margin:0}
+.filtres{display:flex;gap:10px;flex-wrap:wrap}
+.filtres select{min-width:140px;padding:7px 10px}
+
+@media(max-width:900px){
+  .colonnes-docs{grid-template-columns:1fr}
+}
+@media(max-width:800px){
+  .kpis{grid-template-columns:1fr}
+  .fiche{grid-template-columns:1fr}
+  .card{padding:21px}
+  .card.graphique{padding:14px 21px 12px}
+}
+@media(max-width:520px){
+  .zone-docs .c-action{width:104px}
+  .zone-docs .c-action .action{flex-direction:column;align-items:stretch;gap:4px}
+  .btn.mini{padding:4px 8px;font-size:.8rem}
+
+  .onglets{gap:6px}
+  .onglet{padding:10px 11px;font-size:.9rem;gap:5px}
+  .pastille-nb{padding:0 6px;min-width:18px;font-size:.75rem}
+}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+  <section id="etat-chargement" class="card centre" role="status" aria-live="polite">
+    <div class="spin" aria-hidden="true"></div>
+    <p class="sub" id="texte-chargement">Chargement de votre espace…</p>
+  </section>
+
+  <section id="etat-erreur" class="card centre" role="alert" hidden>
+    <h2>Un petit problème de chargement</h2>
+    <p class="sub">Nous n'arrivons pas à charger votre espace pour le moment. Vérifiez votre connexion et réessayez.</p>
+    <button class="btn" type="button" id="btn-reessayer">Réessayer</button>
+  </section>
+
+  <section id="etat-refuse" class="card centre" role="alert" hidden>
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="50" cy="50" r="38"/><path d="M23 77L77 23"/></svg>
+    <h2>Accès interdit</h2>
+    <p class="sub">Cet espace est réservé aux auteurs des Éditions TBL. Si vous croyez y avoir accès, écrivez-nous à <a class="mail" href="mailto:info@editionstbl.ca">info@editionstbl.ca</a>.</p>
+  </section>
+
+  <section id="etat-inactif" class="card centre" role="alert" hidden>
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="24" y="44" width="52" height="42" rx="7"/><path d="M36 44V32c0-9 6-16 14-16s14 7 14 16v12"/><circle cx="50" cy="65" r="4"/></svg>
+    <h2>Compte auteur inactif</h2>
+    <p class="sub">Votre compte auteur est inactif pour le moment, ce qui suspend votre accès à l'Espace Auteurs. Écrivez-nous à <a class="mail" href="mailto:info@editionstbl.ca?subject=Compte%20auteur%20inactif">info@editionstbl.ca</a> pour le réactiver ou pour en savoir plus.</p>
+  </section>
+
+  <section id="espace" hidden>
+    <div class="onglets" role="tablist" aria-label="Sections de l'Espace Auteurs">
+      <button class="onglet" role="tab" id="onglet-ventes" aria-controls="panneau-ventes" aria-selected="true" tabindex="0">Ventes</button>
+      <button class="onglet" role="tab" id="onglet-auteur" aria-controls="panneau-auteur" aria-selected="false" tabindex="-1">Auteur</button>
+      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres <span class="pastille-nb" id="nb-livres">0</span></button>
+      <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
+    </div>
+
+    <!-- VENTES -->
+    <div class="panneau" role="tabpanel" id="panneau-ventes" aria-labelledby="onglet-ventes">
+      <div class="barre-mois">
+        <div><label for="choix-mois">Mois affiché</label><select id="choix-mois"></select></div>
+        <span class="sub" id="etat-ventes" role="status" aria-live="polite"></span>
+      </div>
+      <div class="kpis">
+        <div class="card kpi"><div class="etiquette">Ventes brutes</div><div class="valeur" id="kpi-brut">…</div><div class="detail">Montants payés par les acheteurs, taxes incluses</div></div>
+        <div class="card kpi"><div class="etiquette">Exemplaires vendus</div><div class="valeur" id="kpi-ex">…</div><div class="detail">Livres numériques et ensembles</div></div>
+        <div class="card kpi"><div class="etiquette">Votre part estimée</div><div class="valeur" id="kpi-part">…</div><div class="detail" id="kpi-part-detail">Selon votre taux de commission</div></div>
+      </div>
+      <div class="card graphique">
+        <h3>Les 12 derniers mois</h3>
+        <div id="graphique"></div>
+      </div>
+      <div class="card">
+        <h3 id="titre-tableau">Ventes par livre</h3>
+        <div class="zone-fixe zone-ventes" id="zone-ventes" role="region" aria-labelledby="titre-tableau" tabindex="0">
+          <table id="table-ventes">
+            <thead><tr><th>Livre</th><th class="n c-ex">Exemplaires</th><th class="n c-brut">Ventes brutes</th><th class="n c-liens">Par vos liens de partage</th></tr></thead>
+            <tbody id="corps-ventes"></tbody>
+            <tfoot id="pied-ventes"></tfoot>
+          </table>
+          <p class="vide-zone" id="vide-ventes" hidden>Aucune vente enregistrée pour ce mois.</p>
+        </div>
+        <p class="note" id="note-ventes"></p>
+      </div>
+    </div>
+
+    <!-- AUTEUR -->
+    <div class="panneau" role="tabpanel" id="panneau-auteur" aria-labelledby="onglet-auteur" hidden>
+      <div class="card fiche">
+        <div class="photo-bloc">
+          <div class="photo-cadre" id="photo-cadre" aria-hidden="true"></div>
+          <button class="btn sec petit" type="button" id="btn-photo">Changer la photo</button>
+          <input type="file" id="fichier-photo" accept="image/jpeg,image/png,image/webp" hidden>
+          <p class="note" id="statut-photo" role="status" aria-live="polite"></p>
+        </div>
+        <form id="form-profil" novalidate>
+          <div class="champ">
+            <label for="champ-nom">Nom</label>
+            <input type="text" id="champ-nom" readonly>
+            <div class="aide">Géré par TBL.</div>
+          </div>
+          <div class="champ">
+            <label for="champ-courriel">Adresse courriel</label>
+            <input type="text" id="champ-courriel" readonly>
+            <div class="aide">Géré par TBL. Pour changer votre nom ou votre courriel, <a class="mail" id="lien-modif" href="#">écrivez-nous</a>.</div>
+          </div>
+          <div class="champ">
+            <label for="champ-telephone">Téléphone</label>
+            <input type="text" id="champ-telephone" maxlength="40" autocomplete="tel">
+          </div>
+          <div class="champ">
+            <label for="champ-adresse">Adresse</label>
+            <textarea id="champ-adresse" maxlength="300" autocomplete="street-address"></textarea>
+          </div>
+          <div class="champ">
+            <label for="champ-note">Note de l'auteur</label>
+            <textarea id="champ-note" maxlength="4000"></textarea>
+            <div class="aide">Texte libre. Un retour à la ligne crée un nouveau paragraphe.</div>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit" id="btn-enregistrer" disabled>Enregistrer</button>
+            <span class="statut" id="statut-profil" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- LIVRES -->
+    <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" hidden>
+      <div class="livres" id="liste-livres"></div>
+      <div class="card vide" id="vide-livres" hidden>Aucun livre n'est encore associé à votre compte. Dès qu'un livre sera ajouté, il apparaîtra ici.</div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="panneau" role="tabpanel" id="panneau-documents" aria-labelledby="onglet-documents" hidden>
+      <div class="colonnes-docs">
+        <section class="card carte-docs">
+          <div class="tete-section"><h3 id="titre-docs-generaux">Documents généraux</h3></div>
+          <div class="zone-fixe zone-docs" id="zone-docs-generaux" role="region" aria-labelledby="titre-docs-generaux" tabindex="0">
+            <table id="table-docs-generaux">
+              <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
+              <tbody id="docs-generaux"></tbody>
+            </table>
+            <p class="vide-zone" id="vide-generaux" hidden>Aucun document général pour le moment.</p>
+          </div>
+        </section>
+        <section class="card carte-docs">
+          <div class="tete-section">
+            <h3 id="titre-docs-auteur">Documents de l'auteur</h3>
+            <div class="filtres" id="filtres-docs" hidden>
+              <select id="filtre-type" aria-label="Filtrer par type"></select>
+              <select id="filtre-annee" aria-label="Filtrer par année"></select>
+            </div>
+          </div>
+          <div class="zone-fixe zone-docs" id="zone-docs-auteur" role="region" aria-labelledby="titre-docs-auteur" tabindex="0">
+            <table id="table-docs-auteur">
+              <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
+              <tbody id="docs-auteur"></tbody>
+            </table>
+            <p class="vide-zone" id="vide-auteur" hidden>Aucun document à votre nom pour le moment. Vos relevés de commission apparaîtront ici.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+'use strict';
+
+// Dans Wix la page est un iframe https. Ouverte directement (file:) elle passe en mode test local.
+var EN_WIX = true;
+var DELAI_REPONSE_MS = 10000;
+var RELANCE_MS = 1500;
+var COURRIEL_TBL = 'info@editionstbl.ca';
+var fmtArgent = new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD' });
+var fmtEntier = new Intl.NumberFormat('fr-CA');
+
+var etat = { donnees: null, mois: null, totaux: {}, profilInitial: null, enregistrement: false, minuterie: null };
+
+/* ---------- Utilitaires ---------- */
+function $(id) { return document.getElementById(id); }
+function el(tag, classe, texte) {
+  var e = document.createElement(tag);
+  if (classe) { e.className = classe; }
+  if (texte !== undefined && texte !== null) { e.textContent = texte; }
+  return e;
+}
+function vider(noeud) { while (noeud.firstChild) { noeud.removeChild(noeud.firstChild); } }
+function urlSure(u) {
+  return typeof u === 'string' && (/^https:\/\//i.test(u) || /^data:image\//i.test(u)) ? u : null;
+}
+function moisUtc(offset) {
+  var d = new Date();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + offset);
+  return d.toISOString().slice(0, 7);
+}
+function libelleMois(aaaamm, court) {
+  var d = new Date(aaaamm + '-01T12:00:00Z');
+  return new Intl.DateTimeFormat('fr-CA', { month: court ? 'short' : 'long', year: court ? undefined : 'numeric', timeZone: 'UTC' }).format(d);
+}
+function dateLongue(iso) {
+  if (!iso) { return ''; }
+  return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z'));
+}
+function dateCourte(iso) {
+  if (!iso) { return ''; }
+  return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z'));
+}
+function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+
+/* ---------- Pont avec la page Wix ---------- */
+function envoyer(message) {
+  if (EN_WIX) { window.parent.postMessage(message, '*'); }
+
+}
+window.addEventListener('message', function (e) {
+  if (EN_WIX && e.source !== window.parent) { return; }
+  recevoir(e.data);
+});
+function recevoir(msg) {
+  if (!msg || typeof msg !== 'object') { return; }
+  if (msg.type === 'espace') { surEspace(msg); }
+  else if (msg.type === 'ventes') { surVentes(msg); }
+  else if (msg.type === 'resultatProfil') { surResultatProfil(msg); }
+  else if (msg.type === 'resultatPhoto') { surResultatPhoto(msg); }
+}
+
+/* ---------- États de la page ---------- */
+function montrer(nom) {
+  ['chargement', 'erreur', 'refuse', 'inactif'].forEach(function (n) { $('etat-' + n).hidden = (n !== nom); });
+  $('espace').hidden = (nom !== 'espace');
+  // L'en-tête (et donc #accueil) n'existe pas dans la version Web : tout accès est protégé.
+  var accueil = $('accueil');
+  if (accueil) {
+    accueil.hidden = (nom === 'refuse' || nom === 'inactif'); // sans accès : ni accueil ni description de l'espace
+    if (nom !== 'espace') {
+      accueil.textContent = 'Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.';
+    }
+  }
+}
+// Réponse du serveur « pas d'accès » (aussi possible en cours de session, ex. auteur désactivé entre-temps).
+function accesBloque(msg) {
+  if (msg.statut === 'refuse' || msg.statut === 'inactif') {
+    etat.donnees = null;
+    arreterAttente();
+    montrer(msg.statut);
+    return true;
+  }
+  return false;
+}
+// Attente de la réponse du serveur : le message « pret » est renvoyé toutes les 1,5 s (au cas où le code
+// de la page Wix n'était pas encore prêt à l'écouter quand le premier est parti) jusqu'à la réponse
+// ou jusqu'à l'abandon après DELAI_REPONSE_MS. Le code de la page ignore les doublons.
+function arreterAttente() { clearTimeout(etat.minuterie); clearInterval(etat.relance); }
+function demarrer() {
+  montrer('chargement');
+  $('texte-chargement').textContent = 'Chargement de votre espace…';
+  arreterAttente();
+  etat.minuterie = setTimeout(function () { arreterAttente(); montrer('erreur'); }, DELAI_REPONSE_MS);
+  etat.relance = setInterval(function () { envoyer({ type: 'pret' }); }, RELANCE_MS);
+  envoyer({ type: 'pret' });
+}
+function surEspace(msg) {
+  arreterAttente();
+  if (msg.statut === 'ok' && msg.auteur) {
+    etat.donnees = msg;
+    rendreEspace();
+    montrer('espace');
+
+    demanderVentes(moisUtc(-1));
+  } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
+    etat.donnees = null;
+    montrer(msg.statut);
+  } else if (msg.statut === 'connexion') {
+    montrer('chargement');
+    $('texte-chargement').textContent = 'Veuillez vous connecter pour accéder à votre espace.';
+  } else {
+    montrer('erreur');
+  }
+}
+
+/* ---------- Onglets ---------- */
+var ONGLETS = ['ventes', 'auteur', 'livres', 'documents'];
+function choisirOnglet(nom, focus) {
+  ONGLETS.forEach(function (n) {
+    var actif = (n === nom);
+    var bouton = $('onglet-' + n);
+    bouton.setAttribute('aria-selected', actif ? 'true' : 'false');
+    bouton.tabIndex = actif ? 0 : -1;
+    $('panneau-' + n).hidden = !actif;
+    if (actif && focus) { bouton.focus(); }
+  });
+}
+ONGLETS.forEach(function (nom, i) {
+  var bouton = $('onglet-' + nom);
+  bouton.addEventListener('click', function () { choisirOnglet(nom, false); });
+  bouton.addEventListener('keydown', function (e) {
+    var cible = null;
+    if (e.key === 'ArrowRight') { cible = ONGLETS[(i + 1) % ONGLETS.length]; }
+    else if (e.key === 'ArrowLeft') { cible = ONGLETS[(i + ONGLETS.length - 1) % ONGLETS.length]; }
+    else if (e.key === 'Home') { cible = ONGLETS[0]; }
+    else if (e.key === 'End') { cible = ONGLETS[ONGLETS.length - 1]; }
+    if (cible) { e.preventDefault(); choisirOnglet(cible, true); }
+  });
+});
+
+/* ---------- Rendu général ---------- */
+function rendreEspace() {
+  var d = etat.donnees;
+  var accueil = $('accueil');
+  if (accueil) {
+    accueil.textContent = 'Bienvenue, ' + (d.auteur.nom || 'cher auteur') + '. Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.';
+  }
+  etat.totaux = {};
+  etat.ventesRecues = false;
+  rendreProfil(d.auteur);
+  rendreLivres();
+  rendreDocuments();
+  construireChoixMois();
+  $('nb-livres').textContent = d.livres.length;
+  $('nb-documents').textContent = d.documents.generaux.length + d.documents.auteur.length;
+}
+
+/* ---------- Ventes ---------- */
+function construireChoixMois() {
+  var select = $('choix-mois');
+  vider(select);
+  for (var i = 0; i >= -11; i--) {
+    var m = moisUtc(i);
+    var o = el('option', null, libelleMois(m, false));
+    o.value = m;
+    select.appendChild(o);
+  }
+  select.value = moisUtc(-1);
+}
+function demanderVentes(mois) {
+  etat.mois = mois;
+  $('choix-mois').value = mois;
+  $('etat-ventes').textContent = 'Chargement des ventes…';
+  envoyer({ type: 'ventes', mois: mois });
+}
+$('choix-mois').addEventListener('change', function () { demanderVentes(this.value); });
+
+function surVentes(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') { $('etat-ventes').textContent = 'Les ventes sont indisponibles pour le moment. Réessayez dans quelques instants.'; return; }
+  if (msg.mois !== etat.mois) { return; } // réponse d'un mois déjà remplacé
+  $('etat-ventes').textContent = '';
+
+  $('kpi-brut').textContent = fmtArgent.format(msg.courant.ventesBrutes);
+  $('kpi-ex').textContent = fmtEntier.format(msg.courant.exemplaires);
+  if (msg.courant.partAuteur === null || msg.prcCommission === null) {
+    $('kpi-part').textContent = 'N/D';
+    $('kpi-part-detail').textContent = 'Taux de commission non renseigné';
+  } else {
+    $('kpi-part').textContent = fmtArgent.format(msg.courant.partAuteur);
+    $('kpi-part-detail').textContent = 'Taux de ' + msg.prcCommission.toLocaleString('fr-CA') + ' % sur les ventes brutes';
+  }
+
+  etat.derniereVente = msg;
+  rendreGraphique(msg.mois12, msg.mois);
+  rendreTableauVentes(msg);
+
+  var depuis = msg.debutHistorique ? 'Les ventes sont comptées depuis le ' + dateLongue(msg.debutHistorique) + '. ' : '';
+  var secours = msg.source === 'ventesLivres'
+    ? 'Attention : ces chiffres viennent du journal des ventes, plus récent et moins complet que les commandes. Ils seront corrigés dès que les commandes seront de nouveau accessibles. '
+    : '';
+  $('note-ventes').textContent = secours + depuis + 'Les ensembles de deux livres sont répartis à parts égales entre les livres qu\'ils contiennent. Votre part est une estimation. Le montant net après frais de service figure dans votre rapport de commission mensuel, dans l\'onglet Documents.';
+
+  var premiere = !etat.ventesRecues;
+  etat.ventesRecues = true;
+  etat.totaux = {};
+  msg.totaux.forEach(function (t) { etat.totaux[t.livreId] = t; });
+  if (premiere) { rendreLivres(); }
+}
+
+function rendreGraphique(mois12, moisActif) {
+  var conteneur = $('graphique');
+  vider(conteneur);
+  var NS = 'http://www.w3.org/2000/svg';
+  // Le dessin épouse la largeur réelle du conteneur : le texte reste lisible sur téléphone.
+  // Hauteur du dessin : 100 px (l'ancien faisait 230 px), légendes des mois en bas et valeur au-dessus des barres.
+  var L = Math.max(300, conteneur.clientWidth || 720), H = 100, marge = L < 520 ? 12 : 34, bas = 20, haut = 19;
+  var toutMontrer = L >= 520; // sur petit écran, seule la valeur du mois choisi est écrite
+  var zone = H - bas - haut;
+  var max = 0;
+  mois12.forEach(function (m) { if (m.ventesBrutes > max) { max = m.ventesBrutes; } });
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + L + ' ' + H);
+  svg.setAttribute('role', 'group');
+  svg.setAttribute('aria-label', 'Ventes brutes des 12 derniers mois');
+  var pas = (L - marge * 2) / mois12.length;
+  var largeur = pas * 0.62;
+
+  var ligne = document.createElementNS(NS, 'line');
+  ligne.setAttribute('x1', marge - 6); ligne.setAttribute('x2', L - marge + 6);
+  ligne.setAttribute('y1', H - bas); ligne.setAttribute('y2', H - bas);
+  ligne.setAttribute('stroke', '#34373e');
+  svg.appendChild(ligne);
+
+  mois12.forEach(function (m, i) {
+    var hauteur = max > 0 ? Math.max(m.ventesBrutes > 0 ? 3 : 0, (m.ventesBrutes / max) * zone) : 0;
+    var x = marge + i * pas + (pas - largeur) / 2;
+    var g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'barre' + (m.mois === moisActif ? ' actif' : ''));
+    g.setAttribute('tabindex', '0');
+    g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', libelleMois(m.mois, false) + ' : ' + fmtArgent.format(m.ventesBrutes));
+    var titre = document.createElementNS(NS, 'title');
+    titre.textContent = libelleMois(m.mois, false) + ' : ' + fmtArgent.format(m.ventesBrutes) + ', ' + pluriel(m.exemplaires, 'exemplaire', 'exemplaires');
+    g.appendChild(titre);
+    var r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('width', largeur);
+    r.setAttribute('y', H - bas - hauteur); r.setAttribute('height', hauteur);
+    r.setAttribute('rx', 3);
+    g.appendChild(r);
+    // zone cliquable transparente couvrant toute la colonne
+    var zoneClic = document.createElementNS(NS, 'rect');
+    zoneClic.setAttribute('x', marge + i * pas); zoneClic.setAttribute('width', pas);
+    zoneClic.setAttribute('y', haut); zoneClic.setAttribute('height', zone + bas);
+    zoneClic.setAttribute('class', 'zone');
+    g.appendChild(zoneClic);
+    if (m.ventesBrutes > 0 && (toutMontrer || m.mois === moisActif)) {
+      var val = document.createElementNS(NS, 'text');
+      val.setAttribute('class', 'lib');
+      val.setAttribute('x', x + largeur / 2); val.setAttribute('y', H - bas - hauteur - 6);
+      val.setAttribute('text-anchor', 'middle');
+      val.textContent = Math.round(m.ventesBrutes).toLocaleString('fr-CA');
+      g.appendChild(val);
+    }
+    var lib = document.createElementNS(NS, 'text');
+    lib.setAttribute('class', 'lib');
+    lib.setAttribute('x', x + largeur / 2); lib.setAttribute('y', H - 6);
+    lib.setAttribute('text-anchor', 'middle');
+    lib.textContent = libelleMois(m.mois, true).replace('.', '');
+    g.appendChild(lib);
+    var choisir = function () { demanderVentes(m.mois); };
+    g.addEventListener('click', choisir);
+    g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choisir(); } });
+    svg.appendChild(g);
+  });
+  conteneur.appendChild(svg);
+}
+
+// Zone à hauteur fixe : affiche le tableau s'il y a des lignes, sinon le message centré (la hauteur ne change pas).
+function basculerZone(idZone, idTable, idVide, aDesLignes) {
+  $(idTable).hidden = !aDesLignes;
+  $(idVide).hidden = aDesLignes;
+  $(idZone).classList.toggle('est-vide', !aDesLignes);
+}
+
+function rendreTableauVentes(msg) {
+  $('titre-tableau').textContent = 'Ventes par livre, ' + libelleMois(msg.mois, false);
+  var corps = $('corps-ventes'), pied = $('pied-ventes');
+  vider(corps); vider(pied);
+  var aDesVentes = msg.parLivre.length > 0;
+  basculerZone('zone-ventes', 'table-ventes', 'vide-ventes', aDesVentes);
+  if (!aDesVentes) { return; }
+  var totalLiens = 0;
+  msg.parLivre.forEach(function (l) {
+    totalLiens += l.viaLiens;
+    var tr = el('tr');
+    tr.appendChild(el('td', null, l.titre));
+    tr.appendChild(el('td', 'n', fmtEntier.format(l.exemplaires)));
+    tr.appendChild(el('td', 'n', fmtArgent.format(l.ventesBrutes)));
+    tr.appendChild(el('td', 'n', fmtEntier.format(l.viaLiens)));
+    corps.appendChild(tr);
+  });
+  var tf = el('tr');
+  tf.appendChild(el('td', null, 'Total'));
+  tf.appendChild(el('td', 'n', fmtEntier.format(msg.courant.exemplaires)));
+  tf.appendChild(el('td', 'n', fmtArgent.format(msg.courant.ventesBrutes)));
+  tf.appendChild(el('td', 'n', fmtEntier.format(totalLiens)));
+  pied.appendChild(tf);
+}
+
+/* ---------- Fiche auteur ---------- */
+function initiales(nom) {
+  var mots = (nom || '').trim().split(/\s+/).filter(Boolean);
+  if (!mots.length) { return '?'; }
+  return (mots[0][0] + (mots.length > 1 ? mots[mots.length - 1][0] : '')).toUpperCase();
+}
+function afficherPhoto(url, nom) {
+  var cadre = $('photo-cadre');
+  vider(cadre);
+  var sure = urlSure(url);
+  if (sure) {
+    var img = el('img');
+    img.alt = '';
+    img.src = sure;
+    img.addEventListener('error', function () { vider(cadre); cadre.textContent = initiales(nom); });
+    cadre.appendChild(img);
+  } else {
+    cadre.textContent = initiales(nom);
+  }
+}
+function valeursFormulaire() {
+  return { telephone: $('champ-telephone').value.trim(), adresse: $('champ-adresse').value.trim(), note: $('champ-note').value.trim() };
+}
+function rendreProfil(a) {
+  $('champ-nom').value = a.nom || '';
+  $('champ-courriel').value = a.courriel || '';
+  $('champ-telephone').value = a.telephone || '';
+  $('champ-adresse').value = a.adresse || '';
+  $('champ-note').value = a.note || '';
+  afficherPhoto(a.photoUrl, a.nom);
+  etat.profilInitial = valeursFormulaire();
+  $('lien-modif').href = 'mailto:' + COURRIEL_TBL + '?subject=' + encodeURIComponent('Modification de mon nom ou de mon courriel (Espace Auteurs)');
+  majBoutonEnregistrer();
+}
+function profilModifie() {
+  var v = valeursFormulaire(), i = etat.profilInitial;
+  return !!i && (v.telephone !== i.telephone || v.adresse !== i.adresse || v.note !== i.note);
+}
+function majBoutonEnregistrer() { $('btn-enregistrer').disabled = etat.enregistrement || !profilModifie(); }
+['champ-telephone', 'champ-adresse', 'champ-note'].forEach(function (id) {
+  $(id).addEventListener('input', function () { $('statut-profil').textContent = ''; $('statut-profil').className = 'statut'; majBoutonEnregistrer(); });
+});
+function messageProfil(texte, classe) { var s = $('statut-profil'); s.textContent = texte; s.className = 'statut ' + (classe || ''); }
+$('form-profil').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (!profilModifie() || etat.enregistrement) { return; }
+  etat.enregistrement = true;
+  majBoutonEnregistrer();
+  messageProfil('Enregistrement en cours…');
+  clearTimeout(etat.minuterieProfil);
+  etat.minuterieProfil = setTimeout(function () {
+    if (etat.enregistrement) { etat.enregistrement = false; majBoutonEnregistrer(); messageProfil('L\'enregistrement prend trop de temps. Veuillez réessayer.', 'err'); }
+  }, 15000);
+  envoyer({ type: 'enregistrerProfil', champs: valeursFormulaire() });
+});
+function surResultatProfil(msg) {
+  clearTimeout(etat.minuterieProfil);
+  etat.enregistrement = false;
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok' && msg.auteur) {
+    etat.donnees.auteur = msg.auteur;
+    rendreProfil(msg.auteur);
+    messageProfil('Vos informations ont été enregistrées.', 'ok');
+  } else if (msg.statut === 'invalide') {
+    majBoutonEnregistrer();
+    messageProfil(msg.message || 'Certaines informations ne sont pas valides.', 'err');
+  } else {
+    majBoutonEnregistrer();
+    messageProfil('L\'enregistrement a échoué. Veuillez réessayer.', 'err');
+  }
+}
+window.addEventListener('beforeunload', function (e) {
+  if (profilModifie()) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* Photo : réduction côté navigateur (800 px max, JPEG) avant l'envoi */
+$('btn-photo').addEventListener('click', function () { $('fichier-photo').click(); });
+$('fichier-photo').addEventListener('change', function () {
+  var fichier = this.files && this.files[0];
+  this.value = '';
+  if (!fichier) { return; }
+  var statut = $('statut-photo');
+  if (!/^image\/(jpeg|png|webp)$/.test(fichier.type)) { statut.textContent = 'Choisissez une image JPEG, PNG ou WebP.'; return; }
+  if (fichier.size > 15 * 1024 * 1024) { statut.textContent = 'Cette image est trop lourde. Choisissez-en une de moins de 15 Mo.'; return; }
+  statut.textContent = 'Préparation de la photo…';
+  reduireImage(fichier, 800).then(function (dataUrl) {
+    statut.textContent = 'Envoi de la photo…';
+    $('btn-photo').disabled = true;
+    etat.photoEnAttente = dataUrl;
+    clearTimeout(etat.minuteriePhoto);
+    etat.minuteriePhoto = setTimeout(function () { $('btn-photo').disabled = false; statut.textContent = 'L\'envoi prend trop de temps. Veuillez réessayer.'; }, 30000);
+    envoyer({ type: 'televerserPhoto', base64: dataUrl.split(',')[1] });
+  }).catch(function () { statut.textContent = 'Cette image ne peut pas être lue. Essayez-en une autre.'; });
+});
+function reduireImage(fichier, max) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(fichier);
+    var img = new Image();
+    img.onload = function () {
+      var echelle = Math.min(1, max / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * echelle));
+      canvas.height = Math.max(1, Math.round(img.height * echelle));
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image illisible')); };
+    img.src = url;
+  });
+}
+function surResultatPhoto(msg) {
+  clearTimeout(etat.minuteriePhoto);
+  $('btn-photo').disabled = false;
+  var statut = $('statut-photo');
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok') {
+    var url = msg.photoUrl || etat.photoEnAttente;
+    etat.donnees.auteur.photoUrl = url;
+    afficherPhoto(url, etat.donnees.auteur.nom);
+    statut.textContent = 'Votre photo a été mise à jour.';
+  } else if (msg.statut === 'invalide') {
+    statut.textContent = msg.message || 'Cette photo n\'est pas acceptée.';
+  } else {
+    statut.textContent = 'L\'envoi de la photo a échoué. Veuillez réessayer.';
+  }
+}
+
+/* ---------- Livres ---------- */
+function rendreLivres() {
+  var liste = $('liste-livres');
+  vider(liste);
+  var livres = etat.donnees ? etat.donnees.livres : [];
+  $('vide-livres').hidden = livres.length > 0;
+  livres.forEach(function (l) {
+    var carte = el('article', 'card livre');
+    var mini = urlSure(l.miniature);
+    if (mini) { var img = el('img', 'couv'); img.alt = 'Couverture de ' + l.titre; img.loading = 'lazy'; img.src = mini; carte.appendChild(img); }
+    else { carte.appendChild(el('div', 'couv', 'Couverture à venir')); }
+    carte.appendChild(el('h3', null, l.titre));
+    var pastilles = el('div', 'pastilles');
+    if (l.statut) { pastilles.appendChild(el('span', 'pastille' + (l.statut === 'Publié' ? ' ok' : ''), l.statut)); }
+    if (l.horsLigne) { pastilles.appendChild(el('span', 'pastille rouge', 'Hors ligne')); }
+    if (pastilles.childNodes.length) { carte.appendChild(pastilles); }
+    var t = etat.totaux[l.id];
+    var chiffres = el('div', 'chiffres');
+    if (t) { chiffres.textContent = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ' au total, dont ' + t.viaLiens + ' par vos liens de partage'; }
+    else if (etat.ventesRecues) { chiffres.textContent = 'Aucune vente enregistrée pour le moment'; }
+    if (chiffres.textContent) { carte.appendChild(chiffres); }
+    var page = urlSure(l.page);
+    if (page) {
+      var lien = el('a', 'btn sec petit', 'Voir la page du livre');
+      lien.href = page; lien.target = '_blank'; lien.rel = 'noopener';
+      carte.appendChild(lien);
+    }
+    liste.appendChild(carte);
+  });
+}
+
+/* ---------- Documents ---------- */
+// Une ligne = une hauteur fixe : titre (une seule ligne, coupé par « … » si trop long) et, dessous,
+// type, date et montant. Le titre complet reste lisible au survol (attribut title).
+function creerLigneDoc(doc) {
+  var tr = el('tr');
+  var cellule = el('td');
+  var titre = el('div', 't-titre', doc.titre);
+  titre.title = doc.titre;
+  cellule.appendChild(titre);
+  var meta = el('div', 'meta');
+  if (doc.type) { meta.appendChild(el('span', 'pastille', doc.type)); }
+  if (doc.date) { meta.appendChild(el('span', null, dateCourte(doc.date))); }
+  if (doc.montant) { meta.appendChild(el('span', null, doc.montant)); }
+  cellule.appendChild(meta);
+  tr.appendChild(cellule);
+
+  var celluleAction = el('td', 'c-action');
+  var action = el('div', 'action');
+  var url = urlSure(doc.url);
+  var urlVue = urlSure(doc.urlVisualisation); // fournie seulement pour les PDF
+  if (urlVue) {
+    // Ouvre le PDF dans le navigateur, dans un nouvel onglet.
+    var v = el('a', 'btn mini', 'Visualiser');
+    v.href = urlVue; v.target = '_blank'; v.rel = 'noopener';
+    v.setAttribute('aria-label', 'Visualiser ' + doc.titre + ' dans un nouvel onglet');
+    action.appendChild(v);
+  }
+  if (url) {
+    var a = el('a', urlVue ? 'btn sec mini' : 'btn mini', 'Télécharger');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.setAttribute('aria-label', 'Télécharger ' + doc.titre);
+    action.appendChild(a);
+  } else if (!urlVue) {
+    action.appendChild(el('span', 'note', 'Indisponible'));
+  }
+  celluleAction.appendChild(action);
+  tr.appendChild(celluleAction);
+  return tr;
+}
+function remplirListe(idListe, idVide, docs) {
+  var corps = $(idListe);
+  vider(corps);
+  docs.forEach(function (d) { corps.appendChild(creerLigneDoc(d)); });
+  var suffixe = idListe.slice('docs-'.length); // « generaux » ou « auteur »
+  basculerZone('zone-docs-' + suffixe, 'table-docs-' + suffixe, idVide, docs.length > 0);
+}
+function anneeDe(doc) { return doc.date ? doc.date.slice(0, 4) : ''; }
+function rendreDocuments() {
+  var docs = etat.donnees.documents;
+  remplirListe('docs-generaux', 'vide-generaux', docs.generaux);
+  var types = [], annees = [];
+  docs.auteur.forEach(function (d) {
+    if (d.type && types.indexOf(d.type) < 0) { types.push(d.type); }
+    var a = anneeDe(d); if (a && annees.indexOf(a) < 0) { annees.push(a); }
+  });
+  annees.sort().reverse();
+  remplirFiltre($('filtre-type'), 'Tous les types', types);
+  remplirFiltre($('filtre-annee'), 'Toutes les années', annees);
+  $('filtres-docs').hidden = docs.auteur.length <= 10; // les filtres servent quand la liste dépasse la zone
+  appliquerFiltresDocs();
+}
+function remplirFiltre(select, libelleTous, valeurs) {
+  vider(select);
+  var tous = el('option', null, libelleTous); tous.value = ''; select.appendChild(tous);
+  valeurs.forEach(function (v) { var o = el('option', null, v); o.value = v; select.appendChild(o); });
+}
+function appliquerFiltresDocs() {
+  var type = $('filtre-type').value, annee = $('filtre-annee').value;
+  var docs = etat.donnees.documents.auteur.filter(function (d) {
+    return (!type || d.type === type) && (!annee || anneeDe(d) === annee);
+  });
+  remplirListe('docs-auteur', 'vide-auteur', docs);
+  if (!docs.length && etat.donnees.documents.auteur.length) { $('vide-auteur').textContent = 'Aucun document ne correspond à ces filtres.'; }
+  else { $('vide-auteur').textContent = 'Aucun document à votre nom pour le moment. Vos relevés de commission apparaîtront ici.'; }
+}
+$('filtre-type').addEventListener('change', appliquerFiltresDocs);
+$('filtre-annee').addEventListener('change', appliquerFiltresDocs);
+
+$('btn-reessayer').addEventListener('click', demarrer);
+
+var largeurGraphique = 0;
+window.addEventListener('resize', function () {
+  clearTimeout(etat.minuterieTaille);
+  etat.minuterieTaille = setTimeout(function () {
+    var c = $('graphique');
+    if (etat.derniereVente && c.clientWidth && c.clientWidth !== largeurGraphique) {
+      largeurGraphique = c.clientWidth;
+      rendreGraphique(etat.derniereVente.mois12, etat.derniereVente.mois);
+    }
+  }, 150);
+});
+
+/* ---------- Démarrage ---------- */
+demarrer();
+})();
+</script>
+</body>
+</html>

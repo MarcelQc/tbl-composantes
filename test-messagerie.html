@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test de messagerie | Éditions TBL</title>
+<style>
+body{margin:0;padding:18px;background:#111;color:#eee;font:15px/1.5 Arial,sans-serif}
+h1{font-size:1.2rem;margin:0 0 10px;color:#ED1C24}
+button{background:#ED1C24;color:#fff;border:0;padding:8px 14px;border-radius:4px;font-size:.95rem;cursor:pointer}
+#journal{margin-top:12px;padding:10px;background:#1c1c1c;border:1px solid #333;border-radius:4px;white-space:pre-wrap;font:13px/1.45 Consolas,monospace;min-height:120px}
+.ok{color:#5fd35f}.info{color:#9ab}
+</style>
+</head>
+<body>
+<h1>Test de messagerie : composante chargée par adresse URL</h1>
+<button id="envoyer" type="button">Envoyer un message à la page Wix</button>
+<div id="journal"></div>
+<script>
+/* Page de test sans aucune donnée : elle vérifie seulement que la page Wix et la composante
+   chargée depuis GitHub Pages peuvent s'échanger des messages, et note l'origine réelle
+   du parent pour pouvoir ensuite restreindre les messages à cette origine. */
+var journal = document.getElementById('journal');
+function noter(texte, classe) {
+  var ligne = document.createElement('div');
+  if (classe) { ligne.className = classe; }
+  ligne.textContent = new Date().toLocaleTimeString('fr-CA') + '  ' + texte;
+  journal.appendChild(ligne);
+}
+noter('Page chargée depuis : ' + location.origin, 'info');
+noter('Référent (document.referrer) : ' + (document.referrer || '(vide)'), 'info');
+noter('Dans un iframe : ' + (window.parent !== window ? 'oui' : 'non'), 'info');
+
+var compteur = 0;
+function envoyer() {
+  compteur += 1;
+  window.parent.postMessage({ type: 'testMessagerie', numero: compteur }, '*');
+  noter('Envoyé à la page Wix : message ' + compteur);
+}
+document.getElementById('envoyer').addEventListener('click', envoyer);
+
+window.addEventListener('message', function (e) {
+  var parent = e.source === window.parent ? 'oui' : 'non';
+  noter('Reçu de ' + e.origin + ' (source = parent : ' + parent + ') : ' + JSON.stringify(e.data), 'ok');
+});
+
+envoyer();
+</script>
+</body>
+</html>
