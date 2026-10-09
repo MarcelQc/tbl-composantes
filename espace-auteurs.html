@@ -130,7 +130,44 @@ textarea{min-height:96px;resize:vertical}
 .pastille{border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.8rem;color:var(--muted)}
 .pastille.ok{border-color:var(--ok);color:var(--ok)}
 .pastille.rouge{border-color:var(--red);color:var(--red)}
+.barre-admin{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px;padding:14px 18px;border-color:#c792ff}
+.barre-admin strong{color:#c792ff}
+.barre-admin select{min-width:180px}
+.livre .auteur-livre{color:var(--muted);font-size:.88rem}
+.pastille.attente{border-color:#FFCB05;color:#FFCB05}
+.pastille.bleu{border-color:#4d9fff;color:#4d9fff}
 .livre .chiffres{color:var(--muted);font-size:.9rem}
+.livre .motif{border-left:3px solid var(--red);padding:4px 10px;color:var(--txt);font-size:.88rem;background:var(--card2);border-radius:0 8px 8px 0}
+.livre .actions-livre{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.section-livres{margin-bottom:26px}
+.section-livres>h3{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.offre-duo{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:space-between;margin-bottom:16px;border-color:var(--ok)}
+.offre-duo h3{margin:0 0 4px}
+.offre-duo p{margin:0}
+.note-duo{margin:0 0 16px}
+.duo .couv{aspect-ratio:1/1}
+.duo .contenu-duo{color:var(--muted);font-size:.88rem}
+
+/* Services */
+.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.service{display:flex;flex-direction:column;gap:10px;padding:20px}
+.service h3{margin:0}
+.service .prix{color:var(--ok);font-weight:bold}
+.service .desc{color:var(--muted);font-size:.92rem;margin:0}
+.service .choix-livres{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.service .choix-livres select{width:100%;min-width:0}
+.service .etiquette-admin{align-self:flex-start;border:1px solid #c792ff;color:#c792ff;border-radius:99px;padding:1px 10px;font-size:.78rem}
+
+/* Fenêtres (bientôt disponible, nouveau livre) */
+.fond-fenetre{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;padding:60px 14px;z-index:20;overflow:auto}
+.fenetre{width:min(560px,100%);padding:26px}
+.fenetre h2{margin-bottom:12px}
+.fenetre p{margin:0 0 12px}
+.fenetre .champ select{width:100%;min-width:0}
+.fenetre .boutons{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px}
+.fenetre .apercu-produit{display:flex;gap:12px;align-items:center;margin-top:8px;color:var(--muted);font-size:.9rem}
+.fenetre .apercu-produit img{width:60px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.etiquette-bientot{display:inline-block;border:1px solid #FFCB05;color:#FFCB05;border-radius:99px;padding:1px 10px;font-size:.8rem;margin-bottom:10px}
 
 /* Documents */
 .colonnes-docs{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
@@ -192,6 +229,7 @@ textarea{min-height:96px;resize:vertical}
       <button class="onglet" role="tab" id="onglet-ventes" aria-controls="panneau-ventes" aria-selected="true" tabindex="0">Ventes</button>
       <button class="onglet" role="tab" id="onglet-auteur" aria-controls="panneau-auteur" aria-selected="false" tabindex="-1">Auteur</button>
       <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres <span class="pastille-nb" id="nb-livres">0</span></button>
+      <button class="onglet" role="tab" id="onglet-services" aria-controls="panneau-services" aria-selected="false" tabindex="-1">Services</button>
       <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
     </div>
 
@@ -267,15 +305,44 @@ textarea{min-height:96px;resize:vertical}
 
     <!-- LIVRES -->
     <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" hidden>
-      <div class="livres" id="liste-livres"></div>
-      <div class="card vide" id="vide-livres" hidden>Aucun livre n'est encore associé à votre compte. Dès qu'un livre sera ajouté, il apparaîtra ici.</div>
+      <div class="card barre-admin" id="barre-admin" hidden><strong>Administrateur</strong><span id="txt-admin"></span>
+        <label for="filtre-livres" class="sub">Afficher</label>
+        <select id="filtre-livres" aria-label="Filtrer les livres"><option value="tous">Tous les livres</option><option value="meslivres">Mes livres</option><option value="autresauteurs">Autres auteurs</option><option value="aexaminer">Demandes à valider</option></select>
+        <button class="btn petit" type="button" id="btn-nouveau-livre">Nouveau livre</button></div>
+      <div class="card offre-duo" id="offre-duo" hidden>
+        <div><h3>Créez un ensemble de vos livres</h3><p class="sub">Le forfait Duo réunit deux de vos livres publiés dans un ensemble vendu à prix réduit : 50 $, plus les frais de service et les taxes.</p></div>
+        <button class="btn" type="button" id="btn-creer-duo">Créer un ensemble de livres</button>
+      </div>
+      <section class="section-livres">
+        <h3 id="titre-mes-livres">Mes livres</h3>
+        <div class="livres" id="liste-livres"></div>
+        <div class="card vide" id="vide-livres" hidden>Aucun livre n'est encore associé à votre compte. Dès qu'un livre sera ajouté, il apparaîtra ici.</div>
+      </section>
+      <section class="section-livres" id="section-duos">
+        <h3 id="titre-mes-duos">Mes ensembles (Duos)</h3>
+        <p class="note note-duo" id="note-duo" hidden></p>
+        <div class="livres" id="liste-duos"></div>
+        <div class="card vide" id="vide-duos" hidden>Aucun ensemble pour le moment.</div>
+      </section>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="panneau" role="tabpanel" id="panneau-services" aria-labelledby="onglet-services" hidden>
+      <p class="sub" id="intro-services">Les services offerts par les Éditions TBL pour faire connaître vos livres. Les prix n'incluent pas les frais de service (5 %) ni les taxes.</p>
+      <div class="services" id="liste-services"></div>
     </div>
 
     <!-- DOCUMENTS -->
     <div class="panneau" role="tabpanel" id="panneau-documents" aria-labelledby="onglet-documents" hidden>
       <div class="colonnes-docs">
         <section class="card carte-docs">
-          <div class="tete-section"><h3 id="titre-docs-generaux">Documents généraux</h3></div>
+          <div class="tete-section">
+            <h3 id="titre-docs-generaux">Documents généraux</h3>
+            <div class="filtres" id="filtres-generaux">
+              <select id="filtre-type-generaux" aria-label="Filtrer par type"></select>
+              <select id="filtre-annee-generaux" aria-label="Filtrer par année"></select>
+            </div>
+          </div>
           <div class="zone-fixe zone-docs" id="zone-docs-generaux" role="region" aria-labelledby="titre-docs-generaux" tabindex="0">
             <table id="table-docs-generaux">
               <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
@@ -287,9 +354,10 @@ textarea{min-height:96px;resize:vertical}
         <section class="card carte-docs">
           <div class="tete-section">
             <h3 id="titre-docs-auteur">Documents de l'auteur</h3>
-            <div class="filtres" id="filtres-docs" hidden>
-              <select id="filtre-type" aria-label="Filtrer par type"></select>
-              <select id="filtre-annee" aria-label="Filtrer par année"></select>
+            <div class="filtres" id="filtres-auteur">
+              <select id="filtre-auteur" aria-label="Filtrer par auteur" hidden></select>
+              <select id="filtre-type-auteur" aria-label="Filtrer par type"></select>
+              <select id="filtre-annee-auteur" aria-label="Filtrer par année"></select>
             </div>
           </div>
           <div class="zone-fixe zone-docs" id="zone-docs-auteur" role="region" aria-labelledby="titre-docs-auteur" tabindex="0">
@@ -297,12 +365,50 @@ textarea{min-height:96px;resize:vertical}
               <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
               <tbody id="docs-auteur"></tbody>
             </table>
-            <p class="vide-zone" id="vide-auteur" hidden>Aucun document à votre nom pour le moment. Vos relevés de commission apparaîtront ici.</p>
+            <p class="vide-zone" id="vide-auteur" hidden>Aucun document à votre nom pour le moment. Vos relevés de commission, factures et notes de crédit apparaîtront ici.</p>
           </div>
         </section>
       </div>
     </div>
   </section>
+
+  <!-- Fenêtre « Bientôt disponible » -->
+  <div class="fond-fenetre" id="fenetre-bientot" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-bientot">
+      <span class="etiquette-bientot">Bientôt disponible</span>
+      <h2 id="titre-bientot"></h2>
+      <p id="texte-bientot"></p>
+      <p class="note" id="note-bientot"></p>
+      <div class="boutons"><button class="btn" type="button" id="btn-fermer-bientot">J'ai compris</button></div>
+    </div>
+  </div>
+
+  <!-- Fenêtre « Nouveau livre » (administrateur) -->
+  <div class="fond-fenetre" id="fenetre-nouveau" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-nouveau">
+      <h2 id="titre-nouveau">Nouveau livre</h2>
+      <p class="sub">Choisissez l'auteur et le livre du catalogue. La page du livre est créée au statut Nouveau, invisible sur le site, en attendant que l'auteur la complète et la paie.</p>
+      <div id="nouveau-chargement" class="note" role="status" aria-live="polite">Chargement des auteurs et des livres du catalogue…</div>
+      <form id="form-nouveau" novalidate hidden>
+        <div class="champ">
+          <label for="nouveau-auteur">Auteur</label>
+          <select id="nouveau-auteur" required></select>
+        </div>
+        <div class="champ">
+          <label for="nouveau-produit">Livre du catalogue</label>
+          <select id="nouveau-produit" required></select>
+          <div class="aide">Seuls les livres du catalogue qui n'ont pas encore de page apparaissent ici.</div>
+          <div class="apercu-produit" id="apercu-produit" hidden></div>
+        </div>
+        <p class="statut" id="statut-nouveau" role="status" aria-live="polite"></p>
+        <div class="boutons">
+          <button class="btn sec" type="button" id="btn-annuler-nouveau">Annuler</button>
+          <button class="btn" type="submit" id="btn-creer-nouveau" disabled>Créer le livre</button>
+        </div>
+      </form>
+      <div class="boutons" id="boutons-nouveau-fermer" hidden><button class="btn sec" type="button" id="btn-fermer-nouveau">Fermer</button></div>
+    </div>
+  </div>
 
 </main>
 
@@ -357,8 +463,14 @@ function envoyer(message) {
   if (EN_WIX) { window.parent.postMessage(message, '*'); }
 
 }
+// La page est servie par GitHub Pages et chargée dans la composante HTML de la page Wix : on n'accepte
+// que les messages de cette page parente (site publié, ou Aperçu dans l'éditeur Wix).
+var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+function origineAutorisee(origine) {
+  return ORIGINES_PERMISES.some(function (motif) { return motif.test(origine); });
+}
 window.addEventListener('message', function (e) {
-  if (EN_WIX && e.source !== window.parent) { return; }
+  if (EN_WIX && (e.source !== window.parent || !origineAutorisee(e.origin))) { return; }
   recevoir(e.data);
 });
 function recevoir(msg) {
@@ -367,6 +479,8 @@ function recevoir(msg) {
   else if (msg.type === 'ventes') { surVentes(msg); }
   else if (msg.type === 'resultatProfil') { surResultatProfil(msg); }
   else if (msg.type === 'resultatPhoto') { surResultatPhoto(msg); }
+  else if (msg.type === 'resultatChoixNouveauLivre') { surChoixNouveauLivre(msg); }
+  else if (msg.type === 'resultatNouveauLivre') { surResultatNouveauLivre(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -411,7 +525,7 @@ function surEspace(msg) {
     rendreEspace();
     montrer('espace');
 
-    demanderVentes(moisUtc(-1));
+    demanderVentes(moisUtc(0));
   } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
     etat.donnees = null;
     montrer(msg.statut);
@@ -424,7 +538,7 @@ function surEspace(msg) {
 }
 
 /* ---------- Onglets ---------- */
-var ONGLETS = ['ventes', 'auteur', 'livres', 'documents'];
+var ONGLETS = ['ventes', 'auteur', 'livres', 'services', 'documents'];
 function choisirOnglet(nom, focus) {
   ONGLETS.forEach(function (n) {
     var actif = (n === nom);
@@ -455,13 +569,15 @@ function rendreEspace() {
   if (accueil) {
     accueil.textContent = 'Bienvenue, ' + (d.auteur.nom || 'cher auteur') + '. Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.';
   }
+  document.title = (d.auteur.admin ? 'Espace Auteurs (Admin)' : 'Espace Auteurs') + ' | Éditions TBL';
   etat.totaux = {};
   etat.ventesRecues = false;
   rendreProfil(d.auteur);
   rendreLivres();
+  rendreServices();
   rendreDocuments();
   construireChoixMois();
-  $('nb-livres').textContent = d.livres.length;
+  $('nb-livres').textContent = d.livres.length + (d.duos || []).length;
   $('nb-documents').textContent = d.documents.generaux.length + d.documents.auteur.length;
 }
 
@@ -475,7 +591,7 @@ function construireChoixMois() {
     o.value = m;
     select.appendChild(o);
   }
-  select.value = moisUtc(-1);
+  select.value = moisUtc(0);
 }
 function demanderVentes(mois) {
   etat.mois = mois;
@@ -750,34 +866,354 @@ function surResultatPhoto(msg) {
 }
 
 /* ---------- Livres ---------- */
+function estAdmin() { return !!(etat.donnees && etat.donnees.auteur && etat.donnees.auteur.admin); }
+function enAttente(l) { return !!(l.copie && l.copie.statut === 'En attente de validation'); }
+function bouton(texte, classe, action) {
+  var b = el('button', classe || 'btn sec petit', texte);
+  b.type = 'button';
+  if (action) { b.addEventListener('click', action); } else { b.disabled = true; }
+  return b;
+}
+function lienExterne(texte, url) {
+  var a = el('a', 'btn sec petit', texte);
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  return a;
+}
+function couverture(carte, url, titre) {
+  var mini = urlSure(url);
+  if (mini) { var img = el('img', 'couv'); img.alt = 'Couverture de ' + titre; img.loading = 'lazy'; img.src = mini; carte.appendChild(img); }
+  else { carte.appendChild(el('div', 'couv', 'Couverture à venir')); }
+}
+
+// Boutons d'un livre selon son statut et sa copie ouverte (plan du 9 octobre 2026).
+function actionsLivre(l, admin) {
+  var zone = el('div', 'actions-livre');
+  var page = urlSure(l.page);
+  if (page) { zone.appendChild(lienExterne('Voir la page du livre', page)); }
+  var copie = l.copie ? l.copie.statut : null;
+  var monLivre = l.auteurId && etat.donnees && l.auteurId === etat.donnees.auteurId;
+  if (l.statut === 'Nouveau') {
+    zone.appendChild(bouton('Compléter la page du livre', 'btn petit', function () { bientot('completer', l.titre); }));
+  } else if (copie === 'En attente de validation') {
+    if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { bientot('examiner', l.titre); })); }
+    else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', null)); }
+  } else if (copie === 'Corriger') {
+    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma correction' : 'Reprendre la correction', 'btn petit', function () { bientot('modifier', l.titre); }));
+  } else if (copie === 'Modifier') {
+    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma modification' : 'Reprendre la modification', 'btn petit', function () { bientot('modifier', l.titre); }));
+  } else if (l.statut === 'Publier') {
+    zone.appendChild(bouton('Modifier la page', 'btn sec petit', function () { bientot('modifier', l.titre); }));
+  }
+  return zone;
+}
+
+function carteLivre(l, admin) {
+  var carte = el('article', 'card livre');
+  couverture(carte, l.miniature, l.titre);
+  carte.appendChild(el('h3', null, l.titre));
+  if (admin && l.auteurNom) { carte.appendChild(el('div', 'auteur-livre', 'Auteur : ' + l.auteurNom)); }
+  var pastilles = el('div', 'pastilles');
+  if (l.statut === 'Publier') { pastilles.appendChild(el('span', 'pastille ok', 'Publié')); }
+  else if (l.statut === 'Nouveau') { pastilles.appendChild(el('span', 'pastille attente', 'Nouveau, à compléter')); }
+  if (l.statut === 'Publier' && l.horsLigne) { pastilles.appendChild(el('span', 'pastille rouge', 'Hors carrousel')); }
+  var copie = l.copie ? l.copie.statut : null;
+  if (copie === 'Modifier') { pastilles.appendChild(el('span', 'pastille attente', 'Modification en cours')); }
+  else if (copie === 'Corriger') { pastilles.appendChild(el('span', 'pastille rouge', 'Demande refusée, à corriger')); }
+  else if (copie === 'En attente de validation') { pastilles.appendChild(el('span', 'pastille bleu', 'En attente de validation')); }
+  if (pastilles.childNodes.length) { carte.appendChild(pastilles); }
+  if (copie === 'Corriger' && l.copie.motifRefus) { carte.appendChild(el('div', 'motif', 'Motif : ' + l.copie.motifRefus)); }
+  var t = etat.totaux[l.id];
+  var chiffres = el('div', 'chiffres');
+  if (t) { chiffres.textContent = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ' au total, dont ' + t.viaLiens + ' par vos liens de partage'; }
+  else if (etat.ventesRecues && l.statut === 'Publier') { chiffres.textContent = 'Aucune vente enregistrée pour le moment'; }
+  if (chiffres.textContent) { carte.appendChild(chiffres); }
+  carte.appendChild(actionsLivre(l, admin));
+  return carte;
+}
+
+// Un Duo de LivresDuo : boutons selon son statut (forfait-duo.md).
+function carteDuo(d, admin) {
+  var carte = el('article', 'card livre duo');
+  couverture(carte, d.miniature, d.titre);
+  carte.appendChild(el('h3', null, d.titre));
+  if (admin && d.auteurNom) { carte.appendChild(el('div', 'auteur-livre', 'Auteur : ' + d.auteurNom)); }
+  var titres = (d.livres || []).filter(Boolean);
+  if (titres.length) { carte.appendChild(el('div', 'contenu-duo', 'Livres : ' + titres.join(' et '))); }
+  var pastilles = el('div', 'pastilles');
+  var libelles = { 'Nouveau': ['attente', 'Demande en cours'], 'Payé': ['bleu', 'Payé, en attente de production'], 'En production': ['bleu', 'En production par TBL'], 'Publier': ['ok', 'Publié'] };
+  var p = libelles[d.statut];
+  if (p) { pastilles.appendChild(el('span', 'pastille ' + p[0], p[1])); }
+  var copie = d.copie ? d.copie.statut : null;
+  if (copie === 'Modifier') { pastilles.appendChild(el('span', 'pastille attente', 'Modification en cours')); }
+  else if (copie === 'Corriger') { pastilles.appendChild(el('span', 'pastille rouge', 'Demande refusée, à corriger')); }
+  else if (copie === 'En attente de validation') { pastilles.appendChild(el('span', 'pastille bleu', 'En attente de validation')); }
+  if (pastilles.childNodes.length) { carte.appendChild(pastilles); }
+  var zone = el('div', 'actions-livre');
+  var page = urlSure(d.page);
+  if (page) { zone.appendChild(lienExterne('Voir la fiche de l\'ensemble', page)); }
+  if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', function () { bientot('duo', d.titre); })); }
+  else if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre ensemble. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
+  else if (copie === 'En attente de validation') {
+    if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { bientot('examiner', d.titre); })); }
+    else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', null)); }
+  } else if (copie === 'Modifier' || copie === 'Corriger') { zone.appendChild(bouton(copie === 'Corriger' ? 'Reprendre ma correction' : 'Reprendre ma modification', 'btn petit', function () { bientot('edd', d.titre); })); }
+  else if (d.statut === 'Publier') { zone.appendChild(bouton('Modifier le Duo', 'btn sec petit', function () { bientot('edd', d.titre); })); }
+  carte.appendChild(zone);
+  return carte;
+}
+
 function rendreLivres() {
+  var d = etat.donnees;
+  var livres = d ? d.livres : [];
+  var duos = d ? (d.duos || []) : [];
+  var admin = estAdmin();
+
+  // Administrateur (Auteurs.admin, vérifié par le serveur) : tous les livres de TBL et les demandes à valider
+  $('barre-admin').hidden = !admin;
+  $('titre-mes-livres').textContent = admin ? 'Livres' : 'Mes livres';
+  $('titre-mes-duos').textContent = admin ? 'Ensembles (Duos)' : 'Mes ensembles (Duos)';
+  if (admin) {
+    var nb = livres.filter(enAttente).length + duos.filter(enAttente).length;
+    $('txt-admin').textContent = 'Vous voyez tous les livres de TBL. ' + (nb ? pluriel(nb, 'demande attend', 'demandes attendent') + ' votre validation.' : 'Aucune demande à valider pour le moment.');
+    var filtre = $('filtre-livres').value;
+    var monId = d.auteurId;
+    var garder = function (x) {
+      if (filtre === 'aexaminer') { return enAttente(x); }
+      if (filtre === 'meslivres') { return x.auteurId === monId; }
+      if (filtre === 'autresauteurs') { return x.auteurId !== monId; }
+      return true;
+    };
+    livres = livres.filter(garder);
+    duos = duos.filter(garder);
+  }
+
   var liste = $('liste-livres');
   vider(liste);
-  var livres = etat.donnees ? etat.donnees.livres : [];
+  livres.forEach(function (l) { liste.appendChild(carteLivre(l, admin)); });
   $('vide-livres').hidden = livres.length > 0;
-  livres.forEach(function (l) {
-    var carte = el('article', 'card livre');
-    var mini = urlSure(l.miniature);
-    if (mini) { var img = el('img', 'couv'); img.alt = 'Couverture de ' + l.titre; img.loading = 'lazy'; img.src = mini; carte.appendChild(img); }
-    else { carte.appendChild(el('div', 'couv', 'Couverture à venir')); }
-    carte.appendChild(el('h3', null, l.titre));
-    var pastilles = el('div', 'pastilles');
-    if (l.statut) { pastilles.appendChild(el('span', 'pastille' + (l.statut === 'Publié' ? ' ok' : ''), l.statut)); }
-    if (l.horsLigne) { pastilles.appendChild(el('span', 'pastille rouge', 'Hors ligne')); }
-    if (pastilles.childNodes.length) { carte.appendChild(pastilles); }
-    var t = etat.totaux[l.id];
-    var chiffres = el('div', 'chiffres');
-    if (t) { chiffres.textContent = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ' au total, dont ' + t.viaLiens + ' par vos liens de partage'; }
-    else if (etat.ventesRecues) { chiffres.textContent = 'Aucune vente enregistrée pour le moment'; }
-    if (chiffres.textContent) { carte.appendChild(chiffres); }
-    var page = urlSure(l.page);
-    if (page) {
-      var lien = el('a', 'btn sec petit', 'Voir la page du livre');
-      lien.href = page; lien.target = '_blank'; lien.rel = 'noopener';
-      carte.appendChild(lien);
-    }
-    liste.appendChild(carte);
+
+  var listeDuos = $('liste-duos');
+  vider(listeDuos);
+  duos.forEach(function (x) { listeDuos.appendChild(carteDuo(x, admin)); });
+  $('vide-duos').hidden = duos.length > 0;
+
+  // Offre du forfait Duo : dès 2 livres publiés de l'auteur connecté (forfait-duo.md).
+  var offre = (d && d.offreDuo) || {};
+  $('offre-duo').hidden = !offre.offerte;
+  $('btn-creer-duo').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un ensemble de livres';
+  var note = $('note-duo');
+  if (!offre.offerte && !admin) {
+    note.hidden = false;
+    note.textContent = 'Le forfait Duo vous sera offert dès que deux de vos livres seront publiés (' + (offre.livresPublies || 0) + ' sur 2 pour le moment).';
+  } else {
+    note.hidden = true;
+  }
+}
+
+/* ---------- Fenêtre « Bientôt disponible » ---------- */
+// Fonctions prévues au plan de travail mais pas encore programmées : on explique ce qu'elles feront.
+var BIENTOT = {
+  completer: ['Compléter la page du livre', 'Vous pourrez compléter vous-même la page de votre nouveau livre : description, synopsis, note de l\'auteur, extrait, image du livre et portrait. Vous l\'enverrez ensuite en approbation en payant la page du livre (100 $, plus l\'inscription de 100 $ s\'il s\'agit de votre premier livre). L\'équipe TBL la valide avant de la publier.'],
+  modifier: ['Modifier la page du livre', 'Vous pourrez modifier vous-même la page de votre livre : description, synopsis, note de l\'auteur, extrait, texte du catalogue, image du livre et portrait. Le prix de vos changements se calcule en direct (5 $ ou 10 $ par texte selon l\'ampleur, 10 $ par image). Vous payez au moment d\'envoyer la page en approbation, puis l\'équipe TBL la valide avant de la publier.'],
+  examiner: ['Examiner une demande', 'Vous pourrez comparer la demande avec la version publiée, puis l\'approuver ou la refuser en indiquant un motif. L\'auteur sera avisé par courriel.'],
+  duo: ['Forfait Duo', 'Vous choisirez deux de vos livres publiés, le prix de vente de l\'ensemble (inférieur au total des deux livres) et sa description, puis vous paierez le forfait (50 $, plus les frais de service et les taxes). L\'équipe TBL créera le produit, l\'image de la fiche et deux images publicitaires. Vous activerez ensuite le Duo sur les pages de vos deux livres.'],
+  edd: ['Modifier le Duo', 'Vous pourrez modifier la description, les images et le prix de votre ensemble, et l\'afficher ou le masquer sur les pages de vos deux livres. Les changements passent par la validation de l\'équipe TBL, comme pour la page d\'un livre.'],
+  corrections: ['Modifier la page d\'un livre', 'Ce service se fera dans l\'éditeur de la page du livre : vous modifiez les textes et les images, le prix se calcule en direct (5 $ ou 10 $ par texte, 10 $ par image), puis vous payez et l\'équipe TBL valide avant la publication.'],
+  amazon: ['Publication sur Amazon', 'L\'équipe TBL convertira votre livre au format Amazon, créera sa fiche sur Amazon.ca avec votre synopsis, l\'aperçu du livre et une image du verso, puis ajoutera le bouton Amazon sur la page de votre livre (75 $). Le service s\'activera dans l\'éditeur de la page du livre.'],
+  fbpub: ['Publication Facebook', 'Vous choisirez le nombre de publications (25 $ chacune), préparerez le texte et l\'image de chacune, puis l\'équipe TBL les publiera sur la page Facebook des Éditions TBL après validation. Vos cinq dernières images seront gardées pour les réutiliser.'],
+  fbimage: ['Conception d\'une image Facebook', 'L\'équipe TBL concevra une image publicitaire au format Facebook pour votre livre. Des exemples seront présentés dans la page du service. Le prix sera annoncé bientôt.'],
+  vedette: ['Mise en vedette', 'Vous réserverez une des quatre places de la vitrine, sur la page d\'accueil et dans le carrousel, pour la semaine de votre choix (25 $ par semaine), dans un calendrier qui montre les places libres.'],
+  courriel: ['Courriel promotionnel', 'Un seul courriel promotionnel par semaine pour tout le site : l\'image de votre livre accompagnée d\'un texte, envoyé par les Éditions TBL (25 $). Vous réserverez votre semaine dans un calendrier.'],
+  couverture: ['Conception de couverture ou du verso', 'L\'équipe TBL concevra la couverture ou l\'image du verso (4e de couverture) de votre livre. Le contenu du service et son prix seront précisés bientôt.']
+};
+var dernierFocus = null;
+function ouvrirFenetre(id, focusId) {
+  dernierFocus = document.activeElement;
+  $(id).hidden = false;
+  var cible = $(focusId);
+  if (cible) { cible.focus(); }
+}
+function fermerFenetre(id) {
+  $(id).hidden = true;
+  if (dernierFocus && dernierFocus.focus) { dernierFocus.focus(); }
+}
+function bientot(cle, titreLivre) {
+  var b = BIENTOT[cle] || ['Bientôt disponible', 'Cette fonction sera offerte prochainement.'];
+  $('titre-bientot').textContent = b[0];
+  $('texte-bientot').textContent = b[1];
+  $('note-bientot').textContent = titreLivre ? 'Livre choisi : ' + titreLivre : '';
+  ouvrirFenetre('fenetre-bientot', 'btn-fermer-bientot');
+}
+$('btn-fermer-bientot').addEventListener('click', function () { fermerFenetre('fenetre-bientot'); });
+$('btn-creer-duo').addEventListener('click', function () { bientot('duo'); });
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') { return; }
+  if (!$('fenetre-bientot').hidden) { fermerFenetre('fenetre-bientot'); }
+  else if (!$('fenetre-nouveau').hidden) { fermerFenetre('fenetre-nouveau'); }
+});
+['fenetre-bientot', 'fenetre-nouveau'].forEach(function (id) {
+  $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
+});
+
+/* ---------- Services ---------- */
+// livres : nombre de livres à choisir (0, 1 ou 2). duo : seulement des livres publiés de l'auteur.
+var SERVICES = [
+  { cle: 'nouveau', nom: 'Nouveau livre', prix: 'Page du livre : 100 $, payée par l\'auteur', desc: 'Créer la page d\'un livre du catalogue pour un auteur. L\'auteur est ensuite invité à la compléter dans son Espace Auteurs.', livres: 0, admin: true },
+  { cle: 'corrections', nom: 'Modifier la page d\'un livre', prix: '5 $ ou 10 $ par texte, 10 $ par image', desc: 'Mettre à jour les textes et les images de la page de votre livre. Le prix se calcule selon l\'ampleur des changements.', livres: 1 },
+  { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
+  { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
+  { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
+  { cle: 'fbimage', nom: 'Conception d\'une image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
+  { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 1 },
+  { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
+  { cle: 'couverture', nom: 'Conception de couverture ou du verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
+];
+// Livres proposés dans les services : ceux de l'auteur, ou tous pour un admin. Le Duo n'accepte que
+// les livres publiés de l'auteur connecté (même pour un admin).
+function livresPourService(service) {
+  var d = etat.donnees;
+  var livres = (d && d.livres) || [];
+  if (service.livres === 2) {
+    return livres.filter(function (l) { return l.statut === 'Publier' && l.auteurId === d.auteurId; });
+  }
+  return livres;
+}
+function libelleChoix(l) {
+  var texte = l.titre;
+  if (estAdmin() && l.auteurNom) { texte += ' (' + l.auteurNom + ')'; }
+  if (l.statut === 'Nouveau') { texte += ', à compléter'; }
+  return texte;
+}
+function selectLivres(livres, libelle) {
+  var s = el('select');
+  s.setAttribute('aria-label', libelle);
+  var vide = el('option', null, libelle); vide.value = ''; s.appendChild(vide);
+  livres.forEach(function (l) { var o = el('option', null, libelleChoix(l)); o.value = l.id; s.appendChild(o); });
+  return s;
+}
+function carteService(service) {
+  var carte = el('article', 'card service');
+  if (service.admin) { carte.appendChild(el('span', 'etiquette-admin', 'Administrateur')); }
+  carte.appendChild(el('h3', null, service.nom));
+  carte.appendChild(el('div', 'prix', service.prix));
+  carte.appendChild(el('p', 'desc', service.desc));
+  var zone = el('div', 'choix-livres');
+  if (service.cle === 'nouveau') {
+    zone.appendChild(bouton('Créer un nouveau livre', 'btn petit', ouvrirNouveauLivre));
+    carte.appendChild(zone);
+    return carte;
+  }
+  var livres = livresPourService(service);
+  var besoin = service.livres;
+  if (livres.length < besoin) {
+    zone.appendChild(el('p', 'note', besoin === 2 ? 'Offert dès que deux de vos livres sont publiés.' : 'Aucun livre disponible pour le moment.'));
+    carte.appendChild(zone);
+    return carte;
+  }
+  var choix = [];
+  for (var i = 0; i < besoin; i++) {
+    choix.push(selectLivres(livres, besoin === 2 ? (i === 0 ? 'Premier livre' : 'Deuxième livre') : 'Choisir un livre'));
+    zone.appendChild(choix[i]);
+  }
+  var continuer = bouton('Continuer', 'btn petit', function () {
+    var ids = choix.map(function (s) { return s.value; });
+    var titres = ids.map(function (id) { var l = livres.filter(function (x) { return x.id === id; })[0]; return l ? l.titre : ''; });
+    bientot(service.cle, titres.join(' et '));
   });
+  function majContinuer() {
+    var ids = choix.map(function (s) { return s.value; });
+    continuer.disabled = ids.some(function (v) { return !v; }) || (ids.length === 2 && ids[0] === ids[1]);
+  }
+  choix.forEach(function (s) { s.addEventListener('change', majContinuer); });
+  majContinuer();
+  zone.appendChild(continuer);
+  carte.appendChild(zone);
+  return carte;
+}
+function rendreServices() {
+  var liste = $('liste-services');
+  vider(liste);
+  var admin = estAdmin();
+  SERVICES.filter(function (s) { return admin || !s.admin; }).forEach(function (s) { liste.appendChild(carteService(s)); });
+}
+
+/* ---------- Nouveau livre (administrateur) ---------- */
+// La liste des auteurs et des livres du catalogue vient du serveur, qui revérifie Auteurs.admin.
+function ouvrirNouveauLivre() {
+  $('nouveau-chargement').hidden = false;
+  $('nouveau-chargement').textContent = 'Chargement des auteurs et des livres du catalogue…';
+  $('form-nouveau').hidden = true;
+  $('boutons-nouveau-fermer').hidden = false;
+  $('statut-nouveau').textContent = '';
+  $('statut-nouveau').className = 'statut';
+  etat.produitsNouveau = [];
+  ouvrirFenetre('fenetre-nouveau', 'btn-fermer-nouveau');
+  envoyer({ type: 'choixNouveauLivre' });
+}
+function surChoixNouveauLivre(msg) {
+  if ($('fenetre-nouveau').hidden) { return; }
+  if (msg.statut !== 'ok') {
+    $('nouveau-chargement').textContent = msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : 'Impossible de charger les livres du catalogue pour le moment. Réessayez dans quelques instants.';
+    return;
+  }
+  etat.produitsNouveau = msg.produits || [];
+  remplirFiltre($('nouveau-auteur'), 'Choisir un auteur', []);
+  (msg.auteurs || []).forEach(function (a) { var o = el('option', null, a.nom); o.value = a.id; $('nouveau-auteur').appendChild(o); });
+  remplirFiltre($('nouveau-produit'), 'Choisir un livre du catalogue', []);
+  etat.produitsNouveau.forEach(function (p) { var o = el('option', null, p.nom + (p.visible ? '' : ' (invisible en boutique)')); o.value = p.id; $('nouveau-produit').appendChild(o); });
+  if (!etat.produitsNouveau.length) {
+    $('nouveau-chargement').textContent = 'Tous les livres du catalogue ont déjà une page. Créez d\'abord le produit dans la boutique Wix, puis revenez ici.';
+    return;
+  }
+  $('nouveau-chargement').hidden = true;
+  $('form-nouveau').hidden = false;
+  $('boutons-nouveau-fermer').hidden = true;
+  majNouveauLivre();
+  $('nouveau-auteur').focus();
+}
+function majNouveauLivre() {
+  $('btn-creer-nouveau').disabled = !$('nouveau-auteur').value || !$('nouveau-produit').value || etat.creationEnCours;
+  var p = etat.produitsNouveau.filter(function (x) { return x.id === $('nouveau-produit').value; })[0];
+  var apercu = $('apercu-produit');
+  vider(apercu);
+  apercu.hidden = !p;
+  if (p) {
+    var image = urlSure(p.image);
+    if (image) { var img = el('img'); img.alt = ''; img.src = image; apercu.appendChild(img); }
+    apercu.appendChild(el('span', null, p.visible ? 'Visible dans la boutique.' : 'Invisible dans la boutique pour le moment.'));
+  }
+}
+$('nouveau-auteur').addEventListener('change', majNouveauLivre);
+$('nouveau-produit').addEventListener('change', majNouveauLivre);
+$('btn-nouveau-livre').addEventListener('click', ouvrirNouveauLivre);
+$('btn-annuler-nouveau').addEventListener('click', function () { fermerFenetre('fenetre-nouveau'); });
+$('btn-fermer-nouveau').addEventListener('click', function () { fermerFenetre('fenetre-nouveau'); });
+$('form-nouveau').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if ($('btn-creer-nouveau').disabled) { return; }
+  etat.creationEnCours = true;
+  majNouveauLivre();
+  $('statut-nouveau').className = 'statut';
+  $('statut-nouveau').textContent = 'Création du livre…';
+  envoyer({ type: 'creerNouveauLivre', auteurId: $('nouveau-auteur').value, produitId: $('nouveau-produit').value });
+});
+function surResultatNouveauLivre(msg) {
+  etat.creationEnCours = false;
+  majNouveauLivre();
+  var statut = $('statut-nouveau');
+  if (msg.statut === 'ok' && msg.livre) {
+    statut.className = 'statut ok';
+    statut.textContent = '« ' + msg.livre.titre + ' » a été créé au statut Nouveau pour ' + (msg.livre.auteurNom || 'l\'auteur') + '.';
+    $('form-nouveau').hidden = true;
+    $('nouveau-chargement').hidden = false;
+    $('nouveau-chargement').textContent = statut.textContent + ' L\'auteur pourra compléter la page dans son Espace Auteurs. Le courriel d\'invitation automatique sera ajouté prochainement.';
+    $('boutons-nouveau-fermer').hidden = false;
+    $('btn-fermer-nouveau').focus();
+    envoyer({ type: 'pret' }); // recharge les livres
+  } else {
+    statut.className = 'statut err';
+    statut.textContent = msg.message || (msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : 'La création a échoué. Réessayez dans quelques instants.');
+  }
 }
 
 /* ---------- Documents ---------- */
@@ -790,6 +1226,7 @@ function creerLigneDoc(doc) {
   titre.title = doc.titre;
   cellule.appendChild(titre);
   var meta = el('div', 'meta');
+  if (doc.auteurNom) { meta.appendChild(el('span', 'pastille', doc.auteurNom)); }
   if (doc.type) { meta.appendChild(el('span', 'pastille', doc.type)); }
   if (doc.date) { meta.appendChild(el('span', null, dateCourte(doc.date))); }
   if (doc.montant) { meta.appendChild(el('span', null, doc.montant)); }
@@ -827,38 +1264,56 @@ function remplirListe(idListe, idVide, docs) {
   basculerZone('zone-docs-' + suffixe, 'table-docs-' + suffixe, idVide, docs.length > 0);
 }
 function anneeDe(doc) { return doc.date ? doc.date.slice(0, 4) : ''; }
-function rendreDocuments() {
-  var docs = etat.donnees.documents;
-  remplirListe('docs-generaux', 'vide-generaux', docs.generaux);
+// Filtres Type/Année : visibles pour tout le monde, sur les deux colonnes (« generaux » et « auteur »).
+// Le filtre Auteur (colonne « auteur » seulement) reste réservé à la vue administrateur (plusieurs auteurs).
+function construireFiltres(cle, docs) {
   var types = [], annees = [];
-  docs.auteur.forEach(function (d) {
+  docs.forEach(function (d) {
     if (d.type && types.indexOf(d.type) < 0) { types.push(d.type); }
     var a = anneeDe(d); if (a && annees.indexOf(a) < 0) { annees.push(a); }
   });
   annees.sort().reverse();
-  remplirFiltre($('filtre-type'), 'Tous les types', types);
-  remplirFiltre($('filtre-annee'), 'Toutes les années', annees);
-  $('filtres-docs').hidden = docs.auteur.length <= 10; // les filtres servent quand la liste dépasse la zone
-  appliquerFiltresDocs();
+  remplirFiltre($('filtre-type-' + cle), 'Tous les types', types);
+  remplirFiltre($('filtre-annee-' + cle), 'Toutes les années', annees);
+}
+function rendreDocuments() {
+  var docs = etat.donnees.documents;
+  construireFiltres('generaux', docs.generaux);
+  var auteurs = [];
+  docs.auteur.forEach(function (d) { if (d.auteurNom && auteurs.indexOf(d.auteurNom) < 0) { auteurs.push(d.auteurNom); } });
+  auteurs.sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+  $('filtre-auteur').hidden = auteurs.length <= 1;
+  remplirFiltre($('filtre-auteur'), 'Tous les auteurs', auteurs);
+  construireFiltres('auteur', docs.auteur);
+  appliquerTousLesFiltres();
 }
 function remplirFiltre(select, libelleTous, valeurs) {
   vider(select);
   var tous = el('option', null, libelleTous); tous.value = ''; select.appendChild(tous);
   valeurs.forEach(function (v) { var o = el('option', null, v); o.value = v; select.appendChild(o); });
 }
-function appliquerFiltresDocs() {
-  var type = $('filtre-type').value, annee = $('filtre-annee').value;
-  var docs = etat.donnees.documents.auteur.filter(function (d) {
-    return (!type || d.type === type) && (!annee || anneeDe(d) === annee);
+function appliquerFiltres(cle, source, idVide, texteVide) {
+  var type = $('filtre-type-' + cle).value, annee = $('filtre-annee-' + cle).value;
+  var auteur = cle === 'auteur' ? $('filtre-auteur').value : '';
+  var docs = source.filter(function (d) {
+    return (!auteur || d.auteurNom === auteur) && (!type || d.type === type) && (!annee || anneeDe(d) === annee);
   });
-  remplirListe('docs-auteur', 'vide-auteur', docs);
-  if (!docs.length && etat.donnees.documents.auteur.length) { $('vide-auteur').textContent = 'Aucun document ne correspond à ces filtres.'; }
-  else { $('vide-auteur').textContent = 'Aucun document à votre nom pour le moment. Vos relevés de commission apparaîtront ici.'; }
+  remplirListe('docs-' + cle, idVide, docs);
+  $(idVide).textContent = (!docs.length && source.length) ? 'Aucun document ne correspond à ces filtres.' : texteVide;
 }
-$('filtre-type').addEventListener('change', appliquerFiltresDocs);
-$('filtre-annee').addEventListener('change', appliquerFiltresDocs);
+function appliquerTousLesFiltres() {
+  var docs = etat.donnees.documents;
+  appliquerFiltres('generaux', docs.generaux, 'vide-generaux', 'Aucun document général pour le moment.');
+  appliquerFiltres('auteur', docs.auteur, 'vide-auteur', 'Aucun document à votre nom pour le moment. Vos relevés de commission, factures et notes de crédit apparaîtront ici.');
+}
+$('filtre-type-generaux').addEventListener('change', appliquerTousLesFiltres);
+$('filtre-annee-generaux').addEventListener('change', appliquerTousLesFiltres);
+$('filtre-auteur').addEventListener('change', appliquerTousLesFiltres);
+$('filtre-type-auteur').addEventListener('change', appliquerTousLesFiltres);
+$('filtre-annee-auteur').addEventListener('change', appliquerTousLesFiltres);
 
 $('btn-reessayer').addEventListener('click', demarrer);
+$('filtre-livres').addEventListener('change', rendreLivres);
 
 var largeurGraphique = 0;
 window.addEventListener('resize', function () {
