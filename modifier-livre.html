@@ -231,6 +231,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mini:hover:not(:disabled){border-color:#fff}
 .mini:disabled{opacity:.4;cursor:not-allowed}
 .v-edition .rt[contenteditable="true"]{outline:1px dashed rgba(255,255,255,.3);outline-offset:6px;border-radius:4px;cursor:text}
+/* Zones de saisie des textes enrichis : au moins 6 lignes (15 px x 1,6 = 24 px par ligne), même vides.
+   La description de l'en-tête (.rt-hero) garde sa hauteur fixe ; l'aperçu n'est pas touché. */
+.v-edition .rt:not(.rt-hero){min-height:144px}
 .v-edition .rt[contenteditable="true"]:hover{outline-color:#8ab4ff}
 .v-edition .rt[contenteditable="true"]:focus{outline:2px solid var(--edit)}
 .v-edition .champ.err .rt{outline:2px solid var(--red)!important}
@@ -1663,6 +1666,7 @@ function majUI() {
   $('taux-blocs').hidden = prixFixe;
   $('recap-services').hidden = !prixFixe;
   $('t-diff').hidden = prixFixe;
+  $('t-rapport').hidden = prixFixe; // rien à comparer : un livre Nouveau n'a pas de version publiée
   if (prixFixe) { rendreRecap(); }
   $('b-appr').textContent = prixFixe && etat.d.facture ? 'Envoyer en approbation / payer ' + argent(etat.d.facture.total) : 'Approuver / Payer';
   $('taux-val').textContent = pct(etat.global);
