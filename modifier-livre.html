@@ -2017,25 +2017,41 @@ function adresseVue(vue, appareil) {
   var u = basePage() + '?vue=' + vue + '&livre=' + encodeURIComponent(LIVRE_ID);
   return appareil ? u + '&appareil=' + appareil : u;
 }
-async function ouvrirVue(vue, appareil) {
-  var url = adresseVue(vue, appareil);
-  if (etat.dirty && !etat.verrou) {
-    var r = await modale({
-      titre: 'Enregistrer avant d’ouvrir ?',
-      corps: (vue === 'rapport' ? 'Le rapport' : 'L’aperçu') + ' montre la dernière version enregistrée. Vous avez des modifications non enregistrées.',
-      boutons: [{ id: 'enr', libelle: 'Enregistrer et ouvrir', principal: true }, { id: 'sans', libelle: 'Ouvrir sans enregistrer' }, { id: 'non', libelle: 'Annuler' }]
-    });
-    if (r !== 'enr' && r !== 'sans') { return; }
-    var w = window.open('about:blank', '_blank');
-    if (r === 'enr') {
-      var ok = await enregistrer();
-      if (!ok) { if (w) { w.close(); } return; }
-    }
-    if (w) { w.location.href = url; } else { toast('Votre navigateur a bloqué le nouvel onglet. Autorisez-le pour ce site.', 'mal'); }
-    return;
-  }
-  if (!window.open(url, '_blank')) { toast('Votre navigateur a bloqué le nouvel onglet. Autorisez-le pour ce site.', 'mal'); }
+// Aperçu et rapport : affichés DANS l'éditeur, à la place de la page d'édition (qui reste intacte, cachée).
+// Une composante HTML Wix ne peut pas ouvrir un nouvel onglet de façon fiable : la page Wix se rechargeait
+// dans la composante elle-même (en-tête du site répété). Ils montrent l'état en cours, enregistré ou non.
+var positionEdition = 0;
+function donneesCourantes() {
+  var d = etat.d;
+  return {
+    livre: d.livre, etat: d.etat, dateCopie: d.dateCopie, enPlace: true, nonEnregistre: etat.dirty,
+    publie: etat.pub, copie: etat.work,
+    champsLivre: { publie: etat.L.pub, copie: etat.L.work }
+  };
 }
+function ouvrirVue(vue, appareil) {
+  positionEdition = window.scrollY;
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+  if (vue === 'rapport') { montrerRapport(donneesCourantes()); } else { APPAREIL = appareil || 'ordinateur'; montrerApercu(donneesCourantes()); }
+  window.scrollTo(0, 0);
+}
+function retourEdition() {
+  document.body.className = 'v-edition';
+  document.title = 'Modifier la page : ' + etat.d.livre.titre + ' | Éditions TBL';
+  montrerVue('vue-edition');
+  window.scrollTo(0, positionEdition);
+}
+// L'aperçu ordinateur est dessiné à 1160 px de large, comme le site : on le réduit pour qu'il tienne en entier.
+function ajusterCadre() {
+  var cadre = $('cadre-apercu');
+  if (!cadre || $('vue-apercu').hidden) { return; }
+  cadre.style.zoom = '';
+  if (!cadre.classList.contains('ordinateur')) { return; }
+  var dispo = $('zone-apercu').clientWidth - 28;
+  var echelle = Math.min(1, dispo / 1160);
+  if (echelle < 1) { cadre.style.zoom = String(echelle); }
+}
+window.addEventListener('resize', ajusterCadre);
 
 function basculerDiff() {
   etat.diff = !etat.diff;
@@ -2071,11 +2087,17 @@ function montrerApercu(d) {
   document.title = 'Aperçu : ' + d.livre.titre + ' | Éditions TBL';
   var src = d.copie || d.publie;
   $('ap-titre').textContent = 'Aperçu : ' + d.livre.titre;
-  $('ap-sous').textContent = d.copie ? 'Copie enregistrée le ' + fmtDate(d.dateCopie) + '. Le menu et le pied de page du site ne sont pas montrés.'
-    : 'Aucune modification enregistrée. Le menu et le pied de page du site ne sont pas montrés.';
   var av = $('avis-apercu');
-  av.hidden = !!d.copie;
-  av.textContent = 'Vous n’avez encore rien enregistré : voici la page publiée telle quelle.';
+  if (d.enPlace) {
+    $('ap-sous').textContent = 'La page telle qu’elle paraîtra, avec vos modifications. Le menu et le pied de page du site ne sont pas montrés.';
+    av.hidden = !d.nonEnregistre;
+    av.textContent = 'Certaines modifications ne sont pas encore enregistrées : pensez à enregistrer en revenant à l’éditeur.';
+  } else {
+    $('ap-sous').textContent = d.copie ? 'Copie enregistrée le ' + fmtDate(d.dateCopie) + '. Le menu et le pied de page du site ne sont pas montrés.'
+      : 'Aucune modification enregistrée. Le menu et le pied de page du site ne sont pas montrés.';
+    av.hidden = !!d.copie;
+    av.textContent = 'Vous n’avez encore rien enregistré : voici la page publiée telle quelle.';
+  }
   var cadre = $('cadre-apercu');
   cadre.className = 'cadre ' + APPAREIL;
   var page = fabriquerPage(cadre, d);
@@ -2086,12 +2108,15 @@ function montrerApercu(d) {
     if (estBrut(c.cle)) { rt.classList.add('rt-hero'); }
     rt.appendChild(blocsVersDom(norm(src[c.cle])));
   });
-  $('ap-ord').href = adresseVue('apercu', 'ordinateur');
-  $('ap-mob').href = adresseVue('apercu', 'mobile');
+  $('ap-ord').href = '#'; $('ap-mob').href = '#';
+  $('ap-ord').onclick = function (e) { e.preventDefault(); APPAREIL = 'ordinateur'; montrerApercu(d); };
+  $('ap-mob').onclick = function (e) { e.preventDefault(); APPAREIL = 'mobile'; montrerApercu(d); };
   $('ap-ord').setAttribute('aria-current', APPAREIL === 'ordinateur' ? 'page' : 'false');
   $('ap-mob').setAttribute('aria-current', APPAREIL === 'mobile' ? 'page' : 'false');
-  $('ap-fermer').onclick = fermerPage;
+  $('ap-fermer').textContent = d.enPlace ? 'Retour à l’éditeur' : 'Fermer l’aperçu';
+  $('ap-fermer').onclick = d.enPlace ? retourEdition : fermerPage;
   montrerVue('vue-apercu');
+  ajusterCadre();
 }
 
 // ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
@@ -2108,7 +2133,7 @@ function montrerRapport(d) {
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
   var bo = el('div', 'barre-outils');
   var bi = el('button', 'btn', 'Imprimer / Enregistrer en PDF'); bi.type = 'button'; bi.onclick = function () { window.print(); };
-  var bf = el('button', 'btn sec', 'Fermer le rapport'); bf.type = 'button'; bf.onclick = fermerPage;
+  var bf = el('button', 'btn sec', d.enPlace ? 'Retour à l’éditeur' : 'Fermer le rapport'); bf.type = 'button'; bf.onclick = d.enPlace ? retourEdition : fermerPage;
   bo.appendChild(bi); bo.appendChild(bf); rap.appendChild(bo);
   rap.appendChild(el('h1', '', 'Demande de modification de page'));
   rap.appendChild(el('p', 'sous', 'Les Éditions TBL · Rapport Avant / Après'));
