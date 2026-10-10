@@ -1058,7 +1058,6 @@ document.addEventListener('keydown', function (e) {
 /* ---------- Services ---------- */
 // livres : nombre de livres à choisir (0, 1 ou 2). duo : seulement des livres publiés de l'auteur.
 var SERVICES = [
-  { cle: 'nouveau', nom: 'Nouveau livre', prix: 'Page du livre : 100 $, payée par l\'auteur', desc: 'Créer la page d\'un livre du catalogue pour un auteur. L\'auteur est ensuite invité à la compléter dans son Espace Auteurs.', livres: 0, admin: true },
   { cle: 'corrections', nom: 'Modifier la page d\'un livre', prix: '5 $ ou 10 $ par texte, 10 $ par image', desc: 'Mettre à jour les textes et les images de la page de votre livre. Le prix se calcule selon l\'ampleur des changements.', livres: 1 },
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
   { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
@@ -1098,11 +1097,6 @@ function carteService(service) {
   carte.appendChild(el('div', 'prix', service.prix));
   carte.appendChild(el('p', 'desc', service.desc));
   var zone = el('div', 'choix-livres');
-  if (service.cle === 'nouveau') {
-    zone.appendChild(bouton('Créer un nouveau livre', 'btn petit', ouvrirNouveauLivre));
-    carte.appendChild(zone);
-    return carte;
-  }
   var livres = livresPourService(service);
   var besoin = service.livres;
   if (livres.length < besoin) {
