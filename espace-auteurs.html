@@ -885,6 +885,13 @@ function couverture(carte, url, titre) {
   else { carte.appendChild(el('div', 'couv', 'Couverture à venir')); }
 }
 
+// Ouvre l'éditeur de livre (page Wix /dashboardlivre?livre=…). Dans Wix, c'est le code de la page qui change
+// d'adresse : un iframe ne peut pas faire naviguer la page parente lui-même.
+function ouvrirEditeur(livreId) {
+  if (EN_WIX) { envoyer({ type: 'ouvrirEditeur', livreId: livreId }); return; }
+
+}
+
 // Boutons d'un livre selon son statut et sa copie ouverte (plan du 9 octobre 2026).
 function actionsLivre(l, admin) {
   var zone = el('div', 'actions-livre');
@@ -893,16 +900,16 @@ function actionsLivre(l, admin) {
   var copie = l.copie ? l.copie.statut : null;
   var monLivre = l.auteurId && etat.donnees && l.auteurId === etat.donnees.auteurId;
   if (l.statut === 'Nouveau') {
-    zone.appendChild(bouton('Compléter la page du livre', 'btn petit', function () { bientot('completer', l.titre); }));
+    zone.appendChild(bouton('Compléter la page du livre', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (copie === 'En attente de validation') {
-    if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { bientot('examiner', l.titre); })); }
+    if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { ouvrirEditeur(l.id); })); }
     else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', null)); }
   } else if (copie === 'Corriger') {
-    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma correction' : 'Reprendre la correction', 'btn petit', function () { bientot('modifier', l.titre); }));
+    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma correction' : 'Reprendre la correction', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (copie === 'Modifier') {
-    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma modification' : 'Reprendre la modification', 'btn petit', function () { bientot('modifier', l.titre); }));
+    zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma modification' : 'Reprendre la modification', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (l.statut === 'Publier') {
-    zone.appendChild(bouton('Modifier la page', 'btn sec petit', function () { bientot('modifier', l.titre); }));
+    zone.appendChild(bouton('Modifier la page', 'btn sec petit', function () { ouvrirEditeur(l.id); }));
   }
   return zone;
 }

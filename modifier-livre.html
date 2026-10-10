@@ -1,0 +1,2074 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Modifier la page d'un livre | Éditions TBL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--card:#16181c;--card2:#0f1114;--line:#34373e;--txt:#f5f5f5;--muted:#b7bac2;--red:#ED1C24;--redsoft:#5b2126;--gold:#FFCB05;--ok:#4cc38a;--edit:#4d9fff}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin}
+body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+.wrap{width:min(1160px,calc(100% - 28px));margin:auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--edit);outline-offset:2px}
+
+/* Boutons de l'interface (pas ceux de la page du livre) */
+.btn{border:0;border-radius:9px;padding:10px 18px;background:var(--red);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover:not(:disabled){filter:brightness(1.12)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.sec{background:transparent;border:1px solid #5a5e67;color:var(--txt)}
+.btn.sec:hover:not(:disabled){border-color:var(--txt)}
+.btn.petit{padding:6px 12px;font-size:.85rem}
+.btn.valider{background:#1f9d63}
+.btn.refuser{background:#b3261e}
+.motif-saisie{width:100%;min-height:120px;box-sizing:border-box;background:#0d0e10;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;resize:vertical}
+.motif-saisie:focus{outline:2px solid var(--edit)}
+.motif-compteur{font-size:.8rem;color:var(--muted);text-align:right;margin-top:4px}
+.pastille.admin{border-color:#c792ff;color:#c792ff}
+
+/* ---------- Etats plein ecran ---------- */
+.etat{max-width:620px;margin:70px auto;text-align:center;padding:0 16px}
+.etat svg{width:96px;height:96px;color:var(--red);margin-bottom:8px}
+.etat h1{font-size:1.6rem;margin:0 0 10px}
+.etat p{color:var(--muted);margin:0 0 18px}
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+
+/* ---------- En-tete collant (edition) ---------- */
+#entete{position:sticky;top:0;z-index:30}
+#haut{background:#0d0e10;border-bottom:1px solid var(--line);padding:10px 0 8px}
+.ligne1{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.titre-app .petit{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.titre-app strong{font-size:1.2rem}
+.pastille{display:inline-block;border-radius:99px;padding:3px 12px;font-size:.8rem;font-weight:bold;border:1px solid var(--line);background:var(--card);color:var(--muted);margin-left:10px;vertical-align:middle}
+.pastille.mod{border-color:var(--gold);color:var(--gold)}
+.pastille.appr{border-color:var(--edit);color:var(--edit)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.aide{font-size:.8rem;color:var(--muted);min-height:1.2em;text-align:right;width:100%}
+.ligne2{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin-top:8px}
+.taux-global{display:flex;align-items:center;gap:10px}
+.taux-global .lib{font-size:.82rem;color:var(--muted)}
+.taux-global strong{font-size:1.6rem;min-width:4.4ch;line-height:1}
+.barre{width:150px;height:9px;border-radius:99px;background:#24272d;overflow:hidden}
+.barre i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.pill:hover{border-color:var(--txt);color:var(--txt)}
+.pill b{color:var(--txt)}
+.pill.chg{border-color:var(--gold)}
+#outils{background:#111317;border-bottom:1px solid var(--line);padding:7px 0}
+#outils .wrap{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center}
+.grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
+.grp:last-child{border-right:0}
+.grp.vues{border-right:0;flex-wrap:wrap}
+.grp.vues .tb{height:30px;font-size:.82rem}
+.tb{min-width:34px;height:34px;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:7px;cursor:pointer;padding:0 8px;font-size:.88rem}
+.tb:hover:not(:disabled){border-color:var(--txt)}
+.tb:disabled{opacity:.38;cursor:not-allowed}
+.tb[aria-pressed="true"]{background:var(--edit);border-color:var(--edit);color:#00142e}
+.tb.lien{text-decoration:none;display:inline-flex;align-items:center}
+.legende{font-size:.8rem;color:var(--muted);display:flex;gap:12px;align-items:center}
+.legende .aj{color:var(--gold);font-weight:bold}
+.legende .re{color:var(--red);text-decoration:line-through;font-weight:bold}
+@media (max-width:720px){
+  #entete{display:contents}
+  #haut{position:static}
+  #outils{position:sticky;top:0;z-index:30;overflow-x:auto}
+  #outils .wrap{flex-wrap:nowrap;width:max-content;min-width:calc(100% - 28px)}
+  .barre{width:100px}
+}
+
+#bandeau-appr{background:#0e1a2b;border:1px solid #2a4a7a;color:#cfe2ff;border-radius:12px;padding:12px 16px;margin:14px auto;max-width:1000px}
+#bandeau-refus{background:#2a0f12;border:1px solid var(--red);color:#ffd6d8;border-radius:12px;padding:12px 16px;margin:14px auto;max-width:1000px;white-space:pre-wrap}
+#msg-global{background:#2a0f12;border:1px solid var(--red);color:#ffd6d8;border-radius:12px;padding:10px 16px;margin:12px auto;max-width:1000px}
+
+/* ---------- Page du livre (replique de /livres/xxx) ---------- */
+#zone-page{padding:14px 0 60px}
+#page{width:min(1160px,100%);margin:0 auto;container-type:inline-size;container-name:page;background:#000;color:#fff}
+.pg{max-width:1000px;margin:0 auto;padding:0 14px}
+.oswald{font-family:'Oswald','Arial Narrow',Arial,sans-serif}
+.fond-hero{background:#000 center bottom/cover no-repeat}
+.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:start;padding:30px 0 34px}
+.couv img{width:100%;max-width:330px;display:block;margin:0 auto}
+.hero-carte{border:1px solid #fff;border-radius:30px;padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:rgba(0,0,0,.88)}
+.hero-titre{font:500 30px/1.2 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:0 0 14px;letter-spacing:.02em}
+.prix{margin-top:auto;padding-top:18px;text-align:center;font:700 24px Georgia,'Times New Roman',serif;color:#F28901}
+.pill-cmd{margin-top:22px;border:1px solid #fff;border-radius:22px;background:#480000;color:#fff;text-align:center;padding:10px 14px;letter-spacing:.22em;font-size:14px;display:flex;justify-content:center;align-items:center;gap:14px}
+.pill-cmd i{width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88}
+.carte-epub{border:1px solid #fff;border-radius:30px;margin:26px auto 4px;padding:14px 20px 18px;display:flex;justify-content:center;gap:70px;text-align:center;font-size:12px;line-height:1.4;width:92%}
+.col-epub{width:250px;display:flex;flex-direction:column;align-items:center}
+.col-epub h3{font:700 15px Georgia,'Times New Roman',serif;margin:0 0 6px}
+.col-epub img.ico{height:98px;width:auto;margin:2px 0 6px}
+.col-epub .achat{width:212px;margin-top:auto;padding-top:8px}
+.col-epub .bientot{margin-top:auto;padding-top:14px;font:700 14px Georgia,'Times New Roman',serif;color:#F00000}
+.col-epub ul{margin:0;padding:0;list-style:none}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto}
+.carte{border:1px solid #C7C7C7;border-radius:30px;padding:18px 18px;margin:0 auto 4px}
+.carte-auteur{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;padding:26px 30px}
+.portrait{width:210px;border:6px solid #C7C7C7;display:block;height:auto}
+.col-photo{width:210px}
+.col-photo .controle-image{max-width:210px;padding:8px}
+.col-photo .controle-image .mini.gros{padding:6px 10px;font-size:12px}
+.col-note{display:flex;flex-direction:column;min-height:260px}
+.bouton-contour{align-self:flex-start;border:1px solid #fff;background:transparent;color:#fff;padding:9px 12px;margin-top:auto;font-size:15px;font-family:Arial,sans-serif}
+.controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:rgba(0,0,0,.78);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:center;font:12px Arial,sans-serif;color:#cfd3da}
+.controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.controle-image .etat-img{color:var(--gold);font-weight:bold}
+.controle-image .err-img{color:#ff8a8f;font-weight:bold}
+.controle-image .info-l{color:var(--muted)}
+.controle-image input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.controle-image .mini.gros{padding:7px 14px;font-size:13px}
+.couv{position:relative}
+.controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;background:#0d0e10;font:13px Arial,sans-serif;color:#e6e8ec;max-width:640px}
+.controle-auteur .info-l{color:var(--muted);font-size:12px}
+.interrupteur{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:bold}
+.interrupteur input{position:absolute;opacity:0;width:1px;height:1px}
+.interrupteur .piste{width:44px;height:24px;border-radius:99px;background:#3a3d45;position:relative;transition:background .15s;flex:none}
+.interrupteur .piste::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.interrupteur input:checked+.piste{background:var(--ok)}
+.interrupteur input:checked+.piste::after{left:23px}
+.interrupteur input:focus-visible+.piste{outline:2px solid var(--edit);outline-offset:2px}
+.interrupteur input:disabled+.piste{opacity:.5}
+.section-masquee{display:none;border:1px dashed #5a5e67;border-radius:22px;padding:18px;text-align:center;color:var(--muted);font:14px Arial,sans-serif;margin:8px auto}
+.v-edition [data-section].masque .section-masquee{display:block}
+.v-edition [data-section].masque .titre-img,.v-edition [data-section].masque .carte{display:none}
+.v-apercu [data-section].masque{display:none}
+.v-apercu .controle-auteur,.v-apercu .controle-image,.v-apercu .champ-email,.v-apercu .section-masquee{display:none}
+.ligne-contact{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:auto}
+.ligne-contact .bouton-contour{margin-top:0}
+.champ-email{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0;font:600 12px Arial,sans-serif;color:#cfd3da}
+.champ-email input{width:100%;background:transparent;border:1px solid #fff;color:#fff;padding:9px 12px;font:15px Arial,sans-serif;border-radius:2px}
+.champ-email input::placeholder{color:#8b8f98}
+.champ-email input:focus{outline:2px solid var(--edit);outline-offset:2px}
+.champ-email.err input{border-color:var(--red);outline:2px solid var(--red)}
+.champ-email input:disabled{opacity:.55;cursor:not-allowed}
+.msg-email{color:#ff8a8f;font:600 13px Arial,sans-serif;margin-top:6px}
+.note-email{color:var(--muted);font:12px Arial,sans-serif;margin-top:4px}
+.v-edition .diff-l .ancien{color:var(--red);text-decoration:line-through}
+.v-edition .diff-l .nouveau{color:var(--gold)}
+.pill-extrait{margin:24px auto 6px;border:1px solid #fff;border-radius:22px;background:#480000;color:#fff;text-align:center;padding:10px 14px;letter-spacing:.22em;font-size:14px;width:min(562px,92%);display:flex;justify-content:center;align-items:center;gap:14px}
+.carte-duo img{width:100%;max-width:770px;display:block;margin:6px auto}
+.duo-grille{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start}
+.duo-etiquette{font:700 12px Arial,sans-serif;color:#cfd3da;text-align:center;margin-bottom:6px;letter-spacing:.04em}
+.duo-mob img{max-width:340px}
+.duo-col .controle-image{max-width:none;margin-top:10px}
+.v-apercu .duo-etiquette{display:none}
+.v-apercu .duo-grille{display:block}
+.v-apercu .duo-mob{display:none}
+@container page (max-width:760px){
+  .v-edition .duo-grille{grid-template-columns:1fr}
+  .v-apercu .duo-ord{display:none}
+  .v-apercu .duo-mob{display:block}
+}
+.vedettes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:6px 0 30px}
+.vedettes img{width:100%;height:auto;display:block;border-radius:4px}
+.vedettes figcaption{font-size:12px;text-align:center;padding-top:6px;color:#ddd}
+.vedettes figure{margin:0}
+@container page (max-width:760px){
+  .grille-hero{grid-template-columns:1fr;gap:14px}
+  .hero-carte{min-height:0;padding:14px 16px 18px;border-radius:24px}
+  .hero-titre{font-size:24px}
+  .couv img{max-width:240px}
+  .carte-epub{flex-direction:column;align-items:center;gap:22px;width:100%}
+  .carte-auteur{grid-template-columns:1fr;padding:20px 16px;gap:16px;justify-items:center}
+  .portrait{width:180px}
+  .col-photo{width:210px;max-width:100%}
+  .col-note{min-height:0;width:100%}
+  .vedettes{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .carte{border-radius:22px;padding:14px 12px}
+  .pill-cmd,.pill-extrait{letter-spacing:.1em;font-size:13px}
+}
+
+/* Texte riche : meme rendu que le site (Ricos) */
+.rt{font:15px/1.6 Arial,Helvetica,sans-serif;color:#fff;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;min-height:1.7em}
+.rt p,.rt blockquote,.rt h1,.rt h2,.rt h3,.rt h4,.rt h5,.rt h6{margin:0;min-height:1.6em}
+.rt h1{font-size:32px;line-height:1.25}
+.rt h2{font-size:28px;line-height:1.25}
+.rt h3{font-size:24px;line-height:1.3}
+.rt h4{font-size:20px;font-weight:400;line-height:1.35}
+.rt h5{font-size:17px;line-height:1.4}
+.rt h6{font-size:15px;line-height:1.5}
+.rt blockquote{border-left:4px solid #0057E1;padding:6px 0 6px 16px;margin:0 0 6px 20px}
+.rt-hero,.rt-hero p,.rt-hero h1,.rt-hero h2,.rt-hero h3,.rt-hero h4,.rt-hero h5,.rt-hero h6{font-family:'Oswald','Arial Narrow',Arial,sans-serif;font-weight:500;letter-spacing:.04em}
+.rt-hero,.rt-hero p,.rt-hero h6{font-size:22px;line-height:1.5;letter-spacing:.05em}
+/* DESC_PLAN : composante à hauteur FIXE, une barre de défilement apparaît si le texte déborde */
+.champ[data-champ="desc_plan"] .rt{height:236px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#8a8d95 transparent;padding-right:6px}
+.rt-hero [data-fg],.rt-hero [data-bg]{color:inherit!important;background:none!important}
+.rt-hero h4{font-size:22px}.rt-hero h5{font-size:21px}
+.rt-hero h1{font-size:30px}.rt-hero h2{font-size:28px}.rt-hero h3{font-size:25px}
+@container page (max-width:760px){.rt-hero,.rt-hero p,.rt-hero h6{font-size:17px}.champ[data-champ="desc_plan"] .rt{height:196px}}
+.ajout{color:var(--gold)}
+.retrait{color:var(--red);text-decoration:line-through}
+.rt b,.rt strong{font-weight:700}
+
+/* ---------- Edition en place ---------- */
+.champ-tete{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font:600 12px Arial,sans-serif;color:#cfd3da;letter-spacing:normal}
+.chip{background:#1b1e24;border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
+.chip.crayon{border-color:#5a6577}
+.chip.tx{color:var(--muted)}
+.chip.tx.chg{border-color:var(--gold);color:var(--gold)}
+.chip.fmt{border-color:var(--edit);color:var(--edit)}
+.champ-tete .ecart{flex:1}
+.mini{background:#1b1e24;border:1px solid #5a5e67;color:#fff;border-radius:99px;padding:3px 11px;font:600 12px Arial,sans-serif;cursor:pointer}
+.mini:hover:not(:disabled){border-color:#fff}
+.mini:disabled{opacity:.4;cursor:not-allowed}
+.v-edition .rt[contenteditable="true"]{outline:1px dashed rgba(255,255,255,.3);outline-offset:6px;border-radius:4px;cursor:text}
+.v-edition .rt[contenteditable="true"]:hover{outline-color:#8ab4ff}
+.v-edition .rt[contenteditable="true"]:focus{outline:2px solid var(--edit)}
+.v-edition .champ.err .rt{outline:2px solid var(--red)!important}
+.v-edition .rt.lecture{outline:1px dashed rgba(255,255,255,.18);outline-offset:6px;cursor:default}
+.v-edition .rt.diff{outline:1px solid rgba(255,203,5,.5);outline-offset:6px;border-radius:4px}
+.msg-url{margin-top:12px;color:#ff8a8f;font:600 13px Arial,sans-serif}
+.note-champ{margin-top:10px;color:var(--muted);font:12px Arial,sans-serif}
+.v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
+.v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
+.v-apercu .rt{outline:none}
+
+/* ---------- Apercu (nouvel onglet) ---------- */
+#barre-apercu{position:sticky;top:0;z-index:40;background:#0d0e10;border-bottom:1px solid var(--line);padding:8px 0}
+#barre-apercu .wrap{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+#barre-apercu .seg{display:flex;gap:4px}
+#barre-apercu .seg a{border:1px solid var(--line);border-radius:8px;padding:6px 14px;color:var(--muted);text-decoration:none;font-size:.9rem}
+#barre-apercu .seg a[aria-current="page"]{background:var(--red);border-color:var(--red);color:#fff;font-weight:bold}
+#barre-apercu small{color:var(--muted)}
+#zone-apercu{background:#0b0b0d;padding:20px 14px 60px;overflow-x:auto}
+.cadre{margin:0 auto;border:1px solid #3a3d45;background:#000}
+.cadre.ordinateur{width:1160px}
+.cadre.mobile{width:390px;border:8px solid #2b2d33;border-radius:34px;overflow:hidden}
+#avis-apercu{max-width:1000px;margin:0 auto 14px;background:#2a230a;border:1px solid #6b5a12;color:#ffe9a0;border-radius:10px;padding:10px 14px;font-size:.9rem}
+
+/* ---------- Fenetre modale ---------- */
+#modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .voile{position:absolute;inset:0;background:rgba(0,0,0,.72)}
+#modal .boite{position:relative;background:var(--card);border:1px solid #4a4e58;border-radius:16px;padding:22px 24px;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto}
+#modal h2{margin:0 0 12px;font-size:1.25rem}
+#modal .corps{color:#e6e8ec}
+#modal .corps p{margin:0 0 10px}
+#modal .corps table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.95rem}
+#modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
+#modal .corps td:last-child{text-align:right;font-weight:bold}
+#modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+
+/* ---------- Avis (toast) ---------- */
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:#1d2026;border:1px solid #4a4e58;border-radius:10px;padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#toast.ok{border-color:var(--ok)}
+#toast.mal{border-color:var(--red)}
+
+/* ---------- Rapport Avant / Apres (papier) ---------- */
+.v-rapport,.v-rapport html{background:#fff}
+body.v-rapport{background:#fff;color:#111}
+.rap{max-width:980px;margin:0 auto;padding:24px 20px 60px;font-family:Arial,Helvetica,sans-serif;color:#111}
+.rap h1{font-size:1.6rem;margin:0 0 4px}
+.rap .sous{color:#555;margin:0 0 16px}
+.rap table.meta{border-collapse:collapse;margin-bottom:18px;font-size:.95rem}
+.rap table.meta td{padding:3px 18px 3px 0;vertical-align:top}
+.rap table.meta td:first-child{color:#555}
+.rap section{margin:0 0 22px;break-inside:avoid-page}
+.rap h2{font-size:1.15rem;margin:0 0 8px;border-bottom:2px solid #111;padding-bottom:4px;display:flex;justify-content:space-between;gap:12px}
+.rap .deux{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rap .col{border:1px solid #bbb;border-radius:8px;padding:10px 12px}
+.rap .col h3{margin:0 0 6px;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:#555}
+.rap .rt{color:#111;font-size:13px;line-height:1.5;min-height:0;white-space:pre-wrap}
+.rap .rt blockquote{border-left-color:#0057E1}
+.rap .rt [data-fg]{color:inherit!important}
+.rap .rt .ajout{color:#9A5B00;font-weight:bold}
+.rap .rt .retrait{color:#C4001A}
+.rap .vide{color:#777;font-style:italic}
+.rap table.autres{border-collapse:collapse;width:100%;font-size:.92rem}
+.rap table.autres td,.rap table.autres th{border:1px solid #bbb;padding:6px 10px;vertical-align:top;text-align:left}
+.rap table.autres th{background:#f2f2f2;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:#555}
+.rap table.autres img{max-width:150px;max-height:220px;display:block;border:1px solid #ccc;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/14px 14px}
+.rap .ancien{color:#C4001A;text-decoration:line-through}
+.rap .nouveau{color:#9A5B00;font-weight:bold}
+.rap .barre-outils{display:flex;gap:10px;margin-bottom:16px}
+.rap .btn.sec{color:#111;border-color:#888}
+@media print{
+  @page{size:letter;margin:14mm}
+  .rap .barre-outils{display:none}
+  body.v-rapport{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:640px){.rap .deux{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body class="v-edition">
+
+<div id="chargement" class="etat"><div class="spin" aria-hidden="true"></div><p>Chargement de votre page…</p></div>
+
+<div id="etat-msg" class="etat" hidden>
+  <div id="etat-ico"></div>
+  <h1 id="etat-titre"></h1>
+  <p id="etat-texte"></p>
+  <p><button type="button" class="btn sec" id="etat-btn"></button></p>
+</div>
+
+<!-- ===== Vue Edition ===== -->
+<div id="vue-edition" hidden>
+  <header id="entete">
+    <div id="haut"><div class="wrap">
+      <div class="ligne1">
+        <div class="titre-app"><span class="petit">Modifier la page du livre</span><strong id="h-titre"></strong><span id="pastille-etat" class="pastille"></span><span id="chip-admin" class="pastille admin" hidden>Administrateur</span></div>
+        <div class="grp vues">
+          <button type="button" class="tb" id="t-ap-ord" title="Ouvre l'aperçu ordinateur dans un nouvel onglet">Aperçu Ordinateur</button>
+          <button type="button" class="tb" id="t-ap-mob" title="Ouvre l'aperçu mobile dans un nouvel onglet">Aperçu Mobile</button>
+          <button type="button" class="tb" id="t-rapport" title="Ouvre le rapport Avant / Après dans un nouvel onglet">Rapport Avant / Après</button>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn sec" id="b-enreg">Enregistrer</button>
+          <button type="button" class="btn" id="b-appr">Approuver / Payer</button>
+          <button type="button" class="btn refuser" id="b-refuser" hidden>Refuser et envoyer</button>
+          <button type="button" class="btn valider" id="b-valider" hidden>Approuver et envoyer</button>
+        </div>
+      </div>
+      <div class="ligne2">
+        <div class="taux-global"><span class="lib">Modification globale</span><strong id="taux-val">0 %</strong><div class="barre" role="img" aria-label="Taux de modification"><i id="taux-barre"></i></div></div>
+        <div class="pills" id="taux-blocs"></div>
+        <div class="aide" id="etat-sauv" style="width:auto;margin-left:auto"></div>
+        <div class="aide" id="derniere-modif" style="width:auto;cursor:help" tabindex="0" hidden></div>
+        <div class="aide" id="aide-appr" style="width:auto"></div>
+      </div>
+    </div></div>
+    <div id="outils" role="toolbar" aria-label="Mise en forme du texte"><div class="wrap">
+      <div class="grp">
+        <button type="button" class="tb" id="t-gras" data-cmd="bold" title="Gras (Ctrl+B)" aria-label="Gras"><b>G</b></button>
+        <button type="button" class="tb" id="t-ital" data-cmd="italic" title="Italique (Ctrl+I)" aria-label="Italique"><i>I</i></button>
+        <button type="button" class="tb" id="t-soul" data-cmd="underline" title="Souligné (Ctrl+U)" aria-label="Souligné"><u>S</u></button>
+      </div>
+      <div class="grp" id="grp-blocs">
+        <button type="button" class="tb" data-bloc="p" title="Paragraphe">Texte</button>
+        <button type="button" class="tb" data-bloc="h1" title="Titre 1">T1</button>
+        <button type="button" class="tb" data-bloc="h2" title="Titre 2">T2</button>
+        <button type="button" class="tb" data-bloc="h3" title="Titre 3">T3</button>
+        <button type="button" class="tb" data-bloc="h4" title="Titre 4">T4</button>
+        <button type="button" class="tb" data-bloc="h5" title="Titre 5">T5</button>
+        <button type="button" class="tb" data-bloc="h6" title="Titre 6">T6</button>
+        <button type="button" class="tb" data-bloc="blockquote" title="Citation">Citation</button>
+      </div>
+      <div class="grp">
+        <button type="button" class="tb" data-cmd="undo" title="Annuler (Ctrl+Z)" aria-label="Annuler">↶</button>
+        <button type="button" class="tb" data-cmd="redo" title="Rétablir la frappe (Ctrl+Y)" aria-label="Refaire">↷</button>
+      </div>
+      <div class="grp">
+        <button type="button" class="tb" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
+      </div>
+      <div class="legende" id="legende" hidden><span class="aj">Jaune : ajouté ou modifié</span><span class="re">Rouge barré : retiré</span></div>
+    </div></div>
+  </header>
+  <div class="wrap">
+    <div id="bandeau-appr" hidden></div>
+    <div id="bandeau-refus" role="status" hidden></div>
+    <div id="msg-global" role="alert" hidden></div>
+  </div>
+  <main id="zone-page"><div class="wrap" id="hote-edition"></div></main>
+</div>
+
+<!-- ===== Vue Apercu ===== -->
+<div id="vue-apercu" hidden>
+  <div id="barre-apercu"><div class="wrap">
+    <div><strong id="ap-titre"></strong><br><small id="ap-sous"></small></div>
+    <div class="seg" id="ap-seg">
+      <a id="ap-ord" href="#">Ordinateur</a><a id="ap-mob" href="#">Mobile</a>
+    </div>
+    <button type="button" class="btn sec petit" id="ap-fermer">Fermer l'aperçu</button>
+  </div></div>
+  <div id="zone-apercu">
+    <div id="avis-apercu" hidden></div>
+    <div id="cadre-apercu" class="cadre ordinateur"></div>
+  </div>
+</div>
+
+<!-- ===== Vue Rapport ===== -->
+<div id="vue-rapport" hidden></div>
+
+<!-- Fenetre modale -->
+<div id="modal" hidden>
+  <div class="voile" id="m-voile"></div>
+  <div class="boite" role="dialog" aria-modal="true" aria-labelledby="m-titre" tabindex="-1">
+    <h2 id="m-titre"></h2><div class="corps" id="m-corps"></div><div class="btns" id="m-btns"></div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- Modele de la page du livre (clone pour l'edition et les apercus) -->
+<template id="tpl-page">
+  <div class="fond-hero" data-fond>
+    <div class="pg">
+      <div class="grille-hero">
+        <div class="couv">
+          <div data-zone-img><img data-img="couverture3d" alt="Couverture du livre"></div>
+          <div data-zone-controle="image"></div>
+        </div>
+        <div>
+          <div class="hero-carte">
+            <h1 class="hero-titre fige" data-titre></h1>
+            <div class="champ" data-champ="desc_plan"><div class="champ-tete"></div><div class="rt rt-hero"></div><div class="msg-url" hidden></div></div>
+            <div class="prix fige" data-prix></div>
+          </div>
+          <div class="pill-cmd fige">Commande numérique <i>i</i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pg">
+      <div class="carte-epub fige">
+        <div class="col-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png">
+          <div>Disponible dès maintenant</div><ul><li>• Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul>
+          <img class="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png"></div>
+        <div class="col-epub"><h3>PAPIER</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/7e3c5f_486a82ac19384a7fa9580104cd18182b~mv2.png">
+          <div>Disponible sur Amazon Canada</div><div>Impression de qualité</div><div>Livraison Prime 2 jours</div><div>Service Amazon</div>
+          <div class="bientot">BIENTÔT DISPONIBLE</div></div>
+      </div>
+    <img class="titre-img fige" alt="Synopsis" src="https://static.wixstatic.com/media/26b968_9256b8eb5fa24de8b9eb4456a760783e~mv2.png">
+    <div class="carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
+    <section data-section="auteur">
+    <div class="controle-auteur">
+      <label class="interrupteur"><input type="checkbox" role="switch" data-role="afficheauteur"><span class="piste" aria-hidden="true"></span><span data-role="lib-auteur">Afficher la section Auteur sur la page</span></label>
+      <span class="info-l" data-role="info-auteur"></span>
+    </div>
+    <div class="section-masquee">La section Auteur est masquée sur la page publiée. Votre texte est conservé : réactivez l’interrupteur pour le modifier.</div>
+    <img class="titre-img fige" alt="Auteur" src="https://static.wixstatic.com/media/26b968_114e6bb5852148aa8f30705393fa9ca8~mv2.png">
+    <div class="carte carte-auteur">
+      <div class="col-photo"><div><img class="portrait" data-affiche="photoAuteur" alt="Photo de l'auteur"></div><div data-zone-controle="photoAuteur"></div></div>
+      <div class="col-note champ" data-champ="bioAuteur"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
+        <div class="ligne-contact">
+          <button type="button" class="bouton-contour fige" tabindex="-1">Contacter l’auteur</button>
+          <div class="champ-email" data-role="boite-email"><label for="in-email">Courriel de contact (reçoit les messages des lecteurs)</label>
+            <input type="email" id="in-email" data-role="email" maxlength="254" autocomplete="off" inputmode="email" placeholder="nom@exemple.com" spellcheck="false"></div>
+        </div>
+        <div class="msg-email" data-role="msg-email" role="alert" hidden></div>
+        <div class="note-email" data-role="info-email" hidden></div></div>
+    </div>
+    </section>
+    <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
+    <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
+      <div class="pill-extrait fige">Demande d'extrait <i style="width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88;text-align:center">i</i></div></div>
+    <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
+    <div class="vedettes fige" data-vedettes></div>
+  </div>
+</template>
+<script>
+/*MODULE-DEBUT*/
+// Textes riches des pages de livres (Ricos de Wix) : conversion vers un modèle de « blocs » simple, validation,
+// détection d'adresses web et taux de modification. Fonctions PURES : aucun accès à Wix, aucune donnée sensible.
+// Ce bloc sert aussi au serveur : sync_modifier_livre.ps1 le copie dans backend/livres-textes.js (dépôt editionstbl).
+//
+// Modèle de bloc échangé avec la page (jamais de HTML) :
+//   { type: 'paragraphe' | 'titre' | 'citation', niveau?: 1..6 (titre seulement),
+//     runs: [ { texte, gras?, italique?, souligne?, couleur?: { foreground?, background? } } ] }
+// Un paragraphe vide (runs: []) sert d'espacement, comme dans les textes actuels du site.
+//
+// Ce fichier n'utilise aucune séquence d'échappement Unicode dans une expression régulière (l'éditeur Velo refuse les
+// caractères de contrôle bruts) : les caractères de contrôle sont retirés par code numérique.
+
+// Textes riches (Ricos) de la collection Livres modifiables par l'auteur.
+const CHAMPS_TEXTE = ['synopsis', 'extrait', 'bioAuteur'];
+// La description de l'en-tête est Livres.desc_plan : du texte BRUT (une seule ligne, sans mise en forme).
+// Le style vient de la page (h6, Oswald 22 px) et la composante a une hauteur FIXE (barre de défilement si le texte déborde).
+const CHAMP_TEXTE_BRUT = 'desc_plan';
+
+const LIMITES = {
+  blocs: 120,
+  runsParBloc: 200,
+  caracteresParRun: 6000,
+  caracteresParChamp: 12000,
+};
+
+// ---------------------------------------------------------------------------
+// Ricos vers blocs
+// ---------------------------------------------------------------------------
+
+function borner(n, min, max) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) {
+    return min;
+  }
+  return Math.min(max, Math.max(min, Math.round(v)));
+}
+
+function runsDe(noeud) {
+  const runs = [];
+  for (const t of noeud.nodes || []) {
+    if (!t || t.type !== 'TEXT' || !t.textData) {
+      return null; // noeud inconnu (image, lien, liste...) : le champ ne sera pas modifiable
+    }
+    const run = { texte: String(t.textData.text === undefined || t.textData.text === null ? '' : t.textData.text) };
+    for (const d of t.textData.decorations || []) {
+      if (d.type === 'BOLD') {
+        run.gras = true;
+      } else if (d.type === 'ITALIC') {
+        run.italique = true;
+      } else if (d.type === 'UNDERLINE') {
+        run.souligne = true;
+      } else if (d.type === 'COLOR') {
+        const c = d.colorData || {};
+        const couleur = {};
+        if (typeof c.foreground === 'string') {
+          couleur.foreground = c.foreground;
+        }
+        if (typeof c.background === 'string') {
+          couleur.background = c.background;
+        }
+        run.couleur = couleur;
+      } else {
+        return null; // décoration inconnue (lien, taille de police...) : on ne risque pas de la perdre
+      }
+    }
+    runs.push(run);
+  }
+  return runs;
+}
+
+// Renvoie la liste de blocs, ou null si le texte contient quelque chose que l'éditeur ne sait pas conserver.
+function ricosVersBlocs(ricos) {
+  if (!ricos || typeof ricos !== 'object' || !Array.isArray(ricos.nodes)) {
+    return null;
+  }
+  const blocs = [];
+  for (const n of ricos.nodes) {
+    let bloc = null;
+    if (n.type === 'PARAGRAPH') {
+      const runs = runsDe(n);
+      bloc = runs ? { type: 'paragraphe', runs } : null;
+    } else if (n.type === 'HEADING') {
+      const runs = runsDe(n);
+      bloc = runs ? { type: 'titre', niveau: borner(n.headingData && n.headingData.level, 1, 6), runs } : null;
+    } else if (n.type === 'BLOCKQUOTE') {
+      const enfants = n.nodes || [];
+      if (enfants.length === 1 && enfants[0].type === 'PARAGRAPH') {
+        const runs = runsDe(enfants[0]);
+        bloc = runs ? { type: 'citation', runs } : null;
+      }
+    }
+    if (!bloc) {
+      return null;
+    }
+    blocs.push(bloc);
+  }
+  return blocs;
+}
+
+// ---------------------------------------------------------------------------
+// Blocs vers Ricos
+// ---------------------------------------------------------------------------
+
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
+function idAleatoire() {
+  let s = '';
+  for (let i = 0; i < 9; i++) {
+    s += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+  }
+  return s;
+}
+
+function noeudsTexte(runs) {
+  return runs.map((run) => {
+    const decorations = [];
+    if (run.couleur) {
+      const colorData = {};
+      if (run.couleur.background) {
+        colorData.background = run.couleur.background;
+      }
+      if (run.couleur.foreground) {
+        colorData.foreground = run.couleur.foreground;
+      }
+      decorations.push({ colorData, type: 'COLOR' });
+    }
+    if (run.gras) {
+      decorations.push({ fontWeightValue: 700, type: 'BOLD' });
+    }
+    if (run.italique) {
+      decorations.push({ italicData: true, type: 'ITALIC' });
+    }
+    if (run.souligne) {
+      decorations.push({ underlineData: true, type: 'UNDERLINE' });
+    }
+    return { id: '', nodes: [], textData: { decorations, text: run.texte }, type: 'TEXT' };
+  });
+}
+
+// `ricosOriginal` sert seulement à conserver documentStyle. Les blocs doivent avoir été validés (validerBlocs).
+function blocsVersRicos(blocs, ricosOriginal) {
+  const nodes = blocs.map((bloc) => {
+    const enfants = noeudsTexte(bloc.runs);
+    if (bloc.type === 'titre') {
+      return { headingData: { level: bloc.niveau, textStyle: { textAlignment: 'AUTO' } }, id: idAleatoire(), nodes: enfants, type: 'HEADING' };
+    }
+    if (bloc.type === 'citation') {
+      return {
+        blockquoteData: { indentation: 0 },
+        id: idAleatoire(),
+        nodes: [{ id: idAleatoire(), nodes: enfants, paragraphData: { indentation: 0 }, type: 'PARAGRAPH' }],
+        type: 'BLOCKQUOTE',
+      };
+    }
+    return { id: idAleatoire(), nodes: enfants, paragraphData: {}, type: 'PARAGRAPH' };
+  });
+  return { documentStyle: (ricosOriginal && ricosOriginal.documentStyle) || {}, nodes };
+}
+
+// ---------------------------------------------------------------------------
+// Validation des blocs reçus de la page (le serveur ne fait confiance à rien)
+// ---------------------------------------------------------------------------
+
+const MOTIF_COULEUR = /^(#[0-9a-fA-F]{6}|\$theme-color-\d{1,2})$/;
+
+function sansCaracteresDeControle(texte) {
+  let resultat = '';
+  for (const caractere of texte) {
+    const code = caractere.charCodeAt(0);
+    resultat += code < 32 || code === 127 ? ' ' : caractere;
+  }
+  return resultat;
+}
+
+function memeStyle(a, b) {
+  return !!a.gras === !!b.gras && !!a.italique === !!b.italique && !!a.souligne === !!b.souligne
+    && JSON.stringify(a.couleur || null) === JSON.stringify(b.couleur || null);
+}
+
+// Retourne { ok: true, blocs } (blocs normalisés) ou { ok: false, message }.
+function validerBlocs(entree) {
+  if (!Array.isArray(entree)) {
+    return { ok: false, message: 'Le texte reçu est invalide.' };
+  }
+  if (entree.length > LIMITES.blocs) {
+    return { ok: false, message: `Le texte compte trop de paragraphes (${LIMITES.blocs} au plus).` };
+  }
+  const blocs = [];
+  let total = 0;
+  for (const b of entree) {
+    if (!b || typeof b !== 'object' || !['paragraphe', 'titre', 'citation'].includes(b.type) || !Array.isArray(b.runs)) {
+      return { ok: false, message: 'Le texte reçu est invalide.' };
+    }
+    if (b.runs.length > LIMITES.runsParBloc) {
+      return { ok: false, message: 'Un paragraphe contient trop de mises en forme différentes.' };
+    }
+    const bloc = { type: b.type, runs: [] };
+    if (b.type === 'titre') {
+      if (!Number.isInteger(b.niveau) || b.niveau < 1 || b.niveau > 6) {
+        return { ok: false, message: 'Un niveau de titre est invalide.' };
+      }
+      bloc.niveau = b.niveau;
+    }
+    for (const r of b.runs) {
+      if (!r || typeof r !== 'object' || typeof r.texte !== 'string') {
+        return { ok: false, message: 'Le texte reçu est invalide.' };
+      }
+      if (r.texte.length > LIMITES.caracteresParRun) {
+        return { ok: false, message: 'Un paragraphe est trop long.' };
+      }
+      const texte = sansCaracteresDeControle(r.texte);
+      if (texte === '') {
+        continue;
+      }
+      const run = { texte };
+      if (r.gras === true) {
+        run.gras = true;
+      }
+      if (r.italique === true) {
+        run.italique = true;
+      }
+      if (r.souligne === true) {
+        run.souligne = true;
+      }
+      if (r.couleur !== undefined && r.couleur !== null) {
+        const c = r.couleur;
+        if (typeof c !== 'object') {
+          return { ok: false, message: 'Une couleur est invalide.' };
+        }
+        const couleur = {};
+        for (const cle of ['foreground', 'background']) {
+          if (c[cle] !== undefined) {
+            if (typeof c[cle] !== 'string' || !MOTIF_COULEUR.test(c[cle])) {
+              return { ok: false, message: 'Une couleur est invalide.' };
+            }
+            couleur[cle] = c[cle];
+          }
+        }
+        if (Object.keys(couleur).length) {
+          run.couleur = couleur;
+        }
+      }
+      total += texte.length;
+      const precedent = bloc.runs[bloc.runs.length - 1];
+      if (precedent && memeStyle(precedent, run)) {
+        precedent.texte += run.texte;
+      } else {
+        bloc.runs.push(run);
+      }
+    }
+    blocs.push(bloc);
+  }
+  if (total > LIMITES.caracteresParChamp) {
+    return { ok: false, message: `Le texte est trop long (${LIMITES.caracteresParChamp} caractères au plus).` };
+  }
+  return { ok: true, blocs };
+}
+
+// ---------------------------------------------------------------------------
+// Texte brut, adresses web, taux de modification
+// ---------------------------------------------------------------------------
+
+// Texte d'un champ : un paragraphe par ligne (les paragraphes vides sont ignorés).
+function texteBrut(blocs) {
+  return blocs
+    .map((bloc) => bloc.runs.map((r) => r.texte).join(''))
+    .filter((ligne) => ligne.trim() !== '')
+    .join('\n');
+}
+
+const EXTENSIONS = 'com|ca|fr|org|net|io|info|biz|co|be|ch|app|dev|me|tv|ly|link|xyz|shop|store|site|online|quebec|qc|edu|gov|us|uk|de|eu|ai|cc|to|gg|page|blog|live|news|pro|club|tech|cloud|world|email|mobi|name';
+const MOTIFS_URL = [
+  /[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s]+/g, // schéma://
+  /\bwww\.[^\s]+/gi, // www.
+  /\bmailto:[^\s]+/gi, // mailto:
+  /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, // adresse courriel
+  new RegExp('(?:^|[^\\w@.-])((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:' + EXTENSIONS + ')(?![a-z0-9])(?:/[^\\s]*)?)', 'gi'), // domaine nu
+];
+const PONCTUATION_FINALE = /[.,;:!?)\]}»”'"]+$/;
+
+// Liste des adresses web trouvées dans le texte (sans doublon, ponctuation finale retirée).
+function trouverUrls(texte) {
+  const trouvees = new Set();
+  for (let i = 0; i < MOTIFS_URL.length; i++) {
+    const motif = new RegExp(MOTIFS_URL[i].source, MOTIFS_URL[i].flags);
+    let m;
+    while ((m = motif.exec(texte)) !== null) {
+      const brut = i === MOTIFS_URL.length - 1 ? m[1] : m[0];
+      const propre = brut.replace(PONCTUATION_FINALE, '');
+      if (propre) {
+        trouvees.add(propre);
+      }
+      if (m[0] === '') {
+        motif.lastIndex++;
+      }
+    }
+  }
+  return Array.from(trouvees);
+}
+
+// Adresses NOUVELLES : celles déjà présentes dans le texte publié sont tolérées.
+function urlsInterdites(blocsNouveaux, blocsPublies) {
+  const tolerees = new Set(trouverUrls(texteBrut(blocsPublies || [])).map((u) => u.toLowerCase()));
+  return trouverUrls(texteBrut(blocsNouveaux)).filter((u) => !tolerees.has(u.toLowerCase()));
+}
+
+// Texte brut (desc_plan) vers blocs, pour réutiliser la validation et le taux de modification.
+// Une ligne = un bloc (les lignes vides sont gardées), sauf au début et à la fin du texte.
+function blocsDepuisTexteBrut(texte) {
+  const lignes = String(texte === undefined || texte === null ? '' : texte)
+    .split('\r')
+    .join('')
+    .split('\n')
+    .map((l) => sansCaracteresDeControle(l).split(' ').filter(Boolean).join(' '));
+  while (lignes.length && lignes[0] === '') {
+    lignes.shift();
+  }
+  while (lignes.length && lignes[lignes.length - 1] === '') {
+    lignes.pop();
+  }
+  return lignes.map((l) => ({ type: 'paragraphe', runs: l === '' ? [] : [{ texte: l }] }));
+}
+
+// Blocs vers texte brut : une ligne par bloc, espaces multiples réduits
+function texteBrutDepuisBlocs(blocs) {
+  return blocsDepuisTexteBrut(blocs.map((b) => b.runs.map((r) => r.texte).join('')).join('\n'))
+    .map((b) => b.runs.map((r) => r.texte).join(''))
+    .join('\n');
+}
+
+function mots(blocs) {
+  return texteBrut(blocs).split(/\s+/).filter(Boolean);
+}
+
+// Plus longue sous-suite commune entre deux listes de mots.
+function communs(a, b) {
+  if (a.length === 0 || b.length === 0) {
+    return 0;
+  }
+  let precedente = new Uint32Array(b.length + 1);
+  let courante = new Uint32Array(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      courante[j] = a[i - 1] === b[j - 1] ? precedente[j - 1] + 1 : Math.max(precedente[j], courante[j - 1]);
+    }
+    const t = precedente;
+    precedente = courante;
+    courante = t;
+  }
+  return precedente[b.length];
+}
+
+// Taux de modification d'UN champ : (1 - 2 x mots communs / (mots avant + mots après)) x 100, entre 0 et 100.
+function tauxModification(blocsAvant, blocsApres) {
+  const a = mots(blocsAvant);
+  const b = mots(blocsApres);
+  const c = communs(a, b);
+  const somme = a.length + b.length;
+  return { taux: somme === 0 ? 0 : (1 - (2 * c) / somme) * 100, communs: c, avant: a.length, apres: b.length };
+}
+
+// Taux global sur plusieurs champs : mêmes formules, sur la somme des mots.
+function tauxGlobal(paires) {
+  let c = 0;
+  let somme = 0;
+  for (const p of paires) {
+    const t = tauxModification(p.avant, p.apres);
+    c += t.communs;
+    somme += t.avant + t.apres;
+  }
+  return somme === 0 ? 0 : (1 - (2 * c) / somme) * 100;
+}
+/*MODULE-FIN*/
+
+// ===== Outils de la page : DOM <-> blocs, comparaison, formats =====
+var NBSP = String.fromCharCode(160);
+var ZWSP = String.fromCharCode(8203);
+function $(id) { return document.getElementById(id); }
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function delai(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+var CHAMPS = [
+  { cle: 'desc_plan', nom: 'Description (en-tête)', court: 'Description', brut: true },
+  { cle: 'synopsis', nom: 'Synopsis', court: 'Synopsis' },
+  { cle: 'bioAuteur', nom: 'Note de l’auteur', court: 'Note de l’auteur' },
+  { cle: 'extrait', nom: 'Extrait', court: 'Extrait' }
+];
+
+// Normalise des blocs (fusion des runs, retrait des vides). Si invalide, renvoie les blocs tels quels.
+function norm(blocs) {
+  var v = validerBlocs(blocs);
+  return v.ok ? v.blocs : blocs;
+}
+
+// Empreinte d'un texte riche (texte + mise en forme + structure)
+function signature(blocs) {
+  return JSON.stringify(norm(blocs).map(function (b) {
+    return [b.type, b.niveau || 0, b.runs.map(function (r) {
+      return [r.texte, r.gras ? 1 : 0, r.italique ? 1 : 0, r.souligne ? 1 : 0, r.couleur ? JSON.stringify(r.couleur) : ''];
+    })];
+  }));
+}
+
+function pct(x) {
+  if (x <= 0) { return '0' + NBSP + '%'; }
+  if (x < 1) { return '< 1' + NBSP + '%'; }
+  return Math.round(x) + NBSP + '%';
+}
+
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) { return ''; }
+}
+// « 28 septembre 2026, 14 h 32 », à l'heure du Québec
+function fmtDateHeure(iso) {
+  try {
+    var d = new Date(iso), tz = 'America/Toronto';
+    var h = new Intl.DateTimeFormat('fr-CA', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: tz }).formatToParts(d);
+    var part = function (t) { return (h.filter(function (p) { return p.type === t; })[0] || {}).value || ''; };
+    return d.toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric', timeZone: tz }) + ', ' + Number(part('hour')) + ' h ' + part('minute');
+  } catch (e) { return ''; }
+}
+var LIBELLES_ETAT = { aucune: 'Version publiée', nouveau: 'Nouveau livre', modifier: 'Copie en cours', attente: 'En attente de validation', corriger: 'À corriger' };
+
+// Prix du service selon le taux : réservé pour plus tard (le prix ne fait pas partie de l'analyse pour le moment)
+function prixSelonTaux(taux) { return 'à déterminer'; }
+
+// ---------- DOM vers blocs ----------
+var TAGS_BLOC = { P: 1, DIV: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1, BLOCKQUOTE: 1 };
+
+function versHex(rgb) {
+  var m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(rgb || '');
+  if (!m) { return /^#[0-9a-f]{6}$/i.test(rgb || '') ? rgb.toUpperCase() : null; }
+  return '#' + [m[1], m[2], m[3]].map(function (n) { return ('0' + Number(n).toString(16)).slice(-2); }).join('').toUpperCase();
+}
+
+function parcourir(n, st, out) {
+  if (n.nodeType === 3) {
+    var t = n.nodeValue.split(NBSP).join(' ').split(ZWSP).join('');
+    if (t) {
+      var r = { texte: t };
+      if (st.gras) { r.gras = true; }
+      if (st.italique) { r.italique = true; }
+      if (st.souligne) { r.souligne = true; }
+      if (st.couleur) { r.couleur = st.couleur; }
+      out.push(r);
+    }
+    return;
+  }
+  if (n.nodeType !== 1 || n.tagName === 'BR') { return; }
+  var s = { gras: st.gras, italique: st.italique, souligne: st.souligne, couleur: st.couleur };
+  var tag = n.tagName;
+  if (tag === 'B' || tag === 'STRONG') { s.gras = true; }
+  if (tag === 'I' || tag === 'EM') { s.italique = true; }
+  if (tag === 'U') { s.souligne = true; }
+  var sty = n.style || {};
+  if (sty.fontWeight === 'bold' || Number(sty.fontWeight) >= 600) { s.gras = true; }
+  if (sty.fontStyle === 'italic') { s.italique = true; }
+  if ((sty.textDecorationLine || sty.textDecoration || '').indexOf('underline') >= 0) { s.souligne = true; }
+  if (n.dataset && (n.dataset.fg || n.dataset.bg)) {
+    s.couleur = {};
+    if (n.dataset.fg) { s.couleur.foreground = n.dataset.fg; }
+    if (n.dataset.bg) { s.couleur.background = n.dataset.bg; }
+  } else if (sty.color) {
+    var hx = versHex(sty.color);
+    if (hx) { s.couleur = { foreground: hx }; }
+  }
+  Array.prototype.forEach.call(n.childNodes, function (c) { parcourir(c, s, out); });
+}
+
+function typeDe(tag, ctx) {
+  if (tag === 'BLOCKQUOTE') { return { type: 'citation' }; }
+  if (/^H[1-6]$/.test(tag)) { return { type: 'titre', niveau: Number(tag.charAt(1)) }; }
+  return { type: ctx.type, niveau: ctx.niveau };
+}
+
+function lireConteneur(parent, ctx, blocs) {
+  var courant = null;
+  function vider() { if (courant) { blocs.push(courant); courant = null; } }
+  Array.prototype.forEach.call(parent.childNodes, function (n) {
+    if (n.nodeType === 1 && TAGS_BLOC[n.tagName]) {
+      vider();
+      var t = typeDe(n.tagName, ctx);
+      var aEnfantsBloc = Array.prototype.some.call(n.children, function (c) { return TAGS_BLOC[c.tagName]; });
+      if (aEnfantsBloc) {
+        lireConteneur(n, t.type === 'paragraphe' ? ctx : t, blocs);
+      } else {
+        var runs = [];
+        parcourir(n, {}, runs);
+        var b = { type: t.type, runs: runs };
+        if (t.type === 'titre') { b.niveau = t.niveau; }
+        blocs.push(b);
+      }
+    } else {
+      if (!courant) {
+        courant = { type: ctx.type, runs: [] };
+        if (ctx.type === 'titre') { courant.niveau = ctx.niveau; }
+      }
+      parcourir(n, {}, courant.runs);
+    }
+  });
+  vider();
+}
+
+function lireBlocs(racine) {
+  var blocs = [];
+  lireConteneur(racine, { type: 'paragraphe' }, blocs);
+  return blocs.map(function (b) {
+    b.runs = b.runs.filter(function (r) { return r.texte !== ''; });
+    return b;
+  });
+}
+
+// ---------- Blocs vers DOM ----------
+function creerRuns(runs, opt, etat) {
+  var frag = document.createDocumentFragment();
+  runs.forEach(function (r) {
+    var cont = document.createDocumentFragment();
+    r.texte.split(/(\s+)/).forEach(function (p) {
+      if (p === '') { return; }
+      if (/^\s+$/.test(p)) { cont.appendChild(document.createTextNode(p)); etat.cont = false; return; }
+      var idx;
+      if (etat.cont) { idx = etat.w - 1; }
+      else {
+        idx = etat.w++;
+        if (opt.retraits && opt.retraits[idx]) {
+          var d = document.createElement('span');
+          d.className = 'retrait';
+          d.textContent = opt.retraits[idx].join(' ');
+          cont.appendChild(d);
+          cont.appendChild(document.createTextNode(' '));
+          opt.retraits[idx] = null;
+        }
+      }
+      etat.cont = true;
+      if (opt.flags && !opt.flags[idx]) {
+        var s = document.createElement('span');
+        s.className = opt.classeNon;
+        s.textContent = p;
+        cont.appendChild(s);
+      } else {
+        cont.appendChild(document.createTextNode(p));
+      }
+    });
+    var noeud = cont;
+    function envelopper(tag, attrs) {
+      var e = document.createElement(tag);
+      if (attrs) { Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); }
+      e.appendChild(noeud);
+      noeud = e;
+    }
+    if (r.souligne) { envelopper('u'); }
+    if (r.italique) { envelopper('i'); }
+    if (r.gras) { envelopper('b'); }
+    if (r.couleur && opt.couleurs !== false) {
+      var at = {};
+      if (r.couleur.foreground) { at['data-fg'] = r.couleur.foreground; at.style = 'color:' + r.couleur.foreground; }
+      if (r.couleur.background) { at['data-bg'] = r.couleur.background; }
+      envelopper('span', at);
+    }
+    frag.appendChild(noeud);
+  });
+  return frag;
+}
+
+// opt : { flags, classeNon, retraits, couleurs }. Renvoie un DocumentFragment.
+function blocsVersDom(blocs, opt) {
+  opt = opt || {};
+  var etat = { w: 0 };
+  var frag = document.createDocumentFragment();
+  var dernier = null;
+  blocs.forEach(function (b) {
+    etat.cont = false;
+    var tag = b.type === 'titre' ? 'h' + b.niveau : (b.type === 'citation' ? 'blockquote' : 'p');
+    var e = document.createElement(tag);
+    if (!b.runs.length) { e.appendChild(document.createElement('br')); }
+    else { e.appendChild(creerRuns(b.runs, opt, etat)); }
+    frag.appendChild(e);
+    dernier = e;
+  });
+  if (!dernier) {
+    dernier = document.createElement('p');
+    dernier.appendChild(document.createElement('br'));
+    frag.appendChild(dernier);
+  }
+  if (opt.retraits) {
+    Object.keys(opt.retraits).forEach(function (k) {
+      if (opt.retraits[k]) {
+        if (dernier.lastChild && dernier.lastChild.tagName === 'BR') { dernier.removeChild(dernier.lastChild); }
+        var d = document.createElement('span');
+        d.className = 'retrait';
+        d.textContent = ' ' + opt.retraits[k].join(' ');
+        dernier.appendChild(d);
+      }
+    });
+  }
+  return frag;
+}
+
+// ---------- Alignement des mots (plus longue sous-suite commune) ----------
+function listeMots(blocs) { return texteBrut(blocs).split(/\s+/).filter(Boolean); }
+
+// Renvoie { avantCommun[], apresCommun[], retraits{ indexApres: [mots retires avant ce mot] } } ou null si trop gros.
+function alignerMots(blocsAvant, blocsApres) {
+  var a = listeMots(blocsAvant), b = listeMots(blocsApres);
+  var n = a.length, m = b.length;
+  if (n * m > 30000000) { return null; }
+  var W = m + 1;
+  var L = new Uint16Array((n + 1) * W);
+  var i, j;
+  for (i = 1; i <= n; i++) {
+    for (j = 1; j <= m; j++) {
+      L[i * W + j] = a[i - 1] === b[j - 1] ? L[(i - 1) * W + j - 1] + 1 : Math.max(L[(i - 1) * W + j], L[i * W + j - 1]);
+    }
+  }
+  var avantCommun = new Array(n).fill(0), apresCommun = new Array(m).fill(0), retraits = {};
+  i = n; j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) { avantCommun[i - 1] = 1; apresCommun[j - 1] = 1; i--; j--; }
+    else if (i > 0 && (j === 0 || L[(i - 1) * W + j] >= L[i * W + j - 1])) { (retraits[j] = retraits[j] || []).unshift(a[i - 1]); i--; }
+    else { j--; }
+  }
+  return { avantCommun: avantCommun, apresCommun: apresCommun, retraits: retraits };
+}
+
+// ===== Application =====
+var EN_WIX = true;
+var LIBELLE_PAYER = EN_WIX ? 'Payer' : 'Payer (simulation)';
+var MOTIF_MAX = 1000; // longueur maximale du commentaire de refus
+// Étape 1 : enregistrement seulement. L'envoi en approbation avec paiement (étape 2 et suivantes), l'approbation,
+// le refus et la publication par un administrateur (étape 4) ne sont pas encore branchés au serveur.
+var APPROBATION_ACTIVE = false;
+var TEXTES_BIENTOT = {
+  appr: ['Envoyer en approbation', 'Le calcul du prix de vos modifications et le paiement arrivent bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.'],
+  publier: ['Publier', 'La publication directe par un administrateur arrive bientôt. Vos modifications sont enregistrées dans la copie.'],
+  revue: ['Approuver ou refuser', 'L’approbation et le refus d’une demande arrivent bientôt.']
+};
+function bientot(cle) {
+  var t = TEXTES_BIENTOT[cle];
+  return modale({ titre: t[0], corps: t[1], boutons: [{ id: 'ok', libelle: 'J’ai compris', principal: true }] });
+}
+var URL_ESPACE_AUTEURS = 'espace-auteurs.html';
+var PARAMS = new URLSearchParams(location.search);
+var VUE = ['apercu', 'rapport'].indexOf(PARAMS.get('vue')) >= 0 ? PARAMS.get('vue') : 'edition';
+var APPAREIL = PARAMS.get('appareil') === 'mobile' ? 'mobile' : 'ordinateur';
+var LIVRE_ID = PARAMS.get('livre') || '';
+
+var etat = {
+  d: null,            // réponse du serveur
+  L: { pub: {}, saved: {}, work: {} }, chgL: {}, probL: {},   // champs du livre : image, section Auteur, courriel
+  pub: {}, saved: {}, work: {},   // blocs par champ : publié, dernière copie enregistrée, en cours d'édition
+  t: {}, chg: {}, fmt: {}, prob: {}, global: 0, dirty: false,
+  copie: false, verrou: false, appr: false, revue: false, refus: null, actif: null, diff: false, occupe: false, lecture: []
+};
+
+// ---------- Communication (postMessage avec la page Wix, ou faux serveur en local) ----------
+var attentes = {}, seqAppel = 0;
+function appeler(action, params) {
+  if (EN_WIX) {
+    return new Promise(function (resolve, reject) {
+      var id = ++seqAppel;
+      attentes[id] = { resolve: resolve, reject: reject };
+      window.parent.postMessage({ type: 'modifierLivre', action: action, params: params, id: id }, '*');
+      setTimeout(function () { if (attentes[id]) { delete attentes[id]; reject(new Error('delai')); } }, 40000);
+    });
+  }
+
+}
+// La page est servie par GitHub Pages et chargée dans la composante HTML de la page Wix : on n'accepte
+// que les messages de cette page parente (site publié, ou Aperçu dans l'éditeur Wix).
+var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+function origineAutorisee(origine) {
+  return ORIGINES_PERMISES.some(function (motif) { return motif.test(origine); });
+}
+window.addEventListener('message', function (e) {
+  if (!EN_WIX || e.source !== window.parent || !origineAutorisee(e.origin)) { return; }
+  var m = e.data || {};
+  if (m.type === 'modifierLivreReponse' && attentes[m.id]) {
+    var a = attentes[m.id]; delete attentes[m.id];
+    if (m.erreur) { a.reject(new Error(m.erreur)); } else { a.resolve(m.data); }
+  }
+});
+
+// ---------- Avis et fenêtres ----------
+var minuteurToast = null;
+function toast(msg, type) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = type || '';
+  t.hidden = false;
+  clearTimeout(minuteurToast);
+  minuteurToast = setTimeout(function () { t.hidden = true; }, type === 'mal' ? 7000 : 3500);
+}
+
+var modaleOuverte = null;
+// modale({ titre, corps (texte ou élément), boutons:[{ id, libelle, principal, action:async }] }) -> id du bouton ou null
+function modale(o) {
+  return new Promise(function (resolve) {
+    var m = $('modal'), corps = $('m-corps'), btns = $('m-btns'), boite = m.querySelector('.boite');
+    var retour = document.activeElement;
+    $('m-titre').textContent = o.titre;
+    corps.textContent = '';
+    if (typeof o.corps === 'string') { var p = document.createElement('p'); p.textContent = o.corps; corps.appendChild(p); }
+    else { corps.appendChild(o.corps); }
+    btns.textContent = '';
+    var occupe = false;
+    function fermer(id) {
+      if (occupe) { return; }
+      m.hidden = true; modaleOuverte = null;
+      document.removeEventListener('keydown', touche, true);
+      if (retour && retour.focus) { try { retour.focus(); } catch (e) { /* ignore */ } }
+      resolve(id);
+    }
+    function touche(e) {
+      if (e.key === 'Escape') { e.preventDefault(); fermer(null); }
+      if (e.key === 'Tab') {
+        var f = Array.prototype.filter.call(boite.querySelectorAll('button:not(:disabled)'), function (b) { return !b.hidden; });
+        if (!f.length) { return; }
+        var i = f.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+      }
+    }
+    o.boutons.forEach(function (b) {
+      var bt = document.createElement('button');
+      bt.type = 'button';
+      bt.className = 'btn' + (b.principal ? '' : ' sec');
+      bt.textContent = b.libelle;
+      bt.addEventListener('click', function () {
+        if (!b.action) { fermer(b.id); return; }
+        occupe = true;
+        Array.prototype.forEach.call(btns.children, function (x) { x.disabled = true; });
+        bt.textContent = 'En cours…';
+        b.action().then(function () { occupe = false; fermer(b.id); }, function (err) {
+          occupe = false;
+          Array.prototype.forEach.call(btns.children, function (x) { x.disabled = false; });
+          bt.textContent = b.libelle;
+          toast(err && err.message ? err.message : 'Une erreur est survenue.', 'mal');
+        });
+      });
+      btns.appendChild(bt);
+    });
+    $('m-voile').onclick = function () { fermer(null); };
+    m.hidden = false; modaleOuverte = fermer;
+    document.addEventListener('keydown', touche, true);
+    var premier = btns.querySelector('.btn:not(.sec)') || btns.firstChild;
+    (premier || boite).focus();
+  });
+}
+
+// ---------- États plein écran ----------
+var ICO_INTERDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
+var ICO_CADENAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>';
+function montrerVue(nom) {
+  ['chargement', 'etat-msg', 'vue-edition', 'vue-apercu', 'vue-rapport'].forEach(function (id) { $(id).hidden = id !== nom; });
+}
+function montrerEtat(ico, titre, texte, btn, action) {
+  $('etat-ico').innerHTML = ico || '';
+  $('etat-titre').textContent = titre;
+  $('etat-texte').textContent = texte;
+  $('etat-btn').textContent = btn;
+  $('etat-btn').onclick = action;
+  montrerVue('etat-msg');
+}
+function fermerPage() {
+  window.close();
+  setTimeout(function () { toast('Vous pouvez fermer cet onglet pour revenir à l’Espace Auteurs.'); }, 300);
+}
+function traiterStatut(d) {
+  if (d.statut === 'connexion') { montrerEtat(ICO_CADENAS, 'Connexion requise', 'Connectez-vous à votre compte pour modifier la page de votre livre.', 'Réessayer', demarrer); return true; }
+  if (d.statut === 'refuse') { montrerEtat(ICO_INTERDIT, 'Accès interdit', 'Cette page est réservée aux auteurs des Éditions TBL.', 'Fermer cette page', fermerPage); return true; }
+  if (d.statut === 'inactif') { montrerEtat(ICO_CADENAS, 'Compte auteur inactif', 'Votre compte auteur est inactif pour le moment. Écrivez-nous et nous le réactiverons avec plaisir.', 'Fermer cette page', fermerPage); return true; }
+  if (d.statut === 'nonmodifiable') {
+    montrerEtat(ICO_CADENAS, 'Ce livre ne peut pas être modifié pour le moment',
+      'Ce livre est introuvable ou archivé. Ouvrez l’éditeur depuis l’onglet Livres de votre Espace Auteurs, ou écrivez-nous si vous croyez qu’il s’agit d’une erreur.', 'Fermer cette page', fermerPage);
+    return true;
+  }
+  return false;
+}
+function erreurChargement(e) {
+  montrerEtat('', 'Un petit problème de chargement', 'Nous n’arrivons pas à charger votre page pour le moment. Vérifiez votre connexion et réessayez.', 'Réessayer', demarrer);
+  if (window.console) { console.warn('[modifierLivre]', e); }
+}
+
+// ---------- Remplissage de la page du livre ----------
+function fabriquerPage(hote, d) {
+  hote.textContent = '';
+  var page = document.createElement('div');
+  page.id = 'page';
+  page.appendChild(document.getElementById('tpl-page').content.cloneNode(true));
+  var L = d.livre;
+  page.querySelector('[data-fond]').style.backgroundImage = 'linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.1)),url("' + L.images.fond + '")';
+  page.querySelector('[data-titre]').textContent = L.titre;
+  page.querySelector('[data-prix]').textContent = L.prix || '';
+  var ved = page.querySelector('[data-vedettes]');
+  (L.vedettes || []).forEach(function (v) {
+    var f = document.createElement('figure'), im = document.createElement('img'), c = document.createElement('figcaption');
+    im.src = v.miniature; im.alt = v.titre; c.textContent = v.titre;
+    f.appendChild(im); f.appendChild(c); ved.appendChild(f);
+  });
+  hote.appendChild(page);
+  return page;
+}
+function boitesChamps(page) {
+  var o = {};
+  Array.prototype.forEach.call(page.querySelectorAll('.champ'), function (c) { o[c.getAttribute('data-champ')] = c; });
+  return o;
+}
+
+// ===== Vue Edition =====
+function estBrut(cle) { return cle === CHAMP_TEXTE_BRUT; }
+var PLAINTEXT_OK = (function () { var d = document.createElement('div'); d.contentEditable = 'plaintext-only'; return d.contentEditable === 'plaintext-only'; })();
+function nomChamp(cle) { return CHAMPS.filter(function (c) { return c.cle === cle; })[0].nom; }
+function estLecture(cle) { return etat.lecture.indexOf(cle) >= 0; }
+function editable(cle) { return !etat.verrou && !estLecture(cle) && !etat.diff; }
+function rtDe(cle) { return etat.champs[cle].querySelector('.rt'); }
+
+function montrerEdition(d) {
+  etat.d = d;
+  CHAMPS.forEach(function (c) {
+    etat.pub[c.cle] = norm(d.publie[c.cle]);
+    etat.saved[c.cle] = norm(d.copie ? d.copie[c.cle] : d.publie[c.cle]);
+    etat.work[c.cle] = clone(etat.saved[c.cle]);
+  });
+  var LS = d.champsLivre.copie || d.champsLivre.publie;
+  etat.L = { pub: clone(d.champsLivre.publie), saved: clone(LS), work: clone(LS) };
+  etat.probL = {};
+  // etat : 'aucune' (livre publié sans copie), 'nouveau' (élément Nouveau modifié directement, sans copie),
+  // 'modifier', 'attente' (En attente de validation) ou 'corriger' (copie refusée, déjà payée).
+  etat.copie = d.etat !== 'aucune';
+  etat.nouveau = d.etat === 'nouveau';
+  // En attente de validation : l'auteur est verrouillé, l'administrateur (Auteurs.admin) garde l'édition pour corriger, approuver ou refuser
+  etat.admin = !!d.admin;
+  etat.appr = d.etat === 'attente';
+  etat.revue = etat.appr && etat.admin;
+  etat.verrou = etat.appr && !etat.admin;
+  etat.refus = d.refus || null;
+  etat.lecture = d.lectureSeule || [];
+  etat.diff = false; etat.actif = null;
+  document.body.className = 'v-edition';
+  document.title = 'Modifier la page : ' + d.livre.titre + ' | Éditions TBL';
+  $('h-titre').textContent = d.livre.titre;
+  var page = fabriquerPage($('hote-edition'), d);
+  etat.champs = boitesChamps(page);
+  CHAMPS.forEach(function (c) { monterChamp(c.cle); });
+  monterLivre();
+  $('t-diff').setAttribute('aria-pressed', 'false');
+  $('legende').hidden = true;
+  montrerVue('vue-edition');
+  recalculer();
+}
+
+function monterChamp(cle) {
+  var boite = etat.champs[cle], tete = boite.querySelector('.champ-tete'), rt = boite.querySelector('.rt');
+  tete.innerHTML = '';
+  function chip(cls, txt) { var s = document.createElement('span'); s.className = 'chip ' + cls; s.textContent = txt; tete.appendChild(s); return s; }
+  chip('crayon', '✎ ' + nomChamp(cle));
+  chip('tx', '').setAttribute('data-role', 'tx');
+  var f = chip('fmt', 'Mise en forme modifiée'); f.setAttribute('data-role', 'fmt'); f.hidden = true;
+  chip('ecart', '').style.cssText = 'flex:1;border:0;background:none;padding:0';
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'mini'; b.textContent = '↺ Rétablir le texte publié'; b.setAttribute('data-role', 'retablir');
+  b.addEventListener('click', function () { retablirChamp(cle); });
+  tete.appendChild(b);
+  rt.setAttribute('role', 'textbox');
+  rt.setAttribute('aria-multiline', 'true');
+  rt.setAttribute('aria-label', nomChamp(cle));
+  if (estBrut(cle)) { rt.classList.add('rt-hero'); }
+  var note = document.createElement('div');
+  note.className = 'note-champ'; note.hidden = true; note.setAttribute('data-role', 'note');
+  boite.insertBefore(note, boite.querySelector('.msg-url'));
+  rt.addEventListener('focus', function () { etat.actif = cle; try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) { /* ignore */ } majOutils(); });
+  rt.addEventListener('blur', function () { setTimeout(function () { var ae = document.activeElement; if (!ae || (!ae.closest('.rt') && !ae.closest('#outils'))) { etat.actif = null; majOutils(); } }, 0); });
+  rt.addEventListener('input', function () { lireChamp(cle); });
+  rt.addEventListener('paste', function (e) { e.preventDefault(); if (editable(cle)) { insererTexte((e.clipboardData || window.clipboardData).getData('text/plain')); } });
+  rt.addEventListener('drop', function (e) { e.preventDefault(); });
+  rt.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && estBrut(cle)) { return; }
+    if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); document.execCommand('insertParagraph'); }
+  });
+  rendreChamp(cle);
+}
+
+function rendreChamp(cle) {
+  var rt = rtDe(cle);
+  rt.textContent = '';
+  rt.classList.remove('diff', 'lecture');
+  if (etat.diff) {
+    var al = alignerMots(etat.pub[cle], etat.work[cle]);
+    rt.classList.add('diff');
+    rt.setAttribute('contenteditable', 'false');
+    if (al) {
+      rt.appendChild(blocsVersDom(norm(etat.work[cle]), { flags: al.apresCommun, classeNon: 'ajout', retraits: clone(al.retraits), couleurs: false }));
+      return;
+    }
+  } else {
+    rt.setAttribute('contenteditable', editable(cle) ? (estBrut(cle) && PLAINTEXT_OK ? 'plaintext-only' : 'true') : 'false');
+    if (estLecture(cle) || etat.verrou) { rt.classList.add('lecture'); }
+  }
+  if (estBrut(cle) && !etat.diff) { rt.textContent = texteBrutDepuisBlocs(etat.work[cle]); return; }
+  rt.appendChild(blocsVersDom(etat.work[cle]));
+}
+
+function rendreTout() { CHAMPS.forEach(function (c) { rendreChamp(c.cle); }); rendreLivre(); majLivre(); majOutils(); }
+
+// Texte d'une zone de texte brut : les retours à la ligne viennent du texte (touche Entrée), des <br> ou des blocs <p> et <div>
+// (un collage peut en créer). Un bloc compte pour UNE seule fin de ligne, contrairement à innerText qui en compte deux.
+function texteBrutDom(racine) {
+  var out = '';
+  function fin() { return out === '' || out.charAt(out.length - 1) === '\n'; }
+  (function marche(n) {
+    if (n.nodeType === 3) { out += n.nodeValue; return; }
+    if (n.nodeType !== 1) { return; }
+    if (n.tagName === 'BR') { out += '\n'; return; }
+    var bloc = n.tagName === 'P' || n.tagName === 'DIV';
+    if (bloc && !fin()) { out += '\n'; }
+    Array.prototype.forEach.call(n.childNodes, marche);
+    if (bloc && !fin()) { out += '\n'; }
+  })(racine);
+  return out;
+}
+function lireChamp(cle) {
+  var rt = rtDe(cle);
+  if (estBrut(cle)) {
+    etat.work[cle] = blocsDepuisTexteBrut(texteBrutDom(rt).split(NBSP).join(' '));
+    recalculer();
+    return;
+  }
+  if (!rt.firstChild || (rt.childNodes.length === 1 && rt.firstChild.nodeName === 'BR')) {
+    rt.textContent = '';
+    var p = document.createElement('p'); p.appendChild(document.createElement('br')); rt.appendChild(p);
+  }
+  etat.work[cle] = lireBlocs(rt);
+  recalculer();
+}
+
+function insererTexte(t) {
+  t = t.split(NBSP).join(' ').replace(/\r/g, '');
+  t.split('\n').forEach(function (ligne, i) {
+    if (i > 0) { document.execCommand('insertParagraph'); }
+    if (ligne) { document.execCommand('insertText', false, ligne); }
+  });
+}
+
+// ---------- Calculs et affichage ----------
+function recalculer() {
+  var paires = [];
+  CHAMPS.forEach(function (c) {
+    var k = c.cle, av = etat.pub[k], ap = etat.work[k];
+    var t = tauxModification(av, ap);
+    etat.t[k] = t.taux;
+    etat.chg[k] = signature(av) !== signature(ap);
+    etat.fmt[k] = etat.chg[k] && t.taux === 0;
+    var urls = urlsInterdites(ap, av), v = validerBlocs(ap);
+    etat.prob[k] = urls.length ? 'Les adresses web ne sont pas permises dans ce texte. Adresse refusée : ' + urls[0]
+      : (!v.ok ? v.message : (texteBrut(ap).trim() === '' && texteBrut(av).trim() !== '' ? 'Un texte ne peut pas être vide.' : ''));
+    paires.push({ avant: av, apres: ap });
+  });
+  etat.global = tauxGlobal(paires);
+  var W = etat.L.work, P = etat.L.pub, S = etat.L.saved;
+  etat.chgL = {};
+  CLES_L.forEach(function (k) { etat.chgL[k] = valL(W[k], k) !== valL(P[k], k); });
+  etat.probL.email = validerCourriel(W.email);
+  var dirtyL = CLES_L.some(function (k) { return valL(W[k], k) !== valL(S[k], k); });
+  etat.dirty = dirtyL || CHAMPS.some(function (c) { return signature(etat.work[c.cle]) !== signature(etat.saved[c.cle]); });
+  majUI();
+}
+
+function premierProbleme() {
+  for (var i = 0; i < CHAMPS.length; i++) { if (etat.prob[CHAMPS[i].cle]) { return { cle: CHAMPS[i].cle, msg: etat.prob[CHAMPS[i].cle] }; } }
+  if (etat.probL.email) { return { cle: 'email', msg: etat.probL.email }; }
+  return null;
+}
+function auMoinsUnChangement() {
+  return CHAMPS.some(function (c) { return etat.chg[c.cle]; }) || CLES_L.some(function (k) { return etat.chgL[k]; });
+}
+
+// ---------- Champs du livre : image, section Auteur, courriel de contact ----------
+function courrielNorm(v) { return String(v || '').trim().toLowerCase(); }
+function validerCourriel(v) {
+  var c = courrielNorm(v);
+  if (c === '') { return ''; }
+  if (c.length > 254 || !/^[^\s@<>"']+@[^\s@<>"'.]+(\.[^\s@<>"'.]+)+$/.test(c)) { return 'Entrez une adresse courriel valide (nom@exemple.com).'; }
+  return '';
+}
+// N'accepte qu'une adresse https ou une image PNG, JPEG ou WebP incorporée (jamais autre chose dans un attribut src)
+function imageSure(u) {
+  return typeof u === 'string' && (/^https:\/\//.test(u) || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) ? u : '';
+}
+// Images (image du livre, portrait de l'auteur) : affichées seulement. Leur remplacement (gabarits, Media Manager,
+// champs tampons) arrive à l'étape 3 : il suffira alors de remettre 'image' et 'photoAuteur' dans ces deux listes.
+var CLES_IMAGES = [];
+var CLES_L = ['afficheauteur', 'email'];
+function valL(v, k) { return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || '')); }
+var IMAGE_CONF = {
+  image: { nom: 'Image du livre', bouton: 'Changer l’image du livre', retablir: '↺ Rétablir l’image publiée', ratio: null, max: [1024, 1536],
+    aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Idéal : couverture 3D sur fond transparent.' },
+  photoAuteur: { nom: 'Photo de l’auteur', bouton: 'Changer la photo', retablir: '↺ Rétablir la photo publiée', ratio: null, max: [900, 1200],
+    aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Format portrait recommandé.' }
+};
+function ctl(cle) { return $('hote-edition').querySelector('[data-controle-image="' + cle + '"]'); }
+function creerControles() {
+  CLES_IMAGES.forEach(function (cle) {
+    var conf = IMAGE_CONF[cle], zone = $('hote-edition').querySelector('[data-zone-controle="' + cle + '"]');
+    zone.innerHTML = '<div class="controle-image" data-controle-image="' + cle + '"><div class="rang">' +
+      '<label class="mini gros" data-role="choisir-img" tabindex="0" role="button"></label>' +
+      '<button type="button" class="mini gros" data-role="retablir-img"></button></div>' +
+      '<div class="etat-img" data-role="etat-img" hidden></div><div class="err-img" data-role="err-img" role="alert" hidden></div><div class="info-l" data-role="aide-img"></div></div>';
+    var c = ctl(cle);
+    c.querySelector('[data-role="choisir-img"]').textContent = conf.bouton;
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp'; inp.setAttribute('data-role', 'fichier-img');
+    inp.setAttribute('aria-label', conf.nom);
+    c.querySelector('[data-role="choisir-img"]').appendChild(inp);
+    c.querySelector('[data-role="retablir-img"]').textContent = conf.retablir;
+    c.querySelector('[data-role="aide-img"]').textContent = conf.aide;
+  });
+}
+function appliquerLivre(page, L) {
+  var im = page.querySelector('[data-img="couverture3d"]');
+  if (imageSure(L.image)) { im.src = L.image; } else { im.removeAttribute('src'); }
+  var portrait = page.querySelector('[data-affiche="photoAuteur"]');
+  if (imageSure(L.photoAuteur)) { portrait.src = L.photoAuteur; } else { portrait.removeAttribute('src'); }
+  page.querySelector('[data-section="auteur"]').classList.toggle('masque', !L.afficheauteur);
+}
+function preparerImage(fichier, conf) {
+  return new Promise(function (resolve, reject) {
+    if (['image/png', 'image/jpeg', 'image/webp'].indexOf(fichier.type) < 0) { reject(new Error('Format non accepté. Utilisez un fichier PNG, JPEG ou WebP.')); return; }
+    if (fichier.size > 5 * 1024 * 1024) { reject(new Error('Le fichier est trop lourd (5 Mo au plus).')); return; }
+    var u = URL.createObjectURL(fichier), im = new Image();
+    im.onload = function () {
+      URL.revokeObjectURL(u);
+      if (im.naturalWidth < 300 || im.naturalHeight < 300) { reject(new Error('L’image est trop petite (300 pixels au moins de chaque côté).')); return; }
+      if (conf.ratio === 'paysage' && im.naturalWidth < im.naturalHeight) { reject(new Error('Pour la version Ordinateur, utilisez une image en format paysage (plus large que haute).')); return; }
+      if (conf.ratio === 'portrait' && im.naturalWidth > im.naturalHeight) { reject(new Error('Pour la version Mobile, utilisez une image en format portrait (plus haute que large).')); return; }
+      var k = Math.min(1, conf.max[0] / im.naturalWidth, conf.max[1] / im.naturalHeight);
+      var c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      var out = c.toDataURL('image/webp', 0.92);
+      if (out.indexOf('data:image/webp') !== 0) { out = c.toDataURL('image/png'); }
+      resolve(out);
+    };
+    im.onerror = function () { URL.revokeObjectURL(u); reject(new Error('Ce fichier n’est pas une image lisible.')); };
+    im.src = u;
+  });
+}
+function zoneLivre(role) { return $('hote-edition').querySelector('[data-role="' + role + '"]'); }
+function monterLivre() {
+  creerControles();
+  CLES_IMAGES.forEach(function (cle) {
+    var c = ctl(cle), fichier = c.querySelector('[data-role="fichier-img"]');
+    fichier.addEventListener('change', function () { var fic = fichier.files && fichier.files[0]; fichier.value = ''; if (fic) { choisirImage(cle, fic); } });
+    c.querySelector('[data-role="choisir-img"]').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fichier.click(); } });
+    c.querySelector('[data-role="retablir-img"]').addEventListener('click', function () { retablirImage(cle); });
+  });
+  var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
+  sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
+  em.addEventListener('input', function () { etat.L.work.email = em.value; recalculer(); });
+  em.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); } });
+  rendreLivre();
+}
+function rendreLivre() {
+  var W = etat.L.work, page = $('hote-edition'), sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
+  appliquerLivre(page, W);
+  sw.checked = !!W.afficheauteur;
+  if (document.activeElement !== em) { em.value = W.email || ''; }
+  var bloque = etat.verrou || etat.diff;
+  sw.disabled = bloque; em.disabled = bloque;
+  CLES_IMAGES.forEach(function (cle) { ctl(cle).querySelector('[data-role="choisir-img"]').hidden = bloque; ctl(cle).hidden = bloque; });
+}
+function remplirInfo(el, chg, ancien, nouveau) {
+  el.textContent = '';
+  el.hidden = !chg;
+  if (!chg) { return; }
+  el.className = (el.className.replace(/\bdiff-l\b/g, '').trim() + ' diff-l').trim();
+  if (etat.diff) {
+    var a = document.createElement('span'), n = document.createElement('span');
+    a.className = 'ancien'; a.textContent = ancien; n.className = 'nouveau'; n.textContent = nouveau;
+    el.appendChild(a); el.appendChild(document.createTextNode(' → ')); el.appendChild(n);
+  } else {
+    el.textContent = 'Version publiée : ' + ancien;
+  }
+}
+function majLivre() {
+  var C = etat.chgL, P = etat.L.pub, W = etat.L.work;
+  CLES_IMAGES.forEach(function (cle) {
+    var c = ctl(cle), et = c.querySelector('[data-role="etat-img"]');
+    et.hidden = !C[cle]; et.textContent = C[cle] ? 'Image modifiée' : '';
+    c.querySelector('[data-role="retablir-img"]').hidden = !C[cle] || etat.verrou;
+  });
+  remplirInfo(zoneLivre('info-auteur'), C.afficheauteur, P.afficheauteur ? 'affichée' : 'masquée', W.afficheauteur ? 'affichée' : 'masquée');
+  var pe = etat.probL.email;
+  zoneLivre('msg-email').hidden = !pe; zoneLivre('msg-email').textContent = pe;
+  zoneLivre('boite-email').classList.toggle('err', !!pe);
+  var ie = zoneLivre('info-email');
+  remplirInfo(ie, C.email, P.email || '(aucun)', courrielNorm(W.email) || '(aucun)');
+  if (!pe && courrielNorm(W.email) === '' && W.afficheauteur) {
+    var avert = 'Sans courriel, le bouton « Contacter l’auteur » ne pourra pas envoyer de message.';
+    ie.appendChild(document.createTextNode((ie.textContent ? ' · ' : '') + avert));
+    ie.hidden = false;
+  }
+}
+async function choisirImage(cle, fichier) {
+  var err = ctl(cle).querySelector('[data-role="err-img"]');
+  err.hidden = true;
+  try {
+    etat.L.work[cle] = await preparerImage(fichier, IMAGE_CONF[cle]);
+    rendreLivre(); recalculer();
+    toast('Image changée. Enregistrez pour la conserver.');
+  } catch (e) {
+    err.textContent = e && e.message ? e.message : 'Cette image ne peut pas être utilisée.';
+    err.hidden = false;
+  }
+}
+async function retablirImage(cle) {
+  if (etat.verrou) { return; }
+  var r = await modale({
+    titre: 'Rétablir l’image publiée ?', corps: 'L’image que vous avez choisie (' + IMAGE_CONF[cle].nom + ') sera remplacée par l’image actuellement publiée.',
+    boutons: [{ id: 'ok', libelle: 'Rétablir l’image publiée', principal: true }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  etat.L.work[cle] = etat.L.pub[cle];
+  ctl(cle).querySelector('[data-role="err-img"]').hidden = true;
+  rendreLivre(); recalculer();
+  toast('Image publiée rétablie. Enregistrez pour conserver ce changement.');
+}
+function raisonRefusApprobation() {
+  if (etat.verrou) { return 'Votre demande est déjà envoyée à TBL.'; }
+  if (premierProbleme()) { return 'Corrigez le problème signalé dans le texte avant d’approuver.'; }
+  if (etat.dirty) { return 'Enregistrez vos modifications avant d’approuver.'; }
+  if (!auMoinsUnChangement()) { return 'Il n’y a aucune modification à approuver.'; }
+  if (!etat.copie) { return 'Enregistrez vos modifications avant d’approuver.'; }
+  return '';
+}
+
+function majUI() {
+  $('taux-val').textContent = pct(etat.global);
+  $('taux-barre').style.width = Math.min(100, etat.global) + '%';
+  var pills = $('taux-blocs');
+  pills.textContent = '';
+  CHAMPS.forEach(function (c) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pill' + (etat.chg[c.cle] ? ' chg' : '');
+    b.innerHTML = '';
+    b.appendChild(document.createTextNode(c.court + ' : '));
+    var g = document.createElement('b');
+    g.textContent = etat.fmt[c.cle] ? 'forme' : pct(etat.t[c.cle]);
+    b.appendChild(g);
+    b.addEventListener('click', function () { etat.champs[c.cle].scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    pills.appendChild(b);
+    var boite = etat.champs[c.cle];
+    var tx = boite.querySelector('[data-role="tx"]');
+    tx.textContent = etat.chg[c.cle] ? (etat.fmt[c.cle] ? 'Mise en forme seulement' : 'Modifié : ' + pct(etat.t[c.cle])) : 'Non modifié';
+    tx.classList.toggle('chg', !!etat.chg[c.cle]);
+    boite.querySelector('[data-role="fmt"]').hidden = true;
+    boite.querySelector('[data-role="retablir"]').disabled = !etat.chg[c.cle] || etat.verrou;
+    boite.querySelector('[data-role="retablir"]').hidden = etat.verrou || estLecture(c.cle);
+    var msg = boite.querySelector('.msg-url');
+    msg.hidden = !etat.prob[c.cle];
+    msg.textContent = etat.prob[c.cle];
+    boite.classList.toggle('err', !!etat.prob[c.cle]);
+    var note = boite.querySelector('[data-role="note"]');
+    var deborde = estBrut(c.cle) && rtDe(c.cle).scrollHeight > rtDe(c.cle).clientHeight + 2;
+    note.hidden = !estLecture(c.cle) && !deborde;
+    note.textContent = estLecture(c.cle) ? 'Ce texte contient des éléments spéciaux que cet outil ne sait pas modifier sans les perdre. Écrivez-nous pour le faire modifier.'
+      : (deborde ? 'Le texte est plus long que la zone de l’en-tête, qui a une hauteur fixe : une barre de défilement apparaîtra sur la page. Un texte plus court se lit mieux.' : '');
+  });
+  [['image', 'Image du livre'], ['photoAuteur', 'Photo de l’auteur'], ['afficheauteur', 'Section Auteur'], ['email', 'Courriel']].forEach(function (x) {
+    if (!etat.chgL[x[0]]) { return; }
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'pill chg';
+    b.appendChild(document.createTextNode(x[1] + ' : '));
+    var g = document.createElement('b'); g.textContent = 'modifié'; b.appendChild(g);
+    b.addEventListener('click', function () { (IMAGE_CONF[x[0]] ? ctl(x[0]) : zoneLivre(x[0])).scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    pills.appendChild(b);
+  });
+  majLivre();
+  // Un administrateur (Auteurs.admin) peut modifier n'importe quel livre, en tout temps :
+  // - « revue » : il examine une demande En attente de validation envoyée par un auteur (peut approuver ou refuser).
+  // - « adminEdition » : il modifie directement un livre sans demande en cours (aucune demande à refuser,
+  //   donc pas de bouton Refuser ; publier équivaut à approuver et envoyer le courriel, en une étape).
+  var admin = !!etat.admin, revue = etat.revue, adminEdition = admin && !etat.appr;
+  $('chip-admin').hidden = !admin;
+  $('b-appr').hidden = admin; // un administrateur ne voit jamais « Approuver / Payer », réservé aux auteurs
+  $('b-valider').hidden = !(revue || adminEdition);
+  $('b-valider').textContent = revue ? 'Approuver et envoyer' : 'Publier';
+  $('b-refuser').hidden = !revue;
+  var pe = $('pastille-etat');
+  pe.className = 'pastille' + (etat.appr ? ' appr' : (etat.copie ? ' mod' : ''));
+  pe.textContent = LIBELLES_ETAT[etat.d.etat] || 'Version publiée';
+  $('b-enreg').disabled = !etat.dirty || etat.verrou || etat.occupe;
+  $('b-enreg').textContent = etat.occupe ? 'Enregistrement…' : 'Enregistrer';
+  var raison = raisonRefusApprobation();
+  $('b-appr').disabled = !!raison || etat.occupe;
+  // Pour Publier (adminEdition) ou Approuver et envoyer (revue) : enregistrer d'abord, corriger les
+  // problèmes signalés, et pour une édition directe, avoir au moins une modification à publier.
+  var raisonAdmin = '';
+  if (revue || adminEdition) {
+    if (etat.dirty) { raisonAdmin = 'Enregistrez vos modifications avant de ' + (revue ? 'approuver ou de refuser.' : 'publier.'); }
+    else if (premierProbleme()) { raisonAdmin = 'Corrigez le problème signalé dans le texte avant de publier.'; }
+    else if (adminEdition && (!etat.copie || !auMoinsUnChangement())) { raisonAdmin = 'Il n’y a aucune modification à publier.'; }
+  }
+  $('b-valider').disabled = !!raisonAdmin || etat.occupe;
+  $('b-refuser').disabled = etat.dirty || etat.occupe;
+  $('aide-appr').textContent = (revue || adminEdition) ? raisonAdmin : (raison && !etat.verrou ? raison : '');
+  $('etat-sauv').textContent = etat.dirty ? 'Modifications non enregistrées' : (etat.copie && etat.d.dateCopie ? 'Enregistré le ' + fmtDate(etat.d.dateCopie) : 'Aucune modification');
+  // Date de la dernière modification (envoi en approbation par l'auteur, ou retouche d'un administrateur).
+  // Le nom de la personne apparaît dans une infobulle, au survol ou au toucher.
+  var dm = etat.d.derniereModification, el = $('derniere-modif');
+  el.hidden = !dm;
+  if (dm) { el.textContent = 'Dernière modification : ' + fmtDateHeure(dm.date); el.title = dm.par ? 'Par ' + dm.par : ''; }
+  var ba = $('bandeau-appr');
+  ba.hidden = !etat.appr;
+  if (etat.appr) {
+    ba.textContent = revue
+      ? 'Demande de ' + etat.d.livre.auteurNom + ' envoyée le ' + fmtDate(etat.d.dateCopie) + '. Vous pouvez corriger les textes et les images. Examinez les changements avec « Voir les changements », les aperçus et le rapport Avant / Après, puis approuvez pour publier ou refusez avec un commentaire pour l’auteur.'
+      : 'Demande envoyée à TBL le ' + fmtDate(etat.d.dateCopie) + '. Votre page est verrouillée pendant l’examen. Vous pouvez toujours comparer les changements et ouvrir les aperçus.';
+  }
+  var br = $('bandeau-refus');
+  br.hidden = !etat.refus || etat.appr;
+  if (etat.refus && !etat.appr) {
+    br.textContent = 'Votre demande du ' + fmtDate(etat.refus.date) + ' a été refusée. Commentaire de l’équipe :\n' + etat.refus.motif + '\nCorrigez votre copie puis soumettez-la à nouveau.';
+  }
+  majOutils();
+}
+
+// ---------- Barre d'outils ----------
+function majOutils() {
+  var actif = !!etat.actif && editable(etat.actif) && !estBrut(etat.actif);
+  Array.prototype.forEach.call($('outils').querySelectorAll('[data-cmd],[data-bloc]'), function (b) { b.disabled = !actif; });
+  if (!actif) {
+    Array.prototype.forEach.call($('outils').querySelectorAll('[aria-pressed]'), function (b) { if (b.id !== 't-diff') { b.setAttribute('aria-pressed', 'false'); } });
+    return;
+  }
+  ['bold', 'italic', 'underline'].forEach(function (c) {
+    var b = $('outils').querySelector('[data-cmd="' + c + '"]');
+    var on = false; try { on = document.queryCommandState(c); } catch (e) { /* ignore */ }
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  var courant = blocCourant();
+  Array.prototype.forEach.call($('grp-blocs').querySelectorAll('[data-bloc]'), function (b) {
+    b.setAttribute('aria-pressed', b.getAttribute('data-bloc') === courant ? 'true' : 'false');
+  });
+}
+function blocCourant() {
+  var sel = window.getSelection();
+  if (!sel.anchorNode || !etat.actif) { return ''; }
+  var rt = rtDe(etat.actif), n = sel.anchorNode, res = 'p', trouve = false;
+  while (n && n !== rt) {
+    if (n.nodeType === 1 && TAGS_BLOC[n.tagName]) {
+      if (n.tagName === 'BLOCKQUOTE') { return 'blockquote'; }
+      if (!trouve) { res = /^H[1-6]$/.test(n.tagName) ? n.tagName.toLowerCase() : 'p'; trouve = true; }
+    }
+    n = n.parentNode;
+  }
+  return n === rt ? res : '';
+}
+function changerBloc(tag) {
+  if (!etat.actif) { return; }
+  var cle = etat.actif;
+  document.execCommand('formatBlock', false, '<' + tag + '>');
+  if (tag !== 'blockquote') {
+    var garde = 0;
+    while (blocCourant() === 'blockquote' && garde++ < 4) { document.execCommand('outdent'); }
+  }
+  lireChamp(cle);
+  majOutils();
+}
+
+// ---------- Actions ----------
+async function retablirChamp(cle) {
+  if (etat.verrou) { return; }
+  var r = await modale({
+    titre: 'Rétablir le texte publié ?',
+    corps: 'Vos modifications du bloc « ' + nomChamp(cle) + ' » seront perdues. Le texte publié sera remis à la place.',
+    boutons: [{ id: 'ok', libelle: 'Rétablir le texte publié', principal: true }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  etat.work[cle] = clone(etat.pub[cle]);
+  rendreChamp(cle);
+  recalculer();
+  toast('Texte publié rétabli pour ce bloc. Enregistrez pour conserver ce changement.');
+}
+
+async function enregistrer() {
+  if (etat.occupe || etat.verrou) { return false; }
+  recalculer();
+  var p = premierProbleme();
+  if (p) { toast(p.msg, 'mal'); (p.cle === 'email' ? zoneLivre('email') : etat.champs[p.cle]).scrollIntoView({ behavior: 'smooth', block: 'center' }); return false; }
+  if (!etat.dirty) { return true; }
+  etat.occupe = true; majUI();
+  try {
+    var champs = {};
+    CHAMPS.forEach(function (c) { if (!estLecture(c.cle)) { champs[c.cle] = norm(etat.work[c.cle]); } });
+    var W = etat.L.work;
+    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email) };
+    var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
+    if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
+    CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
+    etat.L.work.email = livre.email;
+    etat.L.saved = clone(etat.L.work);
+    etat.copie = true;
+    if (etat.d.etat === 'aucune') { etat.d.etat = 'modifier'; } // le premier enregistrement crée la copie
+    etat.d.dateCopie = r.dateCopie;
+    if (r.derniereModification) { etat.d.derniereModification = r.derniereModification; }
+    rendreLivre();
+    toast('Modifications enregistrées.', 'ok');
+    return true;
+  } catch (e) {
+    toast('L’enregistrement a échoué. Vos modifications sont toujours dans la page. Réessayez dans un instant.', 'mal');
+    return false;
+  } finally {
+    etat.occupe = false; recalculer();
+  }
+}
+
+function autresModifications() {
+  var o = [], C = etat.chgL, W = etat.L.work;
+  if (C.image) { o.push('Image du livre'); }
+  if (C.photoAuteur) { o.push('Photo de l’auteur'); }
+  if (C.afficheauteur) { o.push('Section Auteur ' + (W.afficheauteur ? 'affichée' : 'masquée')); }
+  if (C.email) { o.push('Courriel de contact'); }
+  return o;
+}
+// Approuver et envoyer (une demande En approbation) et Publier (édition directe par un administrateur, sans
+// demande préalable) déclenchent la même action côté serveur : publication immédiate et courriel d'approbation.
+async function valider() {
+  var revue = etat.revue, adminEdition = etat.admin && !etat.appr;
+  if (!revue && !adminEdition) { return; }
+  if (etat.dirty) { toast('Enregistrez vos modifications avant de publier.', 'mal'); return; }
+  var corps = document.createElement('div');
+  var t = document.createElement('table');
+  [['Livre', etat.d.livre.titre], ['Auteur', etat.d.livre.auteurNom], ['Modification globale', pct(etat.global)],
+    ['Autres modifications', autresModifications().join(' · ') || 'aucune']].forEach(function (r) {
+    var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+    a.textContent = r[0]; b.textContent = r[1]; tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+  });
+  corps.appendChild(t);
+  var p = document.createElement('p');
+  p.textContent = 'La version actuellement publiée passera au statut Archiver (Actif à Faux) et la copie deviendra la version Publier, visible sur le site. Les livres en vedette seront redirigés vers la nouvelle version. Un courriel d’approbation avec les informations du livre sera envoyé à l’auteur.';
+  corps.appendChild(p);
+  var res = null;
+  var r = await modale({
+    titre: revue ? 'Approuver et publier les modifications ?' : 'Publier les modifications ?', corps: corps,
+    boutons: [{ id: 'ok', libelle: revue ? 'Approuver et envoyer' : 'Publier', principal: true, action: async function () {
+      res = await appeler('valider', { livreId: LIVRE_ID, taux: etat.global, autres: autresModifications() });
+      if (!res.ok) { throw new Error(res.message || 'La publication a échoué.'); }
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  if (res.livreId) {
+    LIVRE_ID = res.livreId;
+    try { history.replaceState(null, '', adresseVue('edition')); } catch (e) { /* ignore */ }
+  }
+  toast('Modifications publiées. L’ancienne version est archivée. Courriel d’approbation envoyé à l’auteur.', 'ok');
+  await demarrer();
+}
+// Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
+async function refuser() {
+  if (!etat.revue) { return; }
+  if (etat.dirty) { toast('Enregistrez vos modifications avant de refuser.', 'mal'); return; }
+  var corps = document.createElement('div');
+  var intro = document.createElement('p');
+  intro.textContent = 'Expliquez à l’auteur ce qu’il doit corriger. Ce commentaire lui sera envoyé par courriel et affiché sur sa page. Sa demande redeviendra Modifié pour qu’il puisse la corriger et redemander l’approbation.';
+  corps.appendChild(intro);
+  var zone = document.createElement('textarea');
+  zone.className = 'motif-saisie';
+  zone.maxLength = MOTIF_MAX;
+  zone.setAttribute('aria-label', 'Commentaire pour l’auteur');
+  zone.placeholder = 'Commentaire pour l’auteur';
+  corps.appendChild(zone);
+  var cpt = document.createElement('div');
+  cpt.className = 'motif-compteur';
+  function majCompteur() { cpt.textContent = zone.value.length + ' / ' + MOTIF_MAX; }
+  zone.addEventListener('input', majCompteur);
+  majCompteur();
+  corps.appendChild(cpt);
+  var res = null;
+  var r = await modale({
+    titre: 'Refuser la demande', corps: corps,
+    boutons: [{ id: 'ok', libelle: 'Refuser et envoyer', principal: true, action: async function () {
+      var motif = zone.value.trim();
+      if (motif === '') { zone.focus(); throw new Error('Le commentaire pour l’auteur est obligatoire.'); }
+      res = await appeler('refuser', { livreId: LIVRE_ID, motif: motif });
+      if (!res.ok) { throw new Error(res.message || 'Le refus a échoué.'); }
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  toast('Demande refusée. Courriel envoyé à l’auteur, la demande est redevenue Modifié.', 'ok');
+  await demarrer();
+}
+async function approuver() {
+  if (raisonRefusApprobation()) { return; }
+  var corps = document.createElement('div');
+  var lignes = CHAMPS.filter(function (c) { return etat.chg[c.cle]; }).map(function (c) { return c.court + ' : ' + (etat.fmt[c.cle] ? 'mise en forme' : pct(etat.t[c.cle])); });
+  var t = document.createElement('table');
+  [['Livre', etat.d.livre.titre], ['Service', 'Approbation et Activation des modifications'], ['Modification globale', pct(etat.global)],
+    ['Blocs modifiés', lignes.join(' · ') || 'aucun texte'], ['Autres modifications', autresModifications().join(' · ') || 'aucune'], ['Prix', prixSelonTaux(etat.global)]].forEach(function (r) {
+    var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+    a.textContent = r[0]; b.textContent = r[1]; tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+  });
+  corps.appendChild(t);
+  var p = document.createElement('p');
+  p.textContent = 'Une fois la demande envoyée, votre page est verrouillée le temps de l’examen. TBL vérifie vos modifications et les publie avec plaisir.';
+  corps.appendChild(p);
+
+  var res = null;
+  var r = await modale({
+    titre: 'Approbation et Activation des modifications', corps: corps,
+    boutons: [{ id: 'payer', libelle: LIBELLE_PAYER, principal: true, action: async function () {
+      res = await appeler('demanderApprobation', { livreId: LIVRE_ID, taux: etat.global });
+      if (!res.ok) { throw new Error(res.message || 'La demande a été refusée.'); }
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'payer') { return; }
+  etat.appr = true; etat.refus = null; etat.revue = !!etat.admin; etat.verrou = !etat.admin; etat.d.etat = 'attente'; etat.d.dateCopie = res.dateCopie;
+  rendreTout(); majUI();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Demande envoyée à TBL. Merci !', 'ok');
+}
+
+function basePage() { return EN_WIX ? 'https://www.editionstbl.ca/dashboardlivre' : location.href.split('?')[0].split('#')[0]; }
+function adresseVue(vue, appareil) {
+  var u = basePage() + '?vue=' + vue + '&livre=' + encodeURIComponent(LIVRE_ID);
+  return appareil ? u + '&appareil=' + appareil : u;
+}
+async function ouvrirVue(vue, appareil) {
+  var url = adresseVue(vue, appareil);
+  if (etat.dirty && !etat.verrou) {
+    var r = await modale({
+      titre: 'Enregistrer avant d’ouvrir ?',
+      corps: (vue === 'rapport' ? 'Le rapport' : 'L’aperçu') + ' montre la dernière version enregistrée. Vous avez des modifications non enregistrées.',
+      boutons: [{ id: 'enr', libelle: 'Enregistrer et ouvrir', principal: true }, { id: 'sans', libelle: 'Ouvrir sans enregistrer' }, { id: 'non', libelle: 'Annuler' }]
+    });
+    if (r !== 'enr' && r !== 'sans') { return; }
+    var w = window.open('about:blank', '_blank');
+    if (r === 'enr') {
+      var ok = await enregistrer();
+      if (!ok) { if (w) { w.close(); } return; }
+    }
+    if (w) { w.location.href = url; } else { toast('Votre navigateur a bloqué le nouvel onglet. Autorisez-le pour ce site.', 'mal'); }
+    return;
+  }
+  if (!window.open(url, '_blank')) { toast('Votre navigateur a bloqué le nouvel onglet. Autorisez-le pour ce site.', 'mal'); }
+}
+
+function basculerDiff() {
+  etat.diff = !etat.diff;
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+  etat.actif = null;
+  $('t-diff').setAttribute('aria-pressed', etat.diff ? 'true' : 'false');
+  $('legende').hidden = !etat.diff;
+  rendreTout();
+}
+
+function brancherEdition() {
+  Array.prototype.forEach.call($('outils').querySelectorAll('button'), function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  });
+  Array.prototype.forEach.call($('outils').querySelectorAll('[data-cmd]'), function (b) {
+    b.addEventListener('click', function () { if (etat.actif) { document.execCommand(b.getAttribute('data-cmd')); lireChamp(etat.actif); majOutils(); } });
+  });
+  Array.prototype.forEach.call($('grp-blocs').querySelectorAll('[data-bloc]'), function (b) {
+    b.addEventListener('click', function () { changerBloc(b.getAttribute('data-bloc')); });
+  });
+  $('t-diff').addEventListener('click', basculerDiff);
+  $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
+  $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
+  $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
+  $('b-enreg').addEventListener('click', enregistrer);
+  $('b-appr').addEventListener('click', function () { if (APPROBATION_ACTIVE) { approuver(); } else { bientot('appr'); } });
+  $('b-valider').addEventListener('click', function () { if (APPROBATION_ACTIVE) { valider(); } else { bientot(etat.revue ? 'revue' : 'publier'); } });
+  $('b-refuser').addEventListener('click', function () { if (APPROBATION_ACTIVE) { refuser(); } else { bientot('revue'); } });
+  document.addEventListener('selectionchange', function () { if (etat.actif) { majOutils(); } });
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && VUE === 'edition') { e.preventDefault(); enregistrer(); }
+  });
+  window.addEventListener('beforeunload', function (e) {
+    if (VUE === 'edition' && etat.dirty && !etat.verrou) { e.preventDefault(); e.returnValue = ''; }
+  });
+}
+
+// ===== Vue Aperçu (nouvel onglet) =====
+function montrerApercu(d) {
+  document.body.className = 'v-apercu';
+  document.title = 'Aperçu : ' + d.livre.titre + ' | Éditions TBL';
+  var src = d.copie || d.publie;
+  $('ap-titre').textContent = 'Aperçu : ' + d.livre.titre;
+  $('ap-sous').textContent = d.copie ? 'Copie enregistrée le ' + fmtDate(d.dateCopie) + '. Le menu et le pied de page du site ne sont pas montrés.'
+    : 'Aucune modification enregistrée. Le menu et le pied de page du site ne sont pas montrés.';
+  var av = $('avis-apercu');
+  av.hidden = !!d.copie;
+  av.textContent = 'Vous n’avez encore rien enregistré : voici la page publiée telle quelle.';
+  var cadre = $('cadre-apercu');
+  cadre.className = 'cadre ' + APPAREIL;
+  var page = fabriquerPage(cadre, d);
+  appliquerLivre(page, d.champsLivre.copie || d.champsLivre.publie);
+  var boites = boitesChamps(page);
+  CHAMPS.forEach(function (c) {
+    var rt = boites[c.cle].querySelector('.rt');
+    if (estBrut(c.cle)) { rt.classList.add('rt-hero'); }
+    rt.appendChild(blocsVersDom(norm(src[c.cle])));
+  });
+  $('ap-ord').href = adresseVue('apercu', 'ordinateur');
+  $('ap-mob').href = adresseVue('apercu', 'mobile');
+  $('ap-ord').setAttribute('aria-current', APPAREIL === 'ordinateur' ? 'page' : 'false');
+  $('ap-mob').setAttribute('aria-current', APPAREIL === 'mobile' ? 'page' : 'false');
+  $('ap-fermer').onclick = fermerPage;
+  montrerVue('vue-apercu');
+}
+
+// ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
+function montrerRapport(d) {
+  document.body.className = 'v-rapport';
+  document.title = 'Rapport Avant / Après : ' + d.livre.titre;
+  var apres = d.copie || d.publie;
+  var paires = CHAMPS.map(function (c) { return { avant: norm(d.publie[c.cle]), apres: norm(apres[c.cle]) }; });
+  var glob = tauxGlobal(paires);
+  var racine = $('vue-rapport');
+  racine.textContent = '';
+  var rap = document.createElement('div');
+  rap.className = 'rap';
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
+  var bo = el('div', 'barre-outils');
+  var bi = el('button', 'btn', 'Imprimer / Enregistrer en PDF'); bi.type = 'button'; bi.onclick = function () { window.print(); };
+  var bf = el('button', 'btn sec', 'Fermer'); bf.type = 'button'; bf.onclick = fermerPage;
+  bo.appendChild(bi); bo.appendChild(bf); rap.appendChild(bo);
+  rap.appendChild(el('h1', '', 'Demande de modification de page'));
+  rap.appendChild(el('p', 'sous', 'Les Éditions TBL · Rapport Avant / Après'));
+  var meta = el('table', 'meta');
+  var statut = { aucune: 'Aucune copie : page publiée', nouveau: 'Nouveau livre (pas encore publié)', modifier: 'Copie en cours (non envoyée)', attente: 'En attente de validation', corriger: 'À corriger après un refus' }[d.etat] || '';
+  [['Livre', d.livre.titre], ['Auteur', d.livre.auteurNom], ['Statut', statut],
+    [d.copie ? 'Dernière modification' : 'Date du rapport', fmtDate(d.copie ? d.dateCopie : new Date().toISOString())],
+    ['Modification globale', pct(glob)], ['Prix du service', prixSelonTaux(glob)]].forEach(function (r) {
+    var tr = el('tr'); tr.appendChild(el('td', '', r[0])); tr.appendChild(el('td', '', r[1])); meta.appendChild(tr);
+  });
+  rap.appendChild(meta);
+  CHAMPS.forEach(function (c, i) {
+    var p = paires[i], t = tauxModification(p.avant, p.apres), al = alignerMots(p.avant, p.apres);
+    var chg = signature(p.avant) !== signature(p.apres);
+    var sec = el('section');
+    var h = el('h2'); h.appendChild(el('span', '', c.nom));
+    h.appendChild(el('span', '', chg ? (t.taux === 0 ? 'Mise en forme seulement' : 'Modifié : ' + pct(t.taux)) : 'Aucune modification'));
+    sec.appendChild(h);
+    var deux = el('div', 'deux');
+    [['Avant (version publiée)', p.avant, al && al.avantCommun, 'retrait'], ['Après (copie de l’auteur)', p.apres, al && al.apresCommun, 'ajout']].forEach(function (col) {
+      var c1 = el('div', 'col'); c1.appendChild(el('h3', '', col[0]));
+      var rt = el('div', 'rt');
+      if (texteBrut(col[1]).trim() === '') { rt.appendChild(el('span', 'vide', '(vide)')); }
+      else { rt.appendChild(blocsVersDom(col[1], al ? { flags: col[2], classeNon: col[3], couleurs: false } : { couleurs: false })); }
+      c1.appendChild(rt); deux.appendChild(c1);
+    });
+    sec.appendChild(deux);
+    rap.appendChild(sec);
+  });
+  var LP = d.champsLivre.publie, LC = d.champsLivre.copie || LP;
+  var sec2 = el('section');
+  var h2 = el('h2'); h2.appendChild(el('span', '', 'Autres éléments de la page'));
+  h2.appendChild(el('span', '', 'Ne comptent pas dans le pourcentage'));
+  sec2.appendChild(h2);
+  var tb = el('table', 'autres');
+  var th = el('tr'); ['Élément', 'Avant (version publiée)', 'Après (copie de l’auteur)'].forEach(function (t) { th.appendChild(el('th', '', t)); });
+  tb.appendChild(th);
+  function ligneAutre(nom, avant, apres, chg) {
+    var tr = el('tr'); tr.appendChild(el('td', '', nom));
+    var a = el('td'), b = el('td');
+    if (typeof avant === 'string' || typeof apres === 'string') {
+      a.appendChild(el('span', chg ? 'ancien' : '', avant)); b.appendChild(el('span', chg ? 'nouveau' : '', apres));
+    } else { a.appendChild(avant); b.appendChild(apres); }
+    tr.appendChild(a); tr.appendChild(b); tb.appendChild(tr);
+  }
+  function miniImg(u, alt) { var i = document.createElement('img'); if (imageSure(u)) { i.src = u; } i.alt = alt; return i; }
+  [['image', 'Image du livre'], ['photoAuteur', 'Photo de l’auteur']].forEach(function (x) {
+    var chgI = LP[x[0]] !== LC[x[0]];
+    ligneAutre(x[1], miniImg(LP[x[0]], x[1]), chgI ? miniImg(LC[x[0]], x[1]) : el('span', '', 'Inchangée'), chgI);
+  });
+  ligneAutre('Section Auteur', LP.afficheauteur ? 'Affichée' : 'Masquée', LC.afficheauteur ? 'Affichée' : 'Masquée', !!LP.afficheauteur !== !!LC.afficheauteur);
+  ligneAutre('Courriel de contact', LP.email || '(aucun)', LC.email || '(aucun)', courrielNorm(LP.email) !== courrielNorm(LC.email));
+  sec2.appendChild(tb);
+  rap.appendChild(sec2);
+  racine.appendChild(rap);
+  montrerVue('vue-rapport');
+}
+
+// ===== Démarrage =====
+async function demarrer() {
+  montrerVue('chargement');
+  // Sans livre dans l'adresse : dans Wix, le code de la page recharge aussitôt la composante avec
+  // ?livre=… ; on attend un peu avant d'afficher le message, pour ne pas le faire clignoter.
+  if (!LIVRE_ID) {
+    setTimeout(function () {
+      montrerEtat(ICO_CADENAS, 'Aucun livre choisi', 'Ouvrez cet éditeur depuis l’onglet Livres de votre Espace Auteurs, avec le bouton « Modifier la page » de votre livre.', 'Fermer cette page', fermerPage);
+    }, 2500);
+    return;
+  }
+  try {
+    var d = await appeler('obtenir', { livreId: LIVRE_ID });
+    if (traiterStatut(d)) { return; }
+    // Lien périmé (après une validation, l'ancienne ligne est archivée) : on suit la ligne Publier actuelle
+    if (d.livre && d.livre.id && d.livre.id !== LIVRE_ID) {
+      LIVRE_ID = d.livre.id;
+      try { history.replaceState(null, '', adresseVue(VUE, VUE === 'apercu' ? APPAREIL : undefined)); } catch (e) { /* ignore */ }
+    }
+    if (VUE === 'apercu') { montrerApercu(d); }
+    else if (VUE === 'rapport') { montrerRapport(d); }
+    else { montrerEdition(d); }
+  } catch (e) {
+    erreurChargement(e);
+  }
+}
+
+brancherEdition();
+demarrer();
+</script>
+</body>
+</html>
