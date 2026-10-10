@@ -121,32 +121,41 @@ textarea{min-height:96px;resize:vertical}
 .statut.ok{color:var(--ok)}
 .statut.err{color:var(--red)}
 
-/* Livres */
-.livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
-.livre{padding:16px;display:flex;flex-direction:column;gap:10px}
-.livre .couv{aspect-ratio:2/3;width:100%;border-radius:8px;background:var(--card2);border:1px solid var(--line);object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;text-align:center;padding:8px}
-.livre h3{margin:0;font-size:1.05rem}
-.pastilles{display:flex;flex-wrap:wrap;gap:6px}
-.pastille{border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.8rem;color:var(--muted)}
+/* Livres : cartes horizontales compactes (couverture à gauche), trois par rangée sur ordinateur.
+   La composante HTML Wix a une hauteur FIXE (Velo ne peut pas la changer) : chaque liste a une hauteur
+   maximale et défile à l'intérieur. La rangée coupée à moitié montre qu'il y a d'autres livres plus bas.
+   Avec peu de livres, la liste garde sa hauteur naturelle. */
+:root{--h-carte-livre:150px;--gap-livres:12px}
+.livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap-livres);align-items:start;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
+#liste-livres{max-height:calc(2.5 * var(--h-carte-livre) + 2 * var(--gap-livres))}
+#liste-duos{max-height:calc(1.5 * var(--h-carte-livre) + var(--gap-livres))}
+.livre{padding:12px;display:grid;grid-template-columns:72px 1fr;column-gap:12px;row-gap:5px;align-content:start;min-height:var(--h-carte-livre)}
+.livre>*{grid-column:2;min-width:0}
+.livre .couv{grid-column:1;grid-row:1 / span 8;width:72px;aspect-ratio:2/3;border-radius:6px;background:var(--card2);border:1px solid var(--line);object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.68rem;text-align:center;padding:4px}
+.livre h3{margin:0;font-size:.95rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pastilles{display:flex;flex-wrap:wrap;gap:5px}
+.pastille{border:1px solid var(--line);border-radius:99px;padding:1px 8px;font-size:.74rem;color:var(--muted)}
 .pastille.ok{border-color:var(--ok);color:var(--ok)}
 .pastille.rouge{border-color:var(--red);color:var(--red)}
 .barre-admin{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px;padding:14px 18px;border-color:#c792ff}
 .barre-admin strong{color:#c792ff}
 .barre-admin select{min-width:180px}
-.livre .auteur-livre{color:var(--muted);font-size:.88rem}
+.livre .auteur-livre{color:var(--muted);font-size:.8rem}
 .pastille.attente{border-color:#FFCB05;color:#FFCB05}
 .pastille.bleu{border-color:#4d9fff;color:#4d9fff}
-.livre .chiffres{color:var(--muted);font-size:.9rem}
-.livre .motif{border-left:3px solid var(--red);padding:4px 10px;color:var(--txt);font-size:.88rem;background:var(--card2);border-radius:0 8px 8px 0}
-.livre .actions-livre{display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.livre .chiffres{color:var(--muted);font-size:.78rem;line-height:1.35}
+.livre .motif{border-left:3px solid var(--red);padding:3px 8px;color:var(--txt);font-size:.78rem;background:var(--card2);border-radius:0 6px 6px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.livre .actions-livre{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.livre .actions-livre .btn.petit{padding:4px 9px;font-size:.76rem;border-radius:7px}
+.livre .actions-livre .note{margin:0;font-size:.78rem}
 .section-livres{margin-bottom:26px}
 .section-livres>h3{display:flex;align-items:center;gap:10px;margin:0 0 12px}
 .offre-duo{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:space-between;margin-bottom:16px;border-color:var(--ok)}
 .offre-duo h3{margin:0 0 4px}
 .offre-duo p{margin:0}
 .note-duo{margin:0 0 16px}
-.duo .couv{aspect-ratio:1/1}
-.duo .contenu-duo{color:var(--muted);font-size:.88rem}
+.duo .couv{aspect-ratio:1/1;height:auto}
+.duo .contenu-duo{color:var(--muted);font-size:.78rem}
 
 /* Services */
 .services{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
@@ -896,7 +905,7 @@ function ouvrirEditeur(livreId) {
 function actionsLivre(l, admin) {
   var zone = el('div', 'actions-livre');
   var page = urlSure(l.page);
-  if (page) { zone.appendChild(lienExterne('Voir la page du livre', page)); }
+  if (page) { zone.appendChild(lienExterne('Voir la page', page)); }
   var copie = l.copie ? l.copie.statut : null;
   var monLivre = l.auteurId && etat.donnees && l.auteurId === etat.donnees.auteurId;
   if (l.statut === 'Nouveau') {
@@ -931,8 +940,8 @@ function carteLivre(l, admin) {
   if (copie === 'Corriger' && l.copie.motifRefus) { carte.appendChild(el('div', 'motif', 'Motif : ' + l.copie.motifRefus)); }
   var t = etat.totaux[l.id];
   var chiffres = el('div', 'chiffres');
-  if (t) { chiffres.textContent = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ' au total, dont ' + t.viaLiens + ' par vos liens de partage'; }
-  else if (etat.ventesRecues && l.statut === 'Publier') { chiffres.textContent = 'Aucune vente enregistrée pour le moment'; }
+  if (t) { chiffres.textContent = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ', dont ' + t.viaLiens + ' par vos liens'; }
+  else if (etat.ventesRecues && l.statut === 'Publier') { chiffres.textContent = 'Aucune vente pour le moment'; }
   if (chiffres.textContent) { carte.appendChild(chiffres); }
   carte.appendChild(actionsLivre(l, admin));
   return carte;
@@ -957,7 +966,7 @@ function carteDuo(d, admin) {
   if (pastilles.childNodes.length) { carte.appendChild(pastilles); }
   var zone = el('div', 'actions-livre');
   var page = urlSure(d.page);
-  if (page) { zone.appendChild(lienExterne('Voir la fiche de l\'ensemble', page)); }
+  if (page) { zone.appendChild(lienExterne('Voir la fiche', page)); }
   if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', function () { bientot('duo', d.titre); })); }
   else if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre ensemble. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
   else if (copie === 'En attente de validation') {
