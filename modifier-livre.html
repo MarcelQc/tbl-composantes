@@ -1362,7 +1362,6 @@ function monterChamp(cle) {
   var boite = etat.champs[cle], tete = boite.querySelector('.champ-tete'), rt = boite.querySelector('.rt');
   tete.innerHTML = '';
   function chip(cls, txt) { var s = document.createElement('span'); s.className = 'chip ' + cls; s.textContent = txt; tete.appendChild(s); return s; }
-  chip('crayon', '✎ ' + nomChamp(cle));
   chip('tx', '').setAttribute('data-role', 'tx');
   var f = chip('fmt', 'Mise en forme modifiée'); f.setAttribute('data-role', 'fmt'); f.hidden = true;
   chip('ecart', '').style.cssText = 'flex:1;border:0;background:none;padding:0';
@@ -1723,6 +1722,8 @@ function majUI() {
     tx.textContent = etat.chg[c.cle] ? (etat.fmt[c.cle] ? 'Mise en forme seulement' : 'Modifié : ' + pct(etat.t[c.cle])) : 'Non modifié';
     tx.classList.toggle('chg', !!etat.chg[c.cle]);
     tx.hidden = prixFixe;
+    // Livre Nouveau : ni taux ni « Rétablir », la ligne au-dessus du texte serait vide.
+    boite.querySelector('.champ-tete').hidden = prixFixe;
     boite.querySelector('[data-role="fmt"]').hidden = true;
     boite.querySelector('[data-role="retablir"]').disabled = !etat.chg[c.cle] || etat.verrou;
     // Livre Nouveau : il n'y a pas de texte publié à rétablir.
