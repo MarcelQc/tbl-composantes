@@ -1199,8 +1199,13 @@ function surChoixNouveauLivre(msg) {
     return;
   }
   etat.produitsNouveau = msg.produits || [];
+  etat.auteursNouveau = msg.auteurs || [];
   remplirFiltre($('nouveau-auteur'), 'Choisir un auteur', []);
-  (msg.auteurs || []).forEach(function (a) { var o = el('option', null, a.nom); o.value = a.id; $('nouveau-auteur').appendChild(o); });
+  etat.auteursNouveau.forEach(function (a) {
+    var o = el('option', null, a.nom + (a.avertissement ? ' (premier livre à terminer)' : ''));
+    o.value = a.id;
+    $('nouveau-auteur').appendChild(o);
+  });
   remplirFiltre($('nouveau-produit'), 'Choisir un livre du catalogue', []);
   etat.produitsNouveau.forEach(function (p) { var o = el('option', null, p.nom + (p.visible ? '' : ' (invisible en boutique)')); o.value = p.id; $('nouveau-produit').appendChild(o); });
   if (!etat.produitsNouveau.length) {
@@ -1214,7 +1219,15 @@ function surChoixNouveauLivre(msg) {
   $('nouveau-auteur').focus();
 }
 function majNouveauLivre() {
-  $('btn-creer-nouveau').disabled = !$('nouveau-auteur').value || !$('nouveau-produit').value || etat.creationEnCours;
+  // Auteur dont le premier livre (avec l'inscription de 100 $) n'est pas encore terminé : avertissement et
+  // bouton désactivé. Le serveur refait la même vérification à la création.
+  var auteur = (etat.auteursNouveau || []).filter(function (a) { return a.id === $('nouveau-auteur').value; })[0];
+  var avert = auteur && auteur.avertissement;
+  if (!etat.creationEnCours) {
+    $('statut-nouveau').className = avert ? 'statut err' : 'statut';
+    $('statut-nouveau').textContent = avert || '';
+  }
+  $('btn-creer-nouveau').disabled = !$('nouveau-auteur').value || !$('nouveau-produit').value || !!avert || etat.creationEnCours;
   var p = etat.produitsNouveau.filter(function (x) { return x.id === $('nouveau-produit').value; })[0];
   var apercu = $('apercu-produit');
   vider(apercu);
