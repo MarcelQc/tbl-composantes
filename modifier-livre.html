@@ -81,6 +81,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tb:disabled{opacity:.38;cursor:not-allowed}
 .tb[aria-pressed="true"]{background:var(--edit);border-color:var(--edit);color:#00142e}
 .tb.lien{text-decoration:none;display:inline-flex;align-items:center}
+/* Barre de mise en forme propre à chaque texte enrichi, juste au-dessus de la zone de saisie */
+.outils-champ{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:6px 8px;background:#111317;border:1px solid var(--line);border-radius:9px}
+.outils-champ .tb{min-width:30px;height:30px;font-size:.82rem}
+.outils-champ .grp{padding-right:6px}
 .legende{font-size:.8rem;color:var(--muted);display:flex;gap:12px;align-items:center}
 .legende .aj{color:var(--gold);font-weight:bold}
 .legende .re{color:var(--red);text-decoration:line-through;font-weight:bold}
@@ -343,26 +347,7 @@ body.v-rapport{background:#fff;color:#111}
         <div class="aide" id="aide-appr" style="width:auto"></div>
       </div>
     </div></div>
-    <div id="outils" role="toolbar" aria-label="Mise en forme du texte"><div class="wrap">
-      <div class="grp">
-        <button type="button" class="tb" id="t-gras" data-cmd="bold" title="Gras (Ctrl+B)" aria-label="Gras"><b>G</b></button>
-        <button type="button" class="tb" id="t-ital" data-cmd="italic" title="Italique (Ctrl+I)" aria-label="Italique"><i>I</i></button>
-        <button type="button" class="tb" id="t-soul" data-cmd="underline" title="Souligné (Ctrl+U)" aria-label="Souligné"><u>S</u></button>
-      </div>
-      <div class="grp" id="grp-blocs">
-        <button type="button" class="tb" data-bloc="p" title="Paragraphe">Texte</button>
-        <button type="button" class="tb" data-bloc="h1" title="Titre 1">T1</button>
-        <button type="button" class="tb" data-bloc="h2" title="Titre 2">T2</button>
-        <button type="button" class="tb" data-bloc="h3" title="Titre 3">T3</button>
-        <button type="button" class="tb" data-bloc="h4" title="Titre 4">T4</button>
-        <button type="button" class="tb" data-bloc="h5" title="Titre 5">T5</button>
-        <button type="button" class="tb" data-bloc="h6" title="Titre 6">T6</button>
-        <button type="button" class="tb" data-bloc="blockquote" title="Citation">Citation</button>
-      </div>
-      <div class="grp">
-        <button type="button" class="tb" data-cmd="undo" title="Annuler (Ctrl+Z)" aria-label="Annuler">↶</button>
-        <button type="button" class="tb" data-cmd="redo" title="Rétablir la frappe (Ctrl+Y)" aria-label="Refaire">↷</button>
-      </div>
+    <div id="outils" role="toolbar" aria-label="Comparaison avec la version publiée"><div class="wrap">
       <div class="grp">
         <button type="button" class="tb" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
       </div>
@@ -403,6 +388,31 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- Barre de mise en forme, recopiée au-dessus de chaque texte enrichi (Synopsis, Note de l'auteur, Extrait) -->
+<template id="tpl-outils">
+  <div class="outils-champ" role="toolbar">
+    <div class="grp">
+      <button type="button" class="tb" data-cmd="bold" title="Gras (Ctrl+B)" aria-label="Gras"><b>G</b></button>
+      <button type="button" class="tb" data-cmd="italic" title="Italique (Ctrl+I)" aria-label="Italique"><i>I</i></button>
+      <button type="button" class="tb" data-cmd="underline" title="Souligné (Ctrl+U)" aria-label="Souligné"><u>S</u></button>
+    </div>
+    <div class="grp">
+      <button type="button" class="tb" data-bloc="p" title="Paragraphe">Texte</button>
+      <button type="button" class="tb" data-bloc="h1" title="Titre 1">T1</button>
+      <button type="button" class="tb" data-bloc="h2" title="Titre 2">T2</button>
+      <button type="button" class="tb" data-bloc="h3" title="Titre 3">T3</button>
+      <button type="button" class="tb" data-bloc="h4" title="Titre 4">T4</button>
+      <button type="button" class="tb" data-bloc="h5" title="Titre 5">T5</button>
+      <button type="button" class="tb" data-bloc="h6" title="Titre 6">T6</button>
+      <button type="button" class="tb" data-bloc="blockquote" title="Citation">Citation</button>
+    </div>
+    <div class="grp">
+      <button type="button" class="tb" data-cmd="undo" title="Annuler (Ctrl+Z)" aria-label="Annuler">↶</button>
+      <button type="button" class="tb" data-cmd="redo" title="Rétablir la frappe (Ctrl+Y)" aria-label="Refaire">↷</button>
+    </div>
+  </div>
+</template>
 
 <!-- Modele de la page du livre (clone pour l'edition et les apercus) -->
 <template id="tpl-page">
@@ -1331,6 +1341,7 @@ function montrerEdition(d) {
   $('h-titre').textContent = d.livre.titre;
   var page = fabriquerPage($('hote-edition'), d);
   etat.champs = boitesChamps(page);
+  etat.barres = {};
   CHAMPS.forEach(function (c) { monterChamp(c.cle); });
   monterLivre();
   $('t-diff').setAttribute('aria-pressed', 'false');
@@ -1359,7 +1370,8 @@ function monterChamp(cle) {
   note.className = 'note-champ'; note.hidden = true; note.setAttribute('data-role', 'note');
   boite.insertBefore(note, boite.querySelector('.msg-url'));
   rt.addEventListener('focus', function () { etat.actif = cle; try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) { /* ignore */ } majOutils(); });
-  rt.addEventListener('blur', function () { setTimeout(function () { var ae = document.activeElement; if (!ae || (!ae.closest('.rt') && !ae.closest('#outils'))) { etat.actif = null; majOutils(); } }, 0); });
+  rt.addEventListener('blur', function () { setTimeout(function () { var ae = document.activeElement; if (!ae || (!ae.closest('.rt') && !ae.closest('.outils-champ'))) { etat.actif = null; majOutils(); } }, 0); });
+  if (!estBrut(cle)) { monterBarre(cle, boite, rt); }
   rt.addEventListener('input', function () { lireChamp(cle); });
   rt.addEventListener('paste', function (e) { e.preventDefault(); if (editable(cle)) { insererTexte((e.clipboardData || window.clipboardData).getData('text/plain')); } });
   rt.addEventListener('drop', function (e) { e.preventDefault(); });
@@ -1746,22 +1758,38 @@ function majUI() {
   majOutils();
 }
 
-// ---------- Barre d'outils ----------
-function majOutils() {
-  var actif = !!etat.actif && editable(etat.actif) && !estBrut(etat.actif);
-  Array.prototype.forEach.call($('outils').querySelectorAll('[data-cmd],[data-bloc]'), function (b) { b.disabled = !actif; });
-  if (!actif) {
-    Array.prototype.forEach.call($('outils').querySelectorAll('[aria-pressed]'), function (b) { if (b.id !== 't-diff') { b.setAttribute('aria-pressed', 'false'); } });
-    return;
-  }
-  ['bold', 'italic', 'underline'].forEach(function (c) {
-    var b = $('outils').querySelector('[data-cmd="' + c + '"]');
-    var on = false; try { on = document.queryCommandState(c); } catch (e) { /* ignore */ }
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+// ---------- Barres de mise en forme (une par texte enrichi) ----------
+// Chaque barre agit sur SON texte : un clic place d'abord le curseur dans ce texte s'il était ailleurs.
+function monterBarre(cle, boite, rt) {
+  var barre = document.getElementById('tpl-outils').content.firstElementChild.cloneNode(true);
+  barre.setAttribute('aria-label', 'Mise en forme : ' + nomChamp(cle));
+  boite.insertBefore(barre, rt);
+  etat.barres[cle] = barre;
+  function activer() { if (etat.actif !== cle) { rt.focus(); etat.actif = cle; } }
+  Array.prototype.forEach.call(barre.querySelectorAll('button'), function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); }); // garde la sélection dans le texte
   });
-  var courant = blocCourant();
-  Array.prototype.forEach.call($('grp-blocs').querySelectorAll('[data-bloc]'), function (b) {
-    b.setAttribute('aria-pressed', b.getAttribute('data-bloc') === courant ? 'true' : 'false');
+  Array.prototype.forEach.call(barre.querySelectorAll('[data-cmd]'), function (b) {
+    b.addEventListener('click', function () { activer(); document.execCommand(b.getAttribute('data-cmd')); lireChamp(cle); majOutils(); });
+  });
+  Array.prototype.forEach.call(barre.querySelectorAll('[data-bloc]'), function (b) {
+    b.addEventListener('click', function () { activer(); changerBloc(b.getAttribute('data-bloc')); });
+  });
+}
+function majOutils() {
+  Object.keys(etat.barres || {}).forEach(function (cle) {
+    var barre = etat.barres[cle], possible = editable(cle), actif = possible && etat.actif === cle;
+    barre.hidden = !possible; // texte verrouillé, en lecture seule ou vue « Voir les changements »
+    Array.prototype.forEach.call(barre.querySelectorAll('[data-cmd],[data-bloc]'), function (b) { b.disabled = !possible; });
+    ['bold', 'italic', 'underline'].forEach(function (c) {
+      var on = false;
+      if (actif) { try { on = document.queryCommandState(c); } catch (e) { /* ignore */ } }
+      barre.querySelector('[data-cmd="' + c + '"]').setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var courant = actif ? blocCourant() : '';
+    Array.prototype.forEach.call(barre.querySelectorAll('[data-bloc]'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-bloc') === courant ? 'true' : 'false');
+    });
   });
 }
 function blocCourant() {
@@ -1976,15 +2004,7 @@ function basculerDiff() {
 }
 
 function brancherEdition() {
-  Array.prototype.forEach.call($('outils').querySelectorAll('button'), function (b) {
-    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-  });
-  Array.prototype.forEach.call($('outils').querySelectorAll('[data-cmd]'), function (b) {
-    b.addEventListener('click', function () { if (etat.actif) { document.execCommand(b.getAttribute('data-cmd')); lireChamp(etat.actif); majOutils(); } });
-  });
-  Array.prototype.forEach.call($('grp-blocs').querySelectorAll('[data-bloc]'), function (b) {
-    b.addEventListener('click', function () { changerBloc(b.getAttribute('data-bloc')); });
-  });
+  $('t-diff').addEventListener('mousedown', function (e) { e.preventDefault(); });
   $('t-diff').addEventListener('click', basculerDiff);
   $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
