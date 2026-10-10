@@ -137,6 +137,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .controle-image input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .controle-image .mini.gros{padding:7px 14px;font-size:13px}
 .couv{position:relative}
+/* Boîte vide quand le livre n'a pas encore d'image (livre Nouveau) : mêmes proportions que les gabarits */
+.image-vide{border:2px dashed rgba(255,255,255,.45);border-radius:10px;background:rgba(0,0,0,.45);color:#e6e6e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:14px;font:13px/1.4 Arial,sans-serif;margin:0 auto}
+.image-vide strong{font-size:14px}
+.couv .image-vide{width:100%;max-width:330px;aspect-ratio:2/3}
+.col-photo .image-vide{width:210px;max-width:100%;aspect-ratio:400/454}
 .controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;background:#0d0e10;font:13px Arial,sans-serif;color:#e6e8ec;max-width:640px}
 .controle-auteur .info-l{color:var(--muted);font-size:12px}
 .interrupteur{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:bold}
@@ -1491,27 +1496,28 @@ function validerCourriel(v) {
 function imageSure(u) {
   return typeof u === 'string' && (/^https:\/\//.test(u) || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) ? u : '';
 }
-// Images (image du livre, portrait de l'auteur) : affichées seulement. Leur remplacement (gabarits, Media Manager,
-// champs tampons) arrive à l'étape 3 : il suffira alors de remettre 'image' et 'photoAuteur' dans ces deux listes.
-var CLES_IMAGES = [];
-var CLES_L = ['afficheauteur', 'email'];
+// Images : image du livre (= image du catalogue) et portrait de l'auteur. Sans image (livre Nouveau), une boîte
+// vide aux proportions du gabarit invite à téléverser. L'image choisie est ajustée automatiquement au gabarit
+// (recadrage centré, puis redimensionnement), puis envoyée au serveur à l'enregistrement : elle va dans un champ
+// tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
+var CLES_IMAGES = ['image', 'photoAuteur'];
+var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email'];
 function valL(v, k) { return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || '')); }
 var IMAGE_CONF = {
-  image: { nom: 'Image du livre', bouton: 'Changer l’image du livre', retablir: '↺ Rétablir l’image publiée', ratio: null, max: [1024, 1536],
-    aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Idéal : couverture 3D sur fond transparent.' },
-  photoAuteur: { nom: 'Photo de l’auteur', bouton: 'Changer la photo', retablir: '↺ Rétablir la photo publiée', ratio: null, max: [900, 1200],
-    aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Format portrait recommandé.' }
+  image: { nom: 'Image du livre', bouton: 'Téléverser l’image du livre', changer: 'Changer l’image du livre', retablir: '↺ Rétablir l’image publiée', gabarit: [600, 900],
+    vide: 'Aucune image du livre', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajustée automatiquement à 600 × 900 px (2:3). Idéal : couverture 3D sur fond transparent.' },
+  photoAuteur: { nom: 'Portrait de l’auteur', bouton: 'Téléverser le portrait', changer: 'Changer le portrait', retablir: '↺ Rétablir le portrait publié', gabarit: [400, 454],
+    vide: 'Aucun portrait', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajusté automatiquement à 400 × 454 px.' }
 };
 function ctl(cle) { return $('hote-edition').querySelector('[data-controle-image="' + cle + '"]'); }
 function creerControles() {
   CLES_IMAGES.forEach(function (cle) {
     var conf = IMAGE_CONF[cle], zone = $('hote-edition').querySelector('[data-zone-controle="' + cle + '"]');
     zone.innerHTML = '<div class="controle-image" data-controle-image="' + cle + '"><div class="rang">' +
-      '<label class="mini gros" data-role="choisir-img" tabindex="0" role="button"></label>' +
+      '<label class="mini gros" data-role="choisir-img" tabindex="0" role="button"><span data-role="lib-img"></span></label>' +
       '<button type="button" class="mini gros" data-role="retablir-img"></button></div>' +
       '<div class="etat-img" data-role="etat-img" hidden></div><div class="err-img" data-role="err-img" role="alert" hidden></div><div class="info-l" data-role="aide-img"></div></div>';
     var c = ctl(cle);
-    c.querySelector('[data-role="choisir-img"]').textContent = conf.bouton;
     var inp = document.createElement('input');
     inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp'; inp.setAttribute('data-role', 'fichier-img');
     inp.setAttribute('aria-label', conf.nom);
@@ -1520,13 +1526,31 @@ function creerControles() {
     c.querySelector('[data-role="aide-img"]').textContent = conf.aide;
   });
 }
+// Affiche l'image, ou la boîte vide (avec un bouton de téléversement en mode édition) quand il n'y en a pas.
+function remplirImage(img, url, cle) {
+  var vide = img.parentNode.querySelector('.image-vide');
+  if (imageSure(url)) {
+    img.src = url; img.hidden = false;
+    if (vide) { vide.parentNode.removeChild(vide); }
+    return;
+  }
+  img.removeAttribute('src'); img.hidden = true;
+  if (!vide) {
+    vide = document.createElement('div');
+    vide.className = 'image-vide';
+    var t = document.createElement('strong'); t.textContent = IMAGE_CONF[cle].vide; vide.appendChild(t);
+    var s = document.createElement('span'); s.textContent = document.body.classList.contains('v-edition') ? 'Utilisez le bouton ci-dessous pour en téléverser une.' : 'À venir'; vide.appendChild(s);
+    img.parentNode.appendChild(vide);
+  }
+}
 function appliquerLivre(page, L) {
-  var im = page.querySelector('[data-img="couverture3d"]');
-  if (imageSure(L.image)) { im.src = L.image; } else { im.removeAttribute('src'); }
-  var portrait = page.querySelector('[data-affiche="photoAuteur"]');
-  if (imageSure(L.photoAuteur)) { portrait.src = L.photoAuteur; } else { portrait.removeAttribute('src'); }
+  remplirImage(page.querySelector('[data-img="couverture3d"]'), L.image, 'image');
+  remplirImage(page.querySelector('[data-affiche="photoAuteur"]'), L.photoAuteur, 'photoAuteur');
   page.querySelector('[data-section="auteur"]').classList.toggle('masque', !L.afficheauteur);
 }
+// Ajustement automatique au gabarit : recadrage centré aux proportions de l'emplacement, puis mise à la taille
+// du gabarit. Une image plus petite que le gabarit n'est pas refusée : on avertit seulement que le rendu
+// pourrait être flou (on ne bloque pas l'auteur).
 function preparerImage(fichier, conf) {
   return new Promise(function (resolve, reject) {
     if (['image/png', 'image/jpeg', 'image/webp'].indexOf(fichier.type) < 0) { reject(new Error('Format non accepté. Utilisez un fichier PNG, JPEG ou WebP.')); return; }
@@ -1534,16 +1558,18 @@ function preparerImage(fichier, conf) {
     var u = URL.createObjectURL(fichier), im = new Image();
     im.onload = function () {
       URL.revokeObjectURL(u);
-      if (im.naturalWidth < 300 || im.naturalHeight < 300) { reject(new Error('L’image est trop petite (300 pixels au moins de chaque côté).')); return; }
-      if (conf.ratio === 'paysage' && im.naturalWidth < im.naturalHeight) { reject(new Error('Pour la version Ordinateur, utilisez une image en format paysage (plus large que haute).')); return; }
-      if (conf.ratio === 'portrait' && im.naturalWidth > im.naturalHeight) { reject(new Error('Pour la version Mobile, utilisez une image en format portrait (plus haute que large).')); return; }
-      var k = Math.min(1, conf.max[0] / im.naturalWidth, conf.max[1] / im.naturalHeight);
+      var gw = conf.gabarit[0], gh = conf.gabarit[1], w = im.naturalWidth, h = im.naturalHeight;
+      var ratio = gw / gh, sw = w, sh = h, sx = 0, sy = 0;
+      if (w / h > ratio) { sw = Math.round(h * ratio); sx = Math.round((w - sw) / 2); }
+      else { sh = Math.round(w / ratio); sy = Math.round((h - sh) / 2); }
       var c = document.createElement('canvas');
-      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-      var out = c.toDataURL('image/webp', 0.92);
+      c.width = gw; c.height = gh;
+      var ctx = c.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(im, sx, sy, sw, sh, 0, 0, gw, gh);
+      var out = c.toDataURL('image/webp', 0.85); // WebP garde la transparence (portrait détouré, livre 3D)
       if (out.indexOf('data:image/webp') !== 0) { out = c.toDataURL('image/png'); }
-      resolve(out);
+      resolve({ data: out, recadree: sx > 0 || sy > 0, flou: sw < gw || sh < gh });
     };
     im.onerror = function () { URL.revokeObjectURL(u); reject(new Error('Ce fichier n’est pas une image lisible.')); };
     im.src = u;
@@ -1571,7 +1597,11 @@ function rendreLivre() {
   if (document.activeElement !== em) { em.value = W.email || ''; }
   var bloque = etat.verrou || etat.diff;
   sw.disabled = bloque; em.disabled = bloque;
-  CLES_IMAGES.forEach(function (cle) { ctl(cle).querySelector('[data-role="choisir-img"]').hidden = bloque; ctl(cle).hidden = bloque; });
+  CLES_IMAGES.forEach(function (cle) {
+    ctl(cle).hidden = bloque;
+    // « Téléverser » quand l'emplacement est vide, « Changer » quand il y a déjà une image
+    ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
+  });
 }
 function remplirInfo(el, chg, ancien, nouveau) {
   el.textContent = '';
@@ -1591,7 +1621,8 @@ function majLivre() {
   CLES_IMAGES.forEach(function (cle) {
     var c = ctl(cle), et = c.querySelector('[data-role="etat-img"]');
     et.hidden = !C[cle]; et.textContent = C[cle] ? 'Image modifiée' : '';
-    c.querySelector('[data-role="retablir-img"]').hidden = !C[cle] || etat.verrou;
+    // Livre Nouveau : il n'y a pas d'image publiée à rétablir.
+    c.querySelector('[data-role="retablir-img"]').hidden = !C[cle] || etat.verrou || !!etat.nouveau;
   });
   remplirInfo(zoneLivre('info-auteur'), C.afficheauteur, P.afficheauteur ? 'affichée' : 'masquée', W.afficheauteur ? 'affichée' : 'masquée');
   var pe = etat.probL.email;
@@ -1609,9 +1640,12 @@ async function choisirImage(cle, fichier) {
   var err = ctl(cle).querySelector('[data-role="err-img"]');
   err.hidden = true;
   try {
-    etat.L.work[cle] = await preparerImage(fichier, IMAGE_CONF[cle]);
+    var p = await preparerImage(fichier, IMAGE_CONF[cle]);
+    etat.L.work[cle] = p.data;
     rendreLivre(); recalculer();
-    toast('Image changée. Enregistrez pour la conserver.');
+    var avis = p.recadree ? 'Votre image a été ajustée automatiquement au format de l’emplacement.' : 'Image prête.';
+    if (p.flou) { avis += ' Elle est plus petite que le format attendu : le rendu pourrait être flou.'; }
+    toast(avis + ' Enregistrez pour la conserver.', p.flou ? 'mal' : '');
   } catch (e) {
     err.textContent = e && e.message ? e.message : 'Cette image ne peut pas être utilisée.';
     err.hidden = false;
@@ -1846,11 +1880,16 @@ async function enregistrer() {
   try {
     var champs = {};
     CHAMPS.forEach(function (c) { if (!estLecture(c.cle)) { champs[c.cle] = norm(etat.work[c.cle]); } });
-    var W = etat.L.work;
-    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email) };
+    var W = etat.L.work, S = etat.L.saved, P = etat.L.pub;
+    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email), images: {} };
+    // Seules les images changées depuis le dernier enregistrement partent au serveur ; revenir à l'image
+    // publiée retire le tampon.
+    CLES_IMAGES.forEach(function (k) { if (W[k] !== S[k]) { livre.images[k] = W[k] === P[k] ? { retablir: true } : { data: W[k] }; } });
     var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
     if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
     CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
+    // Le serveur renvoie l'adresse définitive des images téléversées (Gestionnaire de médias)
+    Object.keys(r.images || {}).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(livre.images, k)) { etat.L.work[k] = r.images[k]; } });
     etat.L.work.email = livre.email;
     etat.L.saved = clone(etat.L.work);
     etat.copie = true;
