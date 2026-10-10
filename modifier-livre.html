@@ -1218,17 +1218,24 @@ function montrerEtat(ico, titre, texte, btn, action) {
   $('etat-btn').onclick = action;
   montrerVue('etat-msg');
 }
+// Retour à l'Espace Auteurs. Dans Wix, l'éditeur est une page du site chargée dans un iframe : seul le code de
+// la page peut changer d'adresse, on le lui demande par message. Un aperçu ou un rapport s'ouvre dans un nouvel
+// onglet (window.open) : on essaie d'abord de fermer cet onglet, permis parce qu'il a été ouvert par script.
+function retourEspace() {
+  if (EN_WIX) { window.parent.postMessage({ type: 'retourEspace' }, '*'); return; }
+  location.href = 'espace-auteurs.html';
+}
 function fermerPage() {
-  window.close();
-  setTimeout(function () { toast('Vous pouvez fermer cet onglet pour revenir à l’Espace Auteurs.'); }, 300);
+  if (VUE !== 'edition') { try { window.top.close(); } catch (e) { /* onglet non ouvert par script */ } }
+  setTimeout(retourEspace, 300);
 }
 function traiterStatut(d) {
   if (d.statut === 'connexion') { montrerEtat(ICO_CADENAS, 'Connexion requise', 'Connectez-vous à votre compte pour modifier la page de votre livre.', 'Réessayer', demarrer); return true; }
-  if (d.statut === 'refuse') { montrerEtat(ICO_INTERDIT, 'Accès interdit', 'Cette page est réservée aux auteurs des Éditions TBL.', 'Fermer cette page', fermerPage); return true; }
-  if (d.statut === 'inactif') { montrerEtat(ICO_CADENAS, 'Compte auteur inactif', 'Votre compte auteur est inactif pour le moment. Écrivez-nous et nous le réactiverons avec plaisir.', 'Fermer cette page', fermerPage); return true; }
+  if (d.statut === 'refuse') { montrerEtat(ICO_INTERDIT, 'Accès interdit', 'Cette page est réservée aux auteurs des Éditions TBL.', 'Retour à l’Espace Auteurs', fermerPage); return true; }
+  if (d.statut === 'inactif') { montrerEtat(ICO_CADENAS, 'Compte auteur inactif', 'Votre compte auteur est inactif pour le moment. Écrivez-nous et nous le réactiverons avec plaisir.', 'Retour à l’Espace Auteurs', fermerPage); return true; }
   if (d.statut === 'nonmodifiable') {
     montrerEtat(ICO_CADENAS, 'Ce livre ne peut pas être modifié pour le moment',
-      'Ce livre est introuvable ou archivé. Ouvrez l’éditeur depuis l’onglet Livres de votre Espace Auteurs, ou écrivez-nous si vous croyez qu’il s’agit d’une erreur.', 'Fermer cette page', fermerPage);
+      'Ce livre est introuvable ou archivé. Ouvrez l’éditeur depuis l’onglet Livres de votre Espace Auteurs, ou écrivez-nous si vous croyez qu’il s’agit d’une erreur.', 'Retour à l’Espace Auteurs', fermerPage);
     return true;
   }
   return false;
@@ -1981,7 +1988,7 @@ function montrerRapport(d) {
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
   var bo = el('div', 'barre-outils');
   var bi = el('button', 'btn', 'Imprimer / Enregistrer en PDF'); bi.type = 'button'; bi.onclick = function () { window.print(); };
-  var bf = el('button', 'btn sec', 'Fermer'); bf.type = 'button'; bf.onclick = fermerPage;
+  var bf = el('button', 'btn sec', 'Fermer le rapport'); bf.type = 'button'; bf.onclick = fermerPage;
   bo.appendChild(bi); bo.appendChild(bf); rap.appendChild(bo);
   rap.appendChild(el('h1', '', 'Demande de modification de page'));
   rap.appendChild(el('p', 'sous', 'Les Éditions TBL · Rapport Avant / Après'));
@@ -2047,7 +2054,7 @@ async function demarrer() {
   // ?livre=… ; on attend un peu avant d'afficher le message, pour ne pas le faire clignoter.
   if (!LIVRE_ID) {
     setTimeout(function () {
-      montrerEtat(ICO_CADENAS, 'Aucun livre choisi', 'Ouvrez cet éditeur depuis l’onglet Livres de votre Espace Auteurs, avec le bouton « Modifier la page » de votre livre.', 'Fermer cette page', fermerPage);
+      montrerEtat(ICO_CADENAS, 'Aucun livre choisi', 'Ouvrez cet éditeur depuis l’onglet Livres de votre Espace Auteurs, avec le bouton « Modifier la page » de votre livre.', 'Retour à l’Espace Auteurs', fermerPage);
     }, 2500);
     return;
   }
