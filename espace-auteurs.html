@@ -992,8 +992,9 @@ function actionsLivre(l, admin) {
   if (l.statut === 'Nouveau' && !copie) {
     zone.appendChild(bouton('Compléter la page du livre', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (copie === 'En attente de validation') {
+    // L'auteur peut consulter sa page en lecture seule pendant l'examen (l'éditeur la verrouille).
     if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { ouvrirEditeur(l.id); })); }
-    else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', null)); }
+    else { zone.appendChild(bouton('Consulter la page (lecture seule)', 'btn sec petit', function () { ouvrirEditeur(l.id); })); }
   } else if (copie === 'Corriger') {
     zone.appendChild(bouton(monLivre || !admin ? 'Reprendre ma correction' : 'Reprendre la correction', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (copie === 'Modifier') {

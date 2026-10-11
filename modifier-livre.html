@@ -1785,6 +1785,11 @@ function rendreRecap() {
   // Bloc « Contrôle » : taxes théoriques, pour l'auteur de test seulement
   if (f.gratuit && f.controle) { ligne('Contrôle : TPS théorique', f.tpsTheorique, 'controle'); ligne('TVQ théorique', f.tvqTheorique, 'controle'); }
 }
+// Date de l'envoi en approbation : la copie (livre publié) ou, pour une première publication qui n'a pas de
+// copie, la date de dernière modification (inscrite à l'envoi).
+function dateEnvoi() {
+  return etat.d.dateCopie || (etat.d.derniereModification && etat.d.derniereModification.date) || null;
+}
 function majUI() {
   var prixFixe = !!etat.nouveau;
   $('taux-val').parentNode.hidden = prixFixe;
@@ -1880,7 +1885,8 @@ function majUI() {
   if (etat.appr) {
     ba.textContent = revue
       ? 'Demande de ' + etat.d.livre.auteurNom + ' envoyée le ' + fmtDate(etat.d.dateCopie) + '. Vous pouvez corriger les textes et les images. Examinez les changements avec « Voir les changements », les aperçus et le rapport Avant / Après, puis approuvez pour publier ou refusez avec un commentaire pour l’auteur.'
-      : 'Demande envoyée à TBL le ' + fmtDate(etat.d.dateCopie) + '. Votre page est verrouillée pendant l’examen. Vous pouvez toujours comparer les changements et ouvrir les aperçus.';
+      : 'Demande envoyée à TBL' + (dateEnvoi() ? ' le ' + fmtDate(dateEnvoi()) : '') + '. Votre page est en lecture seule pendant l’examen : vous pouvez la consulter et '
+        + (etat.nouveau ? 'ouvrir l’aperçu.' : 'comparer les changements ou ouvrir les aperçus.');
   }
   var br = $('bandeau-refus');
   br.hidden = !etat.refus || etat.appr;
