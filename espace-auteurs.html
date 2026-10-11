@@ -328,7 +328,7 @@ textarea{min-height:96px;resize:vertical}
     <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" hidden>
       <div class="card barre-admin" id="barre-admin" hidden><strong>Administrateur</strong><span id="txt-admin"></span>
         <label for="filtre-livres" class="sub">Afficher</label>
-        <select id="filtre-livres" aria-label="Filtrer les livres"><option value="tous">Tous les livres</option><option value="meslivres">Mes livres</option><option value="autresauteurs">Autres auteurs</option><option value="aexaminer">Demandes à valider</option></select>
+        <select id="filtre-livres" aria-label="Filtrer les livres"><option value="tous">Tous</option><option value="aexaminer">En approbation</option></select>
         <button class="btn petit" type="button" id="btn-nouveau-livre">Nouveau livre</button></div>
       <div class="card offre-duo" id="offre-duo" hidden>
         <div><h3>Créez un ensemble de vos livres</h3><p class="sub">Le forfait Duo réunit deux de vos livres publiés dans un ensemble vendu à prix réduit : 50 $, plus les frais de service et les taxes.</p></div>
@@ -948,6 +948,21 @@ function ligneCourte(classe, texte) {
 
 // Ouvre l'éditeur de livre (page Wix /dashboardlivre?livre=…). Dans Wix, c'est le code de la page qui change
 // d'adresse : un iframe ne peut pas faire naviguer la page parente lui-même.
+// Filtre de l'onglet Livres (admin) : Tous, En approbation, puis un choix par auteur actif (Auteurs.active,
+// envoyé par le serveur dans auteursActifs). Le choix en cours est gardé quand la liste est refaite.
+function remplirFiltreLivres() {
+  var sel = $('filtre-livres');
+  var choix = sel.value;
+  while (sel.options.length > 2) { sel.remove(2); }
+  ((etat.donnees && etat.donnees.auteursActifs) || []).forEach(function (a) {
+    var o = document.createElement('option');
+    o.value = 'auteur:' + a.id;
+    o.textContent = a.nom;
+    sel.appendChild(o);
+  });
+  sel.value = sel.querySelector('option[value="' + choix + '"]') ? choix : 'tous';
+}
+
 // Retour de l'éditeur « à l'endroit du clic » : on mémorise le livre et le filtre dans la session du
 // navigateur. Au retour, l'Espace Auteurs se recharge (c'est une autre page Wix), puis rouvre l'onglet Livres,
 // remet le filtre et fait défiler la liste jusqu'au livre, mis en évidence un instant.
@@ -960,6 +975,7 @@ function restaurerRetour() {
   try { r = JSON.parse(sessionStorage.getItem(CLE_RETOUR) || 'null'); sessionStorage.removeItem(CLE_RETOUR); } catch (e) { return; }
   if (!r || !r.livreId || Date.now() - r.t > 3 * 3600 * 1000) { return; }
   choisirOnglet('livres', false);
+  if (estAdmin()) { remplirFiltreLivres(); }
   if (estAdmin() && r.filtre && $('filtre-livres').querySelector('option[value="' + r.filtre + '"]')) { $('filtre-livres').value = r.filtre; }
   etat.retour = { id: r.livreId, jusqua: Date.now() + 2500 };
   rendreLivres();
@@ -1085,12 +1101,11 @@ function rendreLivres() {
   if (admin) {
     var nb = livres.filter(enAttente).length + duos.filter(enAttente).length;
     $('txt-admin').textContent = 'Vous voyez tous les livres de TBL. ' + (nb ? pluriel(nb, 'demande attend', 'demandes attendent') + ' votre validation.' : 'Aucune demande à valider pour le moment.');
+    remplirFiltreLivres();
     var filtre = $('filtre-livres').value;
-    var monId = d.auteurId;
     var garder = function (x) {
       if (filtre === 'aexaminer') { return enAttente(x); }
-      if (filtre === 'meslivres') { return x.auteurId === monId; }
-      if (filtre === 'autresauteurs') { return x.auteurId !== monId; }
+      if (filtre.indexOf('auteur:') === 0) { return x.auteurId === filtre.slice(7); }
       return true;
     };
     livres = livres.filter(garder);
