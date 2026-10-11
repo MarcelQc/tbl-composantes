@@ -1021,7 +1021,7 @@ function carteLivre(l, admin) {
   var copie = l.copie ? l.copie.statut : null;
   if (copie === 'Modifier') { pastilles.appendChild(el('span', 'pastille attente', 'Modification en cours')); }
   else if (copie === 'Corriger') { pastilles.appendChild(el('span', 'pastille rouge', 'Demande refusée, à corriger')); }
-  else if (copie === 'En attente de validation') { pastilles.appendChild(el('span', 'pastille bleu', 'En attente de validation')); }
+  else if (copie === 'En attente de validation') { pastilles.appendChild(pastilleAttente()); }
   if (pastilles.childNodes.length) { corps.appendChild(pastilles); }
   if (copie === 'Corriger' && l.copie.motifRefus) { corps.appendChild(ligneCourte('motif', 'Motif : ' + l.copie.motifRefus)); }
   var t = etat.totaux[l.id], ventes = '';
@@ -1030,6 +1030,13 @@ function carteLivre(l, admin) {
   if (ventes) { corps.appendChild(ligneCourte('chiffres', ventes)); }
   corps.appendChild(actionsLivre(l, admin));
   return carte;
+}
+
+// Pastille courte (la carte est étroite) ; le libellé complet s'affiche dans l'infobulle.
+function pastilleAttente() {
+  var p = el('span', 'pastille bleu', 'En attente');
+  p.title = 'En attente d’approbation';
+  return p;
 }
 
 // Un Duo de LivresDuo : boutons selon son statut (forfait-duo.md).
@@ -1050,7 +1057,7 @@ function carteDuo(d, admin) {
   var copie = d.copie ? d.copie.statut : null;
   if (copie === 'Modifier') { pastilles.appendChild(el('span', 'pastille attente', 'Modification en cours')); }
   else if (copie === 'Corriger') { pastilles.appendChild(el('span', 'pastille rouge', 'Demande refusée, à corriger')); }
-  else if (copie === 'En attente de validation') { pastilles.appendChild(el('span', 'pastille bleu', 'En attente de validation')); }
+  else if (copie === 'En attente de validation') { pastilles.appendChild(pastilleAttente()); }
   if (pastilles.childNodes.length) { corps.appendChild(pastilles); }
   var zone = el('div', 'actions-livre');
   if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', function () { bientot('duo', d.titre); })); }
