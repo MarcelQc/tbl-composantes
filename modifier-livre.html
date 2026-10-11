@@ -256,6 +256,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .msg-url{margin-top:12px;color:#ff8a8f;font:600 13px Arial,sans-serif}
 .note-champ{margin-top:10px;color:var(--muted);font:12px Arial,sans-serif}
 .v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
+button.pill-extrait{font-family:inherit;cursor:pointer}
+.v-edition button.pill-extrait:hover{background:#6a0000;border-color:#ffd0d0}
 .v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
 .v-apercu .rt{outline:none}
 
@@ -493,7 +495,7 @@ body.v-rapport{background:#fff;color:#111}
     </section>
     <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
     <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
-      <div class="pill-extrait fige">Demande d'extrait <i style="width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88;text-align:center">i</i></div></div>
+      <button type="button" class="pill-extrait" data-role="demande-extrait">Demande d'extrait <i style="width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88;text-align:center">i</i></button></div>
     <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
     <div class="vedettes fige" data-vedettes></div>
   </div>
@@ -1613,6 +1615,7 @@ function monterLivre() {
     c.querySelector('[data-role="retablir-img"]').addEventListener('click', function () { retablirImage(cle); });
     c.querySelector('[data-role="actualiser-img"]').addEventListener('click', function () { actualiserImage(cle); });
   });
+  zoneLivre('demande-extrait').addEventListener('click', demandeExtrait);
   var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
   em.addEventListener('input', function () { etat.L.work.email = em.value; recalculer(); });
@@ -1701,9 +1704,41 @@ function raisonRefusApprobation() {
   if (etat.verrou) { return 'Votre demande est déjà envoyée à TBL.'; }
   if (premierProbleme()) { return 'Corrigez le problème signalé dans le texte avant d’approuver.'; }
   if (etat.dirty) { return 'Enregistrez vos modifications avant d’approuver.'; }
-  if (!auMoinsUnChangement()) { return 'Il n’y a aucune modification à approuver.'; }
+  // Livre Nouveau : pas de version publiée, donc pas de « modification » à mesurer ; une page enregistrée
+  // peut toujours être envoyée, même si on revient plus tard sans rien changer.
+  if (!etat.nouveau && !auMoinsUnChangement()) { return 'Il n’y a aucune modification à approuver.'; }
   if (!etat.copie) { return 'Enregistrez vos modifications avant d’approuver.'; }
   return '';
+}
+// Sections encore vides (textes et images). Elles n'empêchent pas l'envoi : l'auteur est averti et choisit.
+function elementsIncomplets() {
+  var manque = CHAMPS.filter(function (c) { return texteBrut(norm(etat.work[c.cle] || [])).trim() === ''; }).map(function (c) { return c.court; });
+  if (!imageSure(etat.L.work.image)) { manque.push('Image du livre'); }
+  if (!imageSure(etat.L.work.photoAuteur)) { manque.push('Portrait de l’auteur'); }
+  return manque;
+}
+async function lancerApprobation() {
+  var manque = elementsIncomplets();
+  if (manque.length) {
+    var r = await modale({
+      titre: 'Certaines sections sont incomplètes',
+      corps: 'Il manque encore : ' + manque.join(', ') + '. Vous pouvez tout de même envoyer votre page en approbation ; l’équipe TBL vous écrira au besoin.',
+      boutons: [{ id: 'ok', libelle: 'Envoyer quand même', principal: true }, { id: 'non', libelle: 'Continuer à compléter' }]
+    });
+    if (r !== 'ok') { return; }
+  }
+  if (APPROBATION_ACTIVE) { approuver(); } else { bientot('appr'); }
+}
+// « Demande d'extrait » : l'auteur envoie son extrait en PDF par courriel, TBL s'occupe de la distribution.
+var COURRIEL_EXTRAITS = 'clients@editionstbl.ca';
+function demandeExtrait() {
+  var corps = document.createElement('div');
+  var p1 = document.createElement('p');
+  p1.textContent = 'Les lecteurs peuvent demander un extrait de votre livre depuis sa page. Pour nous le fournir, écrivez-nous à ' + COURRIEL_EXTRAITS + ' en joignant le fichier PDF de votre extrait.';
+  var p2 = document.createElement('p');
+  p2.textContent = 'L’équipe des Éditions TBL s’occupera de distribuer votre extrait.';
+  corps.appendChild(p1); corps.appendChild(p2);
+  modale({ titre: 'Demande d’extrait', corps: corps, boutons: [{ id: 'ok', libelle: 'J’ai compris', principal: true }] });
 }
 
 // Livre au statut Nouveau : prix fixe (page du livre, plus l'inscription pour un premier livre). Le taux de
@@ -2190,7 +2225,7 @@ function brancherEdition() {
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
   $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
   $('b-enreg').addEventListener('click', enregistrer);
-  $('b-appr').addEventListener('click', function () { if (APPROBATION_ACTIVE) { approuver(); } else { bientot('appr'); } });
+  $('b-appr').addEventListener('click', lancerApprobation);
   $('b-valider').addEventListener('click', function () { if (APPROBATION_ACTIVE) { valider(); } else { bientot(etat.revue ? 'revue' : 'publier'); } });
   $('b-refuser').addEventListener('click', function () { if (APPROBATION_ACTIVE) { refuser(); } else { bientot('revue'); } });
   document.addEventListener('selectionchange', function () { if (etat.actif) { majOutils(); } });
