@@ -70,6 +70,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .recap .lig b{color:var(--txt);font-weight:600;margin-left:4px}
 .recap .lig.total{border-color:var(--gold);color:var(--txt)}
 .recap .lig.total b{color:var(--gold)}
+.recap .lig.controle{border-style:dashed;opacity:.8}
 #outils{background:#111317;border-bottom:1px solid var(--line);padding:7px 0}
 #outils .wrap{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center}
 .grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
@@ -887,13 +888,24 @@ const TAUX_TVQ = 0.09975;
 
 // lignes : [{ nom, montant }] en CENTS (entiers). Frais de service sur le sous-total, puis TPS et TVQ sur
 // le sous-total plus les frais, chacune arrondie au cent. Ex. 100 $ + 100 $ : 210,00 + 10,50 + 20,95 = 241,45 $.
-function calculerFacture(lignes) {
+//
+// options.gratuit (auteur gratuit ou admin, nouveau-livre-et-auteur.md) : une ligne « Ajustements » NÉGATIVE,
+// placée après les services et les frais et AVANT les taxes, ramène la base taxable à 0 : TPS, TVQ et total
+// valent 0,00 $. Les frais restent calculés sur les vrais services. Les taxes théoriques (comme sans
+// ajustement) sont gardées pour le bloc « Contrôle ».
+// Ex. 5 $ + 10 $ + 10 $, frais 1,25 $, ajustements −26,25 $, total 0,00 $ ; TPS théorique 1,31 $, TVQ 2,62 $.
+function calculerFacture(lignes, options) {
   const sousTotal = lignes.reduce((s, l) => s + l.montant, 0);
   const frais = Math.round(sousTotal * TAUX_FRAIS_SERVICE);
-  const base = sousTotal + frais;
-  const tps = Math.round(base * TAUX_TPS);
-  const tvq = Math.round(base * TAUX_TVQ);
-  return { lignes, sousTotal, frais, tps, tvq, total: base + tps + tvq };
+  const baseReelle = sousTotal + frais;
+  const tpsTheorique = Math.round(baseReelle * TAUX_TPS);
+  const tvqTheorique = Math.round(baseReelle * TAUX_TVQ);
+  const gratuit = !!(options && options.gratuit);
+  const ajustement = gratuit ? -baseReelle : 0;
+  const base = baseReelle + ajustement;
+  const tps = gratuit ? 0 : tpsTheorique;
+  const tvq = gratuit ? 0 : tvqTheorique;
+  return { lignes, sousTotal, frais, ajustement, tps, tvq, total: base + tps + tvq, tpsTheorique, tvqTheorique, gratuit };
 }
 /*MODULE-FIN*/
 
@@ -1762,9 +1774,13 @@ function rendreRecap() {
   }
   f.lignes.forEach(function (l) { ligne(l.nom, l.montant); });
   ligne('Frais de service (5' + NBSP + '%)', f.frais);
+  // Auteur gratuit ou admin : ligne d'ajustement négative avant les taxes, total à 0,00 $ (tâche 66)
+  if (f.ajustement) { ligne('Ajustements (services offerts)', f.ajustement); }
   ligne('TPS', f.tps);
   ligne('TVQ', f.tvq);
   ligne('Total', f.total, 'total');
+  // Bloc « Contrôle » : taxes théoriques, pour l'auteur de test seulement
+  if (f.gratuit && f.controle) { ligne('Contrôle : TPS théorique', f.tpsTheorique, 'controle'); ligne('TVQ théorique', f.tvqTheorique, 'controle'); }
 }
 function majUI() {
   var prixFixe = !!etat.nouveau;
@@ -1774,7 +1790,10 @@ function majUI() {
   $('t-diff').hidden = prixFixe;
   $('t-rapport').hidden = prixFixe; // rien à comparer : un livre Nouveau n'a pas de version publiée
   if (prixFixe) { rendreRecap(); }
-  $('b-appr').textContent = prixFixe && etat.d.facture ? 'Envoyer en approbation / payer ' + argent(etat.d.facture.total) : 'Approuver / Payer';
+  var fac = etat.d.facture;
+  $('b-appr').textContent = prixFixe && fac
+    ? (fac.total > 0 ? 'Envoyer en approbation / payer ' + argent(fac.total) : 'Envoyer en approbation')
+    : 'Approuver / Payer';
   $('taux-val').textContent = pct(etat.global);
   $('taux-barre').style.width = Math.min(100, etat.global) + '%';
   var pills = $('taux-blocs');
