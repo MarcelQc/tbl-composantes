@@ -2232,7 +2232,7 @@ async function approuver() {
   if (res.derniereModification) { etat.d.derniereModification = res.derniereModification; }
   rendreTout(); majUI();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  toast('Demande envoyée à l’équipe TBL. Merci !', 'ok');
+  toast('Demande envoyée à l’équipe TBL. Merci !' + (res.facture ? ' Votre facture ' + res.facture + ' vous a été envoyée par courriel.' : ''), 'ok');
 }
 
 function basePage() { return EN_WIX ? 'https://www.editionstbl.ca/dashboardlivre' : location.href.split('?')[0].split('#')[0]; }
