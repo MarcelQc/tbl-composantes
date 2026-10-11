@@ -50,6 +50,7 @@ h3{margin:0 0 12px;font-size:1.15rem}
 .onglet[aria-selected="true"]{background:var(--red);border-color:var(--red);color:#fff}
 .pastille-nb{background:rgba(255,255,255,.14);border-radius:99px;padding:0 8px;font-size:.8rem;min-width:22px;text-align:center}
 .panneau{padding-top:16px}
+.onglet.actualiser{margin-left:auto;font-weight:normal}
 
 /* Ventes */
 .barre-mois{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -131,6 +132,8 @@ textarea{min-height:96px;resize:vertical}
 #liste-livres{max-height:calc(2.5 * var(--h-carte-livre) + 2 * var(--gap-livres))}
 #liste-duos{max-height:calc(1.5 * var(--h-carte-livre) + var(--gap-livres))}
 .livre{padding:12px;display:flex;gap:12px;height:var(--h-carte-livre);overflow:hidden}
+.livre{transition:box-shadow .4s,border-color .4s}
+.livre.retour{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,37,48,.35)}
 .livre .lien-couv{flex:0 0 72px;align-self:flex-start;display:block;border-radius:6px;color:inherit;text-decoration:none}
 .livre .lien-couv:hover .couv{border-color:var(--red)}
 .livre .couv{width:72px;aspect-ratio:2/3;border-radius:6px;background:var(--card2);border:1px solid var(--line);object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.68rem;text-align:center;padding:4px}
@@ -248,6 +251,7 @@ textarea{min-height:96px;resize:vertical}
       <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres <span class="pastille-nb" id="nb-livres">0</span></button>
       <button class="onglet" role="tab" id="onglet-services" aria-controls="panneau-services" aria-selected="false" tabindex="-1">Services</button>
       <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
+      <button class="onglet actualiser" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
     </div>
 
     <!-- VENTES -->
@@ -388,6 +392,15 @@ textarea{min-height:96px;resize:vertical}
       </div>
     </div>
   </section>
+
+  <!-- Fenêtre de confirmation (Actualiser avec des modifications non enregistrées) -->
+  <div class="fond-fenetre" id="fenetre-confirmer" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-confirmer">
+      <h2 id="titre-confirmer"></h2>
+      <p id="texte-confirmer"></p>
+      <div class="boutons"><button class="btn sec" type="button" id="btn-confirmer-non">Annuler</button><button class="btn" type="button" id="btn-confirmer-oui"></button></div>
+    </div>
+  </div>
 
   <!-- Fenêtre « Bientôt disponible » -->
   <div class="fond-fenetre" id="fenetre-bientot" hidden>
@@ -542,6 +555,7 @@ function surEspace(msg) {
     rendreEspace();
     montrer('espace');
 
+    restaurerRetour(); // retour de l'éditeur de livre : onglet Livres, sur le livre cliqué
     demanderVentes(moisUtc(0));
   } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
     etat.donnees = null;
@@ -927,7 +941,27 @@ function ligneCourte(classe, texte) {
 
 // Ouvre l'éditeur de livre (page Wix /dashboardlivre?livre=…). Dans Wix, c'est le code de la page qui change
 // d'adresse : un iframe ne peut pas faire naviguer la page parente lui-même.
+// Retour de l'éditeur « à l'endroit du clic » : on mémorise le livre et le filtre dans la session du
+// navigateur. Au retour, l'Espace Auteurs se recharge (c'est une autre page Wix), puis rouvre l'onglet Livres,
+// remet le filtre et fait défiler la liste jusqu'au livre, mis en évidence un instant.
+var CLE_RETOUR = 'tbl-eda-retour';
+function memoriserRetour(livreId) {
+  try { sessionStorage.setItem(CLE_RETOUR, JSON.stringify({ livreId: livreId, filtre: $('filtre-livres').value, t: Date.now() })); } catch (e) { /* stockage indisponible */ }
+}
+function restaurerRetour() {
+  var r = null;
+  try { r = JSON.parse(sessionStorage.getItem(CLE_RETOUR) || 'null'); sessionStorage.removeItem(CLE_RETOUR); } catch (e) { return; }
+  if (!r || !r.livreId || Date.now() - r.t > 3 * 3600 * 1000) { return; }
+  choisirOnglet('livres', false);
+  if (estAdmin() && r.filtre && $('filtre-livres').querySelector('option[value="' + r.filtre + '"]')) { $('filtre-livres').value = r.filtre; }
+  etat.retour = { id: r.livreId, jusqua: Date.now() + 2500 };
+  rendreLivres();
+  var carte = $('liste-livres').querySelector('[data-livre="' + r.livreId + '"]');
+  if (carte) { carte.scrollIntoView({ block: 'nearest' }); }
+  setTimeout(function () { var c = document.querySelector('.livre.retour'); if (c) { c.classList.remove('retour'); } }, 2500);
+}
 function ouvrirEditeur(livreId) {
+  memoriserRetour(livreId);
   if (EN_WIX) { envoyer({ type: 'ouvrirEditeur', livreId: livreId }); return; }
 
 }
@@ -954,6 +988,8 @@ function actionsLivre(l, admin) {
 
 function carteLivre(l, admin) {
   var carte = el('article', 'card livre');
+  carte.setAttribute('data-livre', l.id);
+  if (etat.retour && etat.retour.id === l.id && Date.now() < etat.retour.jusqua) { carte.classList.add('retour'); }
   var page = urlSure(l.page);
   couverture(carte, l.miniature, l.titre, page);
   var corps = el('div', 'corps');
@@ -1094,12 +1130,40 @@ function bientot(cle, titreLivre) {
 }
 $('btn-fermer-bientot').addEventListener('click', function () { fermerFenetre('fenetre-bientot'); });
 $('btn-creer-duo').addEventListener('click', function () { bientot('duo'); });
+// Confirmation simple : titre, texte, libellé du bouton d'action et action à faire si l'utilisateur confirme.
+var actionConfirmee = null;
+function confirmer(titre, texte, libelle, action) {
+  $('titre-confirmer').textContent = titre;
+  $('texte-confirmer').textContent = texte;
+  $('btn-confirmer-oui').textContent = libelle;
+  actionConfirmee = action;
+  ouvrirFenetre('fenetre-confirmer', 'btn-confirmer-non');
+}
+$('btn-confirmer-non').addEventListener('click', function () { actionConfirmee = null; fermerFenetre('fenetre-confirmer'); });
+$('btn-confirmer-oui').addEventListener('click', function () {
+  var a = actionConfirmee; actionConfirmee = null;
+  fermerFenetre('fenetre-confirmer');
+  if (a) { a(); }
+});
+
+// ↻ Actualiser : recharge tout l'Espace Auteurs (l'onglet affiché reste le même). Confirmation seulement si la
+// fiche de l'auteur a des modifications non enregistrées, qui seraient perdues.
+function actualiserEspace() {
+  if (profilModifie()) {
+    confirmer('Actualiser l’Espace Auteurs ?', 'Les modifications non enregistrées de votre fiche (onglet Auteur) seront perdues.', 'Actualiser', demarrer);
+    return;
+  }
+  demarrer();
+}
+$('btn-actualiser').addEventListener('click', actualiserEspace);
+
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Escape') { return; }
-  if (!$('fenetre-bientot').hidden) { fermerFenetre('fenetre-bientot'); }
+  if (!$('fenetre-confirmer').hidden) { actionConfirmee = null; fermerFenetre('fenetre-confirmer'); }
+  else if (!$('fenetre-bientot').hidden) { fermerFenetre('fenetre-bientot'); }
   else if (!$('fenetre-nouveau').hidden) { fermerFenetre('fenetre-nouveau'); }
 });
-['fenetre-bientot', 'fenetre-nouveau'].forEach(function (id) {
+['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau'].forEach(function (id) {
   $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
 });
 

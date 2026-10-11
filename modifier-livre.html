@@ -342,6 +342,10 @@ body.v-rapport{background:#fff;color:#111}
   <header id="entete">
     <div id="haut"><div class="wrap">
       <div class="ligne1">
+        <div class="grp vues">
+          <button type="button" class="tb" id="b-retour" title="Revenir à l’onglet Livres de l’Espace Auteurs, sur ce livre">← Espace Auteurs</button>
+          <button type="button" class="tb" id="b-actualiser" title="Recharger la page du livre depuis le serveur" aria-label="Actualiser">↻ Actualiser</button>
+        </div>
         <div class="titre-app"><span class="petit">Modifier la page du livre</span><strong id="h-titre"></strong><span id="pastille-etat" class="pastille"></span><span id="chip-admin" class="pastille admin" hidden>Administrateur</span></div>
         <div class="grp vues">
           <button type="button" class="tb" id="t-ap-ord" title="Ouvre l'aperçu ordinateur dans un nouvel onglet">Aperçu Ordinateur</button>
@@ -1383,8 +1387,14 @@ function monterChamp(cle) {
   chip('tx', '').setAttribute('data-role', 'tx');
   var f = chip('fmt', 'Mise en forme modifiée'); f.setAttribute('data-role', 'fmt'); f.hidden = true;
   chip('ecart', '').style.cssText = 'flex:1;border:0;background:none;padding:0';
+  // ↻ : recharge la version enregistrée de CE texte ; « Annuler les modifications » : seulement s'il y en a.
+  var ra = document.createElement('button');
+  ra.type = 'button'; ra.className = 'mini'; ra.textContent = '↻'; ra.setAttribute('data-role', 'actualiser');
+  ra.title = 'Actualiser : recharger le texte enregistré'; ra.setAttribute('aria-label', 'Actualiser ' + nomChamp(cle));
+  ra.addEventListener('click', function () { actualiserChamp(cle); });
+  tete.appendChild(ra);
   var b = document.createElement('button');
-  b.type = 'button'; b.className = 'mini'; b.textContent = '↺ Rétablir le texte publié'; b.setAttribute('data-role', 'retablir');
+  b.type = 'button'; b.className = 'mini'; b.textContent = '↺ Annuler les modifications'; b.setAttribute('data-role', 'retablir');
   b.addEventListener('click', function () { retablirChamp(cle); });
   tete.appendChild(b);
   rt.setAttribute('role', 'textbox');
@@ -1521,9 +1531,9 @@ var CLES_IMAGES = ['image', 'photoAuteur'];
 var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email'];
 function valL(v, k) { return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || '')); }
 var IMAGE_CONF = {
-  image: { nom: 'Image du livre', bouton: 'Téléverser l’image du livre', changer: 'Changer l’image du livre', retablir: '↺ Rétablir l’image publiée', gabarit: [600, 900],
+  image: { nom: 'Image du livre', bouton: 'Téléverser l’image du livre', changer: 'Changer l’image du livre', retablir: '↺ Annuler les modifications', gabarit: [600, 900],
     vide: 'Aucune image du livre', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajustée automatiquement à 600 × 900 px (2:3). Idéal : couverture 3D sur fond transparent.' },
-  photoAuteur: { nom: 'Portrait de l’auteur', bouton: 'Téléverser le portrait', changer: 'Changer le portrait', retablir: '↺ Rétablir le portrait publié', gabarit: [400, 454],
+  photoAuteur: { nom: 'Portrait de l’auteur', bouton: 'Téléverser le portrait', changer: 'Changer le portrait', retablir: '↺ Annuler les modifications', gabarit: [400, 454],
     vide: 'Aucun portrait', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajusté automatiquement à 400 × 454 px.' }
 };
 function ctl(cle) { return $('hote-edition').querySelector('[data-controle-image="' + cle + '"]'); }
@@ -1532,6 +1542,7 @@ function creerControles() {
     var conf = IMAGE_CONF[cle], zone = $('hote-edition').querySelector('[data-zone-controle="' + cle + '"]');
     zone.innerHTML = '<div class="controle-image" data-controle-image="' + cle + '"><div class="rang">' +
       '<label class="mini gros" data-role="choisir-img" tabindex="0" role="button"><span data-role="lib-img"></span></label>' +
+      '<button type="button" class="mini gros" data-role="actualiser-img" title="Actualiser : recharger l’image enregistrée">↻</button>' +
       '<button type="button" class="mini gros" data-role="retablir-img"></button></div>' +
       '<div class="etat-img" data-role="etat-img" hidden></div><div class="err-img" data-role="err-img" role="alert" hidden></div><div class="info-l" data-role="aide-img"></div></div>';
     var c = ctl(cle);
@@ -1600,6 +1611,7 @@ function monterLivre() {
     fichier.addEventListener('change', function () { var fic = fichier.files && fichier.files[0]; fichier.value = ''; if (fic) { choisirImage(cle, fic); } });
     c.querySelector('[data-role="choisir-img"]').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fichier.click(); } });
     c.querySelector('[data-role="retablir-img"]').addEventListener('click', function () { retablirImage(cle); });
+    c.querySelector('[data-role="actualiser-img"]').addEventListener('click', function () { actualiserImage(cle); });
   });
   var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
@@ -1638,8 +1650,9 @@ function majLivre() {
   CLES_IMAGES.forEach(function (cle) {
     var c = ctl(cle), et = c.querySelector('[data-role="etat-img"]');
     et.hidden = !C[cle]; et.textContent = C[cle] ? 'Image modifiée' : '';
-    // Livre Nouveau : il n'y a pas d'image publiée à rétablir.
-    c.querySelector('[data-role="retablir-img"]').hidden = !C[cle] || etat.verrou || !!etat.nouveau;
+    // « Annuler les modifications » seulement si l'image a changé (par rapport à l'image publiée, ou à la
+    // dernière image enregistrée pour un livre Nouveau).
+    c.querySelector('[data-role="retablir-img"]').hidden = etat.verrou || W[cle] === referenceImage(cle);
   });
   remplirInfo(zoneLivre('info-auteur'), C.afficheauteur, P.afficheauteur ? 'affichée' : 'masquée', W.afficheauteur ? 'affichée' : 'masquée');
   var pe = etat.probL.email;
@@ -1668,17 +1681,21 @@ async function choisirImage(cle, fichier) {
     err.hidden = false;
   }
 }
+function referenceImage(cle) { return etat.nouveau ? etat.L.saved[cle] : etat.L.pub[cle]; }
 async function retablirImage(cle) {
   if (etat.verrou) { return; }
   var r = await modale({
-    titre: 'Rétablir l’image publiée ?', corps: 'L’image que vous avez choisie (' + IMAGE_CONF[cle].nom + ') sera remplacée par l’image actuellement publiée.',
-    boutons: [{ id: 'ok', libelle: 'Rétablir l’image publiée', principal: true }, { id: 'non', libelle: 'Annuler' }]
+    titre: 'Annuler les modifications ?',
+    corps: etat.nouveau
+      ? 'L’image choisie (' + IMAGE_CONF[cle].nom + ') sera remplacée par la dernière image enregistrée.'
+      : 'L’image choisie (' + IMAGE_CONF[cle].nom + ') sera remplacée par l’image actuellement publiée.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mon image' }]
   });
   if (r !== 'ok') { return; }
-  etat.L.work[cle] = etat.L.pub[cle];
+  etat.L.work[cle] = referenceImage(cle);
   ctl(cle).querySelector('[data-role="err-img"]').hidden = true;
   rendreLivre(); recalculer();
-  toast('Image publiée rétablie. Enregistrez pour conserver ce changement.');
+  toast(etat.nouveau ? 'Dernière image enregistrée remise.' : 'Image publiée remise. Enregistrez pour conserver ce changement.');
 }
 function raisonRefusApprobation() {
   if (etat.verrou) { return 'Votre demande est déjà envoyée à TBL.'; }
@@ -1740,12 +1757,10 @@ function majUI() {
     tx.textContent = etat.chg[c.cle] ? (etat.fmt[c.cle] ? 'Mise en forme seulement' : 'Modifié : ' + pct(etat.t[c.cle])) : 'Non modifié';
     tx.classList.toggle('chg', !!etat.chg[c.cle]);
     tx.hidden = prixFixe;
-    // Livre Nouveau : ni taux ni « Rétablir », la ligne au-dessus du texte serait vide.
-    boite.querySelector('.champ-tete').hidden = prixFixe;
     boite.querySelector('[data-role="fmt"]').hidden = true;
-    boite.querySelector('[data-role="retablir"]').disabled = !etat.chg[c.cle] || etat.verrou;
-    // Livre Nouveau : il n'y a pas de texte publié à rétablir.
-    boite.querySelector('[data-role="retablir"]').hidden = etat.verrou || estLecture(c.cle) || prixFixe;
+    // « Annuler les modifications » seulement s'il y a des modifications : par rapport au texte publié, ou au
+    // dernier texte enregistré pour un livre Nouveau (qui n'a pas de version publiée).
+    boite.querySelector('[data-role="retablir"]').hidden = etat.verrou || estLecture(c.cle) || !aAnnuler(c.cle);
     var msg = boite.querySelector('.msg-url');
     msg.hidden = !etat.prob[c.cle];
     msg.textContent = etat.prob[c.cle];
@@ -1875,18 +1890,88 @@ function changerBloc(tag) {
 }
 
 // ---------- Actions ----------
+// Texte de référence pour « Annuler les modifications » : le texte publié, ou le dernier texte enregistré pour
+// un livre Nouveau.
+function referenceTexte(cle) { return etat.nouveau ? etat.saved[cle] : etat.pub[cle]; }
+function aAnnuler(cle) { return signature(etat.work[cle]) !== signature(referenceTexte(cle)); }
 async function retablirChamp(cle) {
   if (etat.verrou) { return; }
   var r = await modale({
-    titre: 'Rétablir le texte publié ?',
-    corps: 'Vos modifications du bloc « ' + nomChamp(cle) + ' » seront perdues. Le texte publié sera remis à la place.',
-    boutons: [{ id: 'ok', libelle: 'Rétablir le texte publié', principal: true }, { id: 'non', libelle: 'Annuler' }]
+    titre: 'Annuler les modifications ?',
+    corps: etat.nouveau
+      ? 'Vos modifications non enregistrées du texte « ' + nomChamp(cle) + ' » seront perdues. Le dernier texte enregistré sera remis.'
+      : 'Toutes vos modifications du texte « ' + nomChamp(cle) + ' » seront annulées. Le texte publié sera remis à la place.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mes modifications' }]
   });
   if (r !== 'ok') { return; }
-  etat.work[cle] = clone(etat.pub[cle]);
+  etat.work[cle] = clone(referenceTexte(cle));
   rendreChamp(cle);
   recalculer();
-  toast('Texte publié rétabli pour ce bloc. Enregistrez pour conserver ce changement.');
+  toast(etat.nouveau ? 'Dernier texte enregistré remis.' : 'Texte publié remis. Enregistrez pour conserver ce changement.');
+}
+// ↻ Actualiser un texte : relit la version enregistrée sur le serveur (utile si quelqu'un d'autre l'a changée).
+async function actualiserChamp(cle) {
+  var r = await modale({
+    titre: 'Actualiser ce texte ?',
+    corps: 'Le texte « ' + nomChamp(cle) + ' » sera rechargé tel qu’il est enregistré. Ses modifications non enregistrées seront perdues.',
+    boutons: [{ id: 'ok', libelle: 'Actualiser', principal: true, action: async function () {
+      var d = await appeler('obtenir', { livreId: LIVRE_ID });
+      if (d.statut !== 'ok') { throw new Error('Le livre ne peut pas être rechargé pour le moment.'); }
+      var src = d.copie || d.publie;
+      etat.saved[cle] = norm(src[cle]);
+      etat.work[cle] = clone(etat.saved[cle]);
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  rendreChamp(cle);
+  recalculer();
+  toast('Texte actualisé.', 'ok');
+}
+// ↻ Actualiser une image : relit l'image enregistrée sur le serveur.
+async function actualiserImage(cle) {
+  var r = await modale({
+    titre: 'Actualiser cette image ?',
+    corps: 'L’image « ' + IMAGE_CONF[cle].nom + ' » sera rechargée telle qu’elle est enregistrée. Une image choisie mais pas encore enregistrée sera perdue.',
+    boutons: [{ id: 'ok', libelle: 'Actualiser', principal: true, action: async function () {
+      var d = await appeler('obtenir', { livreId: LIVRE_ID });
+      if (d.statut !== 'ok') { throw new Error('Le livre ne peut pas être rechargé pour le moment.'); }
+      var LS = d.champsLivre.copie || d.champsLivre.publie;
+      etat.L.saved[cle] = LS[cle];
+      etat.L.work[cle] = LS[cle];
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  ctl(cle).querySelector('[data-role="err-img"]').hidden = true;
+  rendreLivre(); recalculer();
+  toast('Image actualisée.', 'ok');
+}
+// ↻ Actualiser toute la page (en-tête de l'éditeur).
+async function actualiserTout() {
+  if (etat.dirty && !etat.verrou) {
+    var r = await modale({
+      titre: 'Actualiser la page ?',
+      corps: 'La page sera rechargée telle qu’elle est enregistrée. Vos modifications non enregistrées seront perdues.',
+      boutons: [{ id: 'ok', libelle: 'Actualiser', principal: true }, { id: 'non', libelle: 'Annuler' }]
+    });
+    if (r !== 'ok') { return; }
+  }
+  etat.dirty = false;
+  await demarrer();
+  toast('Page actualisée.', 'ok');
+}
+// ← Espace Auteurs : revient à l'onglet Livres, sur ce livre (l'Espace Auteurs a mémorisé l'endroit du clic).
+async function retourEspaceAuteurs() {
+  if (etat.dirty && !etat.verrou) {
+    var r = await modale({
+      titre: 'Revenir à l’Espace Auteurs ?',
+      corps: 'Vous avez des modifications non enregistrées.',
+      boutons: [{ id: 'enr', libelle: 'Enregistrer et revenir', principal: true }, { id: 'sans', libelle: 'Revenir sans enregistrer' }, { id: 'non', libelle: 'Rester ici' }]
+    });
+    if (r === 'enr') { if (!(await enregistrer())) { return; } }
+    else if (r !== 'sans') { return; }
+  }
+  etat.dirty = false; // pas d'avertissement « quitter la page » du navigateur
+  retourEspace();
 }
 
 async function enregistrer() {
@@ -2084,6 +2169,8 @@ function basculerDiff() {
 function brancherEdition() {
   $('t-diff').addEventListener('mousedown', function (e) { e.preventDefault(); });
   $('t-diff').addEventListener('click', basculerDiff);
+  $('b-retour').addEventListener('click', retourEspaceAuteurs);
+  $('b-actualiser').addEventListener('click', actualiserTout);
   $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
   $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
