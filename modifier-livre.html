@@ -257,6 +257,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .note-champ{margin-top:10px;color:var(--muted);font:12px Arial,sans-serif}
 .v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
 button.pill-extrait{font-family:inherit;cursor:pointer}
+/* Section « En vedette » masquée dans l'édition et l'aperçu tant que les vedettes ne sont pas programmées (tâche 138) */
+.section-vedettes-cachee{display:none!important}
 .v-edition button.pill-extrait:hover{background:#6a0000;border-color:#ffd0d0}
 .v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
 .v-apercu .rt{outline:none}
@@ -496,8 +498,9 @@ body.v-rapport{background:#fff;color:#111}
     <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
     <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
       <button type="button" class="pill-extrait" data-role="demande-extrait">Demande d'extrait <i style="width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88;text-align:center">i</i></button></div>
-    <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
-    <div class="vedettes fige" data-vedettes></div>
+    <!-- Section « En vedette » masquée (tâche 138) : l'affichage des livres vedettes n'est pas encore programmé -->
+    <img class="titre-img fige section-vedettes-cachee" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
+    <div class="vedettes fige section-vedettes-cachee" data-vedettes></div>
   </div>
 </template>
 <script>
