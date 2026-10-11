@@ -1351,7 +1351,9 @@ function surResultatNouveauLivre(msg) {
     statut.textContent = '« ' + msg.livre.titre + ' » a été créé au statut Nouveau pour ' + (msg.livre.auteurNom || 'l\'auteur') + '.';
     $('form-nouveau').hidden = true;
     $('nouveau-chargement').hidden = false;
-    $('nouveau-chargement').textContent = statut.textContent + ' L\'auteur pourra compléter la page dans son Espace Auteurs. Le courriel d\'invitation automatique sera ajouté prochainement.';
+    var c = msg.courriel || {};
+    $('nouveau-chargement').textContent = statut.textContent + ' L\'auteur pourra compléter la page dans son Espace Auteurs. '
+      + (c.envoye ? 'Le courriel d\'invitation lui a été envoyé.' : 'Le courriel d\'invitation n\'a pas été envoyé : ' + (c.raison || 'raison inconnue.'));
     $('boutons-nouveau-fermer').hidden = false;
     $('btn-fermer-nouveau').focus();
     envoyer({ type: 'pret' }); // recharge les livres
