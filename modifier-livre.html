@@ -120,6 +120,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .col-epub .achat{width:212px;margin-top:auto;padding-top:8px}
 .col-epub .bientot{margin-top:auto;padding-top:14px;font:700 14px Georgia,'Times New Roman',serif;color:#F00000}
 .col-epub ul{margin:0;padding:0;list-style:none}
+.carte-epub.cache{display:none}
+/* Bannière « numérique seulement » : titre et icône à gauche, texte au centre, bouton d'achat à droite */
+.carte-epub-seul{justify-content:space-between;align-items:center;gap:30px;padding:14px clamp(20px,5vw,60px)}
+.carte-epub-seul .titre-epub{display:flex;flex-direction:column;align-items:center;width:200px}
+.carte-epub-seul h3{font:700 15px Georgia,'Times New Roman',serif;margin:0 0 6px}
+.carte-epub-seul img.ico{height:98px;width:auto}
+.carte-epub-seul .texte-epub{max-width:260px;text-align:center}
+.carte-epub-seul .texte-epub ul{margin:4px 0 0;padding-left:18px;text-align:left}
+.carte-epub-seul .achat{width:212px}
 .titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto}
 .carte{border:1px solid #C7C7C7;border-radius:30px;padding:18px 18px;margin:0 auto 4px}
 .carte-auteur{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;padding:26px 30px}
@@ -443,13 +452,19 @@ body.v-rapport{background:#fff;color:#111}
     </div>
   </div>
   <div class="pg">
-      <div class="carte-epub fige">
+      <!-- Livres.afficheNumPapier vrai : numérique et papier ; faux : bannière « numérique seulement » (comme la page publique) -->
+      <div class="carte-epub fige" data-epub="numpapier">
         <div class="col-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png">
           <div>Disponible dès maintenant</div><ul><li>• Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul>
           <img class="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png"></div>
         <div class="col-epub"><h3>PAPIER</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/7e3c5f_486a82ac19384a7fa9580104cd18182b~mv2.png">
           <div>Disponible sur Amazon Canada</div><div>Impression de qualité</div><div>Livraison Prime 2 jours</div><div>Service Amazon</div>
           <div class="bientot">BIENTÔT DISPONIBLE</div></div>
+      </div>
+      <div class="carte-epub carte-epub-seul fige cache" data-epub="seul">
+        <div class="titre-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png"></div>
+        <div class="texte-epub"><div>Disponible dès maintenant</div><ul><li>Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul></div>
+        <img class="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png">
       </div>
     <img class="titre-img fige" alt="Synopsis" src="https://static.wixstatic.com/media/26b968_9256b8eb5fa24de8b9eb4456a760783e~mv2.png">
     <div class="carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
@@ -1299,6 +1314,9 @@ function fabriquerPage(hote, d) {
   page.querySelector('[data-fond]').style.backgroundImage = 'linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.1)),url("' + L.images.fond + '")';
   page.querySelector('[data-titre]').textContent = L.titre;
   page.querySelector('[data-prix]').textContent = L.prix || '';
+  var numPapier = L.afficheNumPapier === true; // même règle que la page publique (Page de livres, Item)
+  page.querySelector('[data-epub="numpapier"]').classList.toggle('cache', !numPapier);
+  page.querySelector('[data-epub="seul"]').classList.toggle('cache', numPapier);
   var ved = page.querySelector('[data-vedettes]');
   (L.vedettes || []).forEach(function (v) {
     var f = document.createElement('figure'), im = document.createElement('img'), c = document.createElement('figcaption');
