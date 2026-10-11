@@ -1165,11 +1165,12 @@ var LIBELLE_PAYER = EN_WIX ? 'Payer' : 'Payer (simulation)';
 var MOTIF_MAX = 1000; // longueur maximale du commentaire de refus
 // Étape 1 : enregistrement seulement. L'envoi en approbation avec paiement (étape 2 et suivantes), l'approbation,
 // le refus et la publication par un administrateur (étape 4) ne sont pas encore branchés au serveur.
-var APPROBATION_ACTIVE = false;
+var APPROBATION_ACTIVE = true; // envoi sans paiement (auteur gratuit ou admin), approbation et refus branchés
 var TEXTES_BIENTOT = {
   appr: ['Envoyer en approbation', 'Le calcul du prix de vos modifications et le paiement arrivent bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.'],
   publier: ['Publier', 'La publication directe par un administrateur arrive bientôt. Vos modifications sont enregistrées dans la copie.'],
-  revue: ['Approuver ou refuser', 'L’approbation et le refus d’une demande arrivent bientôt.']
+  revue: ['Approuver ou refuser', 'L’approbation et le refus d’une demande arrivent bientôt.'],
+  paiement: ['Envoyer en approbation', 'Le paiement en ligne arrive bientôt. Votre page est enregistrée : vous pourrez l’envoyer en approbation dès qu’il sera offert.']
 };
 function bientot(cle) {
   var t = TEXTES_BIENTOT[cle];
@@ -1374,7 +1375,9 @@ function montrerEdition(d) {
   // etat : 'aucune' (livre publié sans copie), 'nouveau' (élément Nouveau modifié directement, sans copie),
   // 'modifier', 'attente' (En attente de validation) ou 'corriger' (copie refusée, déjà payée).
   etat.copie = d.etat !== 'aucune';
-  etat.nouveau = d.etat === 'nouveau';
+  // Première publication (jamais publié) : prix fixe, pas de version publiée à comparer. Reste vrai quand la
+  // page passe à « En attente de validation » ou à « À corriger ».
+  etat.nouveau = !!d.premiere || d.etat === 'nouveau';
   // En attente de validation : l'auteur est verrouillé, l'administrateur (Auteurs.admin) garde l'édition pour corriger, approuver ou refuser
   etat.admin = !!d.admin;
   etat.appr = d.etat === 'attente';
@@ -1861,7 +1864,7 @@ function majUI() {
   if (revue || adminEdition) {
     if (etat.dirty) { raisonAdmin = 'Enregistrez vos modifications avant de ' + (revue ? 'approuver ou de refuser.' : 'publier.'); }
     else if (premierProbleme()) { raisonAdmin = 'Corrigez le problème signalé dans le texte avant de publier.'; }
-    else if (adminEdition && (!etat.copie || !auMoinsUnChangement())) { raisonAdmin = 'Il n’y a aucune modification à publier.'; }
+    else if (adminEdition && !etat.nouveau && (!etat.copie || !auMoinsUnChangement())) { raisonAdmin = 'Il n’y a aucune modification à publier.'; }
   }
   $('b-valider').disabled = !!raisonAdmin || etat.occupe;
   $('b-refuser').disabled = etat.dirty || etat.occupe;
@@ -2102,13 +2105,15 @@ async function valider() {
   });
   corps.appendChild(t);
   var p = document.createElement('p');
-  p.textContent = 'La version actuellement publiée passera au statut Archiver (Actif à Faux) et la copie deviendra la version Publier, visible sur le site. Les livres en vedette seront redirigés vers la nouvelle version. Un courriel d’approbation avec les informations du livre sera envoyé à l’auteur.';
+  p.textContent = etat.nouveau
+    ? 'La page sera publiée et visible sur le site. Un courriel de confirmation sera envoyé à l’auteur.'
+    : 'La version actuellement publiée passera au statut Archiver et la copie deviendra la version publiée, visible sur le site. Les livres en vedette seront redirigés vers la nouvelle version. Un courriel de confirmation sera envoyé à l’auteur.';
   corps.appendChild(p);
   var res = null;
   var r = await modale({
     titre: revue ? 'Approuver et publier les modifications ?' : 'Publier les modifications ?', corps: corps,
     boutons: [{ id: 'ok', libelle: revue ? 'Approuver et envoyer' : 'Publier', principal: true, action: async function () {
-      res = await appeler('valider', { livreId: LIVRE_ID, taux: etat.global, autres: autresModifications() });
+      res = await appeler('approuver', { livreId: LIVRE_ID });
       if (!res.ok) { throw new Error(res.message || 'La publication a échoué.'); }
     } }, { id: 'non', libelle: 'Annuler' }]
   });
@@ -2117,7 +2122,7 @@ async function valider() {
     LIVRE_ID = res.livreId;
     try { history.replaceState(null, '', adresseVue('edition')); } catch (e) { /* ignore */ }
   }
-  toast('Modifications publiées. L’ancienne version est archivée. Courriel d’approbation envoyé à l’auteur.', 'ok');
+  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.'), 'ok');
   await demarrer();
 }
 // Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
@@ -2126,7 +2131,7 @@ async function refuser() {
   if (etat.dirty) { toast('Enregistrez vos modifications avant de refuser.', 'mal'); return; }
   var corps = document.createElement('div');
   var intro = document.createElement('p');
-  intro.textContent = 'Expliquez à l’auteur ce qu’il doit corriger. Ce commentaire lui sera envoyé par courriel et affiché sur sa page. Sa demande redeviendra Modifié pour qu’il puisse la corriger et redemander l’approbation.';
+  intro.textContent = 'Expliquez à l’auteur ce qu’il doit corriger. Ce commentaire lui sera envoyé par courriel et affiché en haut de sa page. Sa demande passera à « À corriger » : il pourra la corriger puis la soumettre à nouveau.';
   corps.appendChild(intro);
   var zone = document.createElement('textarea');
   zone.className = 'motif-saisie';
@@ -2151,37 +2156,36 @@ async function refuser() {
     } }, { id: 'non', libelle: 'Annuler' }]
   });
   if (r !== 'ok') { return; }
-  toast('Demande refusée. Courriel envoyé à l’auteur, la demande est redevenue Modifié.', 'ok');
+  toast('Demande refusée : elle est passée à « À corriger ». ' + (res.courrielEnvoye ? 'Courriel envoyé à l’auteur.' : 'Le courriel n’a pas pu être envoyé.'), 'ok');
   await demarrer();
 }
+// Envoi en approbation. Étape actuelle : SANS paiement, pour un auteur gratuit ou admin (total 0,00 $).
+// Pour un auteur payant, le paiement en ligne n'est pas encore offert : on l'explique sans rien envoyer.
 async function approuver() {
-  if (raisonRefusApprobation()) { return; }
+  var raison = raisonRefusApprobation();
+  if (raison) { toast(raison, 'mal'); return; }
+  if (!etat.d.gratuit) { bientot('paiement'); return; }
   var corps = document.createElement('div');
-  var lignes = CHAMPS.filter(function (c) { return etat.chg[c.cle]; }).map(function (c) { return c.court + ' : ' + (etat.fmt[c.cle] ? 'mise en forme' : pct(etat.t[c.cle])); });
-  var t = document.createElement('table');
-  [['Livre', etat.d.livre.titre], ['Service', 'Approbation et Activation des modifications'], ['Modification globale', pct(etat.global)],
-    ['Blocs modifiés', lignes.join(' · ') || 'aucun texte'], ['Autres modifications', autresModifications().join(' · ') || 'aucune'], ['Prix', prixSelonTaux(etat.global)]].forEach(function (r) {
-    var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
-    a.textContent = r[0]; b.textContent = r[1]; tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
-  });
-  corps.appendChild(t);
   var p = document.createElement('p');
-  p.textContent = 'Une fois la demande envoyée, votre page est verrouillée le temps de l’examen. TBL vérifie vos modifications et les publie avec plaisir.';
+  p.textContent = 'Votre page sera envoyée à l’équipe TBL, qui la vérifiera puis la publiera. Elle sera verrouillée pendant l’examen.';
   corps.appendChild(p);
-
+  var p2 = document.createElement('p');
+  p2.textContent = 'Nos services vous sont offerts gratuitement : aucun paiement n’est demandé.';
+  corps.appendChild(p2);
   var res = null;
   var r = await modale({
-    titre: 'Approbation et Activation des modifications', corps: corps,
-    boutons: [{ id: 'payer', libelle: LIBELLE_PAYER, principal: true, action: async function () {
-      res = await appeler('demanderApprobation', { livreId: LIVRE_ID, taux: etat.global });
-      if (!res.ok) { throw new Error(res.message || 'La demande a été refusée.'); }
+    titre: 'Envoyer en approbation', corps: corps,
+    boutons: [{ id: 'ok', libelle: 'Envoyer en approbation', principal: true, action: async function () {
+      res = await appeler('envoyer', { livreId: LIVRE_ID });
+      if (!res.ok) { throw new Error(res.message || 'L’envoi a été refusé.'); }
     } }, { id: 'non', libelle: 'Annuler' }]
   });
-  if (r !== 'payer') { return; }
+  if (r !== 'ok') { return; }
   etat.appr = true; etat.refus = null; etat.revue = !!etat.admin; etat.verrou = !etat.admin; etat.d.etat = 'attente'; etat.d.dateCopie = res.dateCopie;
+  if (res.derniereModification) { etat.d.derniereModification = res.derniereModification; }
   rendreTout(); majUI();
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  toast('Demande envoyée à TBL. Merci !', 'ok');
+  toast('Demande envoyée à l’équipe TBL. Merci !', 'ok');
 }
 
 function basePage() { return EN_WIX ? 'https://www.editionstbl.ca/dashboardlivre' : location.href.split('?')[0].split('#')[0]; }

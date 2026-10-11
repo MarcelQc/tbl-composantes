@@ -987,7 +987,9 @@ function actionsLivre(l, admin) {
   var zone = el('div', 'actions-livre');
   var copie = l.copie ? l.copie.statut : null;
   var monLivre = l.auteurId && etat.donnees && l.auteurId === etat.donnees.auteurId;
-  if (l.statut === 'Nouveau') {
+  // La demande en cours passe avant le statut Nouveau : une première publication envoyée ou refusée garde
+  // le statut Nouveau dans la carte, avec sa demande (En attente de validation ou Corriger).
+  if (l.statut === 'Nouveau' && !copie) {
     zone.appendChild(bouton('Compléter la page du livre', 'btn petit', function () { ouvrirEditeur(l.id); }));
   } else if (copie === 'En attente de validation') {
     if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { ouvrirEditeur(l.id); })); }
@@ -1014,7 +1016,7 @@ function carteLivre(l, admin) {
   if (admin && l.auteurNom) { corps.appendChild(ligneCourte('auteur-livre', 'Auteur : ' + l.auteurNom)); }
   var pastilles = el('div', 'pastilles');
   if (l.statut === 'Publier') { pastilles.appendChild(el('span', 'pastille ok', 'Publié')); }
-  else if (l.statut === 'Nouveau') { pastilles.appendChild(el('span', 'pastille attente', 'Nouveau, à compléter')); }
+  else if (l.statut === 'Nouveau') { pastilles.appendChild(el('span', 'pastille attente', l.copie ? 'Nouveau' : 'Nouveau, à compléter')); }
   if (l.statut === 'Publier' && l.horsLigne) { pastilles.appendChild(el('span', 'pastille rouge', 'Hors carrousel')); }
   var copie = l.copie ? l.copie.statut : null;
   if (copie === 'Modifier') { pastilles.appendChild(el('span', 'pastille attente', 'Modification en cours')); }
