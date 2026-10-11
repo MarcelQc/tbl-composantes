@@ -1971,7 +1971,18 @@ async function retourEspaceAuteurs() {
     else if (r !== 'sans') { return; }
   }
   etat.dirty = false; // pas d'avertissement « quitter la page » du navigateur
+  if (ouvertDansUnOnglet()) {
+    // Ouvert par l'Espace Auteurs dans un nouvel onglet : on ferme cet onglet, l'Espace Auteurs est intact
+    // dans le sien (il se met à jour tout seul). Si la fermeture est refusée, retour classique.
+    try { window.top.close(); } catch (e) { /* fermeture refusée */ }
+    setTimeout(retourEspace, 400);
+    return;
+  }
   retourEspace();
+}
+// Vrai si la page Wix de l'éditeur a été ouverte par script (window.open depuis l'Espace Auteurs).
+function ouvertDansUnOnglet() {
+  try { return EN_WIX && !!window.top.opener; } catch (e) { return false; }
 }
 
 async function enregistrer() {
@@ -2170,6 +2181,10 @@ function brancherEdition() {
   $('t-diff').addEventListener('mousedown', function (e) { e.preventDefault(); });
   $('t-diff').addEventListener('click', basculerDiff);
   $('b-retour').addEventListener('click', retourEspaceAuteurs);
+  if (ouvertDansUnOnglet()) {
+    $('b-retour').textContent = '✕ Fermer l’éditeur';
+    $('b-retour').title = 'Fermer cet onglet et revenir à l’Espace Auteurs';
+  }
   $('b-actualiser').addEventListener('click', actualiserTout);
   $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });

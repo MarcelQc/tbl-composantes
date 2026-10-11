@@ -555,7 +555,14 @@ function surEspace(msg) {
     rendreEspace();
     montrer('espace');
 
-    restaurerRetour(); // retour de l'éditeur de livre : onglet Livres, sur le livre cliqué
+    if (etat.miseAJourDiscrete) {
+      // Mise à jour au retour de l'éditeur ouvert dans un autre onglet : même onglet, même défilement.
+      $('liste-livres').scrollTop = etat.miseAJourDiscrete.defilement;
+      etat.miseAJourDiscrete = null;
+      try { sessionStorage.removeItem(CLE_RETOUR); } catch (e) { /* stockage indisponible */ }
+    } else {
+      restaurerRetour(); // retour de l'éditeur dans le même onglet : onglet Livres, sur le livre cliqué
+    }
     demanderVentes(moisUtc(0));
   } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
     etat.donnees = null;
@@ -960,8 +967,17 @@ function restaurerRetour() {
   if (carte) { carte.scrollIntoView({ block: 'nearest' }); }
   setTimeout(function () { var c = document.querySelector('.livre.retour'); if (c) { c.classList.remove('retour'); } }, 2500);
 }
+// L'éditeur s'ouvre dans un NOUVEL ONGLET : l'Espace Auteurs reste ouvert et intact dans le sien. Si le
+// navigateur ou Wix empêche l'ouverture (window.open renvoie null), repli : l'éditeur s'ouvre dans le même
+// onglet par le code de la page Wix, et le retour se fait à l'endroit mémorisé (memoriserRetour).
+var URL_EDITEUR = 'https://www.editionstbl.ca/dashboardlivre';
 function ouvrirEditeur(livreId) {
   memoriserRetour(livreId);
+  if (EN_WIX) {
+    var onglet = null;
+    try { onglet = window.open(URL_EDITEUR + '?livre=' + encodeURIComponent(livreId), '_blank'); } catch (e) { onglet = null; }
+    if (onglet) { etat.editeurOuvert = true; return; }
+  }
   if (EN_WIX) { envoyer({ type: 'ouvrirEditeur', livreId: livreId }); return; }
 
 }
@@ -1156,6 +1172,16 @@ function actualiserEspace() {
   demarrer();
 }
 $('btn-actualiser').addEventListener('click', actualiserEspace);
+
+// Retour sur cet onglet après l'éditeur (ouvert dans un autre onglet) : on met les livres à jour
+// discrètement, sans écran de chargement, en gardant l'onglet affiché et le défilement de la liste.
+// Pas de mise à jour si la fiche de l'auteur a des modifications non enregistrées (elles seraient perdues).
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState !== 'visible' || !etat.editeurOuvert || !etat.donnees || profilModifie()) { return; }
+  etat.editeurOuvert = false;
+  etat.miseAJourDiscrete = { defilement: $('liste-livres').scrollTop };
+  envoyer({ type: 'pret' });
+});
 
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Escape') { return; }
