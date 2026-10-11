@@ -1163,14 +1163,14 @@ function alignerMots(blocsAvant, blocsApres) {
 var EN_WIX = true;
 var LIBELLE_PAYER = EN_WIX ? 'Payer' : 'Payer (simulation)';
 var MOTIF_MAX = 1000; // longueur maximale du commentaire de refus
-// Étape 1 : enregistrement seulement. L'envoi en approbation avec paiement (étape 2 et suivantes), l'approbation,
-// le refus et la publication par un administrateur (étape 4) ne sont pas encore branchés au serveur.
-var APPROBATION_ACTIVE = true; // envoi sans paiement (auteur gratuit ou admin), approbation et refus branchés
+// Envoi en approbation (sans paiement pour un auteur gratuit ou admin, après paiement pour un auteur payant),
+// approbation, refus et publication par un administrateur : branchés au serveur.
+var APPROBATION_ACTIVE = true;
 var TEXTES_BIENTOT = {
   appr: ['Envoyer en approbation', 'Le calcul du prix de vos modifications et le paiement arrivent bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.'],
   publier: ['Publier', 'La publication directe par un administrateur arrive bientôt. Vos modifications sont enregistrées dans la copie.'],
   revue: ['Approuver ou refuser', 'L’approbation et le refus d’une demande arrivent bientôt.'],
-  paiement: ['Envoyer en approbation', 'Le paiement en ligne arrive bientôt. Votre page est enregistrée : vous pourrez l’envoyer en approbation dès qu’il sera offert.']
+  prixCorrection: ['Envoyer en approbation', 'Le calcul du prix des corrections d’un livre déjà publié arrive bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.']
 };
 function bientot(cle) {
   var t = TEXTES_BIENTOT[cle];
@@ -1795,7 +1795,7 @@ function majUI() {
   if (prixFixe) { rendreRecap(); }
   var fac = etat.d.facture;
   $('b-appr').textContent = prixFixe && fac
-    ? (fac.total > 0 ? 'Envoyer en approbation / payer ' + argent(fac.total) : 'Envoyer en approbation')
+    ? (fac.total > 0 && paiementRequis() ? 'Payer ' + argent(fac.total) + ' et envoyer en approbation' : 'Envoyer en approbation')
     : 'Approuver / Payer';
   $('taux-val').textContent = pct(etat.global);
   $('taux-barre').style.width = Math.min(100, etat.global) + '%';
@@ -2159,19 +2159,66 @@ async function refuser() {
   toast('Demande refusée : elle est passée à « À corriger ». ' + (res.courrielEnvoye ? 'Courriel envoyé à l’auteur.' : 'Le courriel n’a pas pu être envoyé.'), 'ok');
   await demarrer();
 }
-// Envoi en approbation. Étape actuelle : SANS paiement, pour un auteur gratuit ou admin (total 0,00 $).
-// Pour un auteur payant, le paiement en ligne n'est pas encore offert : on l'explique sans rien envoyer.
+// Un auteur payant paie AVANT la vérification par l'équipe. Une page « À corriger » a déjà été payée : son
+// nouvel envoi est sans paiement (même règle que livres-editeur.js).
+function paiementRequis() { return !etat.d.gratuit && etat.d.etat !== 'corriger'; }
+
+function paragraphe(texte) { var p = document.createElement('p'); p.textContent = texte; return p; }
+
+// Auteur payant : le serveur crée le paiement Wix, puis la page Wix ouvre la page de paiement. La page passe
+// à « En attente de validation » quand Wix confirme le paiement. En local, le paiement est simulé.
+async function payer() {
+  var f = etat.d.facture;
+  if (!f) { bientot('prixCorrection'); return; }
+  var corps = document.createElement('div');
+  corps.appendChild(paragraphe('Pour que l’équipe TBL vérifie puis publie votre page, le paiement de vos services est requis. Vous serez dirigé vers la page de paiement sécurisée du site.'));
+  var resume = document.createElement('div');
+  f.lignes.forEach(function (l) { resume.appendChild(paragraphe(l.nom + ' : ' + argent(l.montant))); });
+  resume.appendChild(paragraphe('Frais de service (5' + NBSP + '%) : ' + argent(f.frais)));
+  resume.appendChild(paragraphe('TPS et TVQ : ' + argent(f.tps + f.tvq)));
+  var tot = paragraphe('Total : ' + argent(f.total));
+  tot.style.fontWeight = '700';
+  resume.appendChild(tot);
+  corps.appendChild(resume);
+  corps.appendChild(paragraphe('Une fois le paiement confirmé, votre page passera en attente de validation et sera verrouillée pendant l’examen.'));
+  if (etat.d.paiementCommence) {
+    var avert = paragraphe('Vous avez commencé un paiement le ' + new Date(etat.d.paiementCommence).toLocaleString('fr-CA', { dateStyle: 'long', timeStyle: 'short' }) + '. Si vous l’avez terminé, la confirmation arrive dans quelques minutes : actualisez la page avant de payer de nouveau.');
+    avert.style.color = '#B00020';
+    corps.appendChild(avert);
+  }
+  var res = null;
+  var r = await modale({
+    titre: 'Paiement avant la vérification', corps: corps,
+    boutons: [{ id: 'ok', libelle: LIBELLE_PAYER + ' ' + argent(f.total), principal: true, action: async function () {
+      res = await appeler('payer', { livreId: LIVRE_ID });
+      if (!res.ok) { throw new Error(res.message || 'Le paiement n’a pas pu être préparé.'); }
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  if (!res.simulation) {
+    // La page Wix ouvre la page de paiement (code de la page Dashboard Livres).
+    etat.verrou = true; majUI();
+    toast('Ouverture de la page de paiement…', 'ok');
+    return;
+  }
+  etat.appr = true; etat.refus = null; etat.revue = false; etat.verrou = true; etat.d.etat = 'attente'; etat.d.dateCopie = res.dateCopie;
+  if (res.derniereModification) { etat.d.derniereModification = res.derniereModification; }
+  rendreTout(); majUI();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Paiement simulé et confirmé : demande envoyée à l’équipe TBL. Merci !', 'ok');
+}
+
+// Envoi en approbation : sans paiement pour un auteur gratuit ou admin (total 0,00 $), ou pour une page
+// « À corriger » déjà payée. Sinon, le paiement d'abord.
 async function approuver() {
   var raison = raisonRefusApprobation();
   if (raison) { toast(raison, 'mal'); return; }
-  if (!etat.d.gratuit) { bientot('paiement'); return; }
+  if (paiementRequis()) { await payer(); return; }
   var corps = document.createElement('div');
-  var p = document.createElement('p');
-  p.textContent = 'Votre page sera envoyée à l’équipe TBL, qui la vérifiera puis la publiera. Elle sera verrouillée pendant l’examen.';
-  corps.appendChild(p);
-  var p2 = document.createElement('p');
-  p2.textContent = 'Nos services vous sont offerts gratuitement : aucun paiement n’est demandé.';
-  corps.appendChild(p2);
+  corps.appendChild(paragraphe('Votre page sera envoyée à l’équipe TBL, qui la vérifiera puis la publiera. Elle sera verrouillée pendant l’examen.'));
+  corps.appendChild(paragraphe(etat.d.gratuit
+    ? 'Nos services vous sont offerts gratuitement : aucun paiement n’est demandé.'
+    : 'Vos services ont déjà été payés : aucun nouveau paiement n’est demandé.'));
   var res = null;
   var r = await modale({
     titre: 'Envoyer en approbation', corps: corps,
