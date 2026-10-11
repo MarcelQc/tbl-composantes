@@ -1127,7 +1127,6 @@ var BIENTOT = {
   examiner: ['Examiner une demande', 'Vous pourrez comparer la demande avec la version publiée, puis l\'approuver ou la refuser en indiquant un motif. L\'auteur sera avisé par courriel.'],
   duo: ['Forfait Duo', 'Vous choisirez deux de vos livres publiés, le prix de vente de l\'ensemble (inférieur au total des deux livres) et sa description, puis vous paierez le forfait (50 $, plus les frais de service et les taxes). L\'équipe TBL créera le produit, l\'image de la fiche et deux images publicitaires. Vous activerez ensuite le Duo sur les pages de vos deux livres.'],
   edd: ['Modifier le Duo', 'Vous pourrez modifier la description, les images et le prix de votre ensemble, et l\'afficher ou le masquer sur les pages de vos deux livres. Les changements passent par la validation de l\'équipe TBL, comme pour la page d\'un livre.'],
-  corrections: ['Modifier la page d\'un livre', 'Ce service se fera dans l\'éditeur de la page du livre : vous modifiez les textes et les images, le prix se calcule en direct (5 $ ou 10 $ par texte, 10 $ par image), puis vous payez et l\'équipe TBL valide avant la publication.'],
   amazon: ['Publication sur Amazon', 'L\'équipe TBL convertira votre livre au format Amazon, créera sa fiche sur Amazon.ca avec votre synopsis, l\'aperçu du livre et une image du verso, puis ajoutera le bouton Amazon sur la page de votre livre (75 $). Le service s\'activera dans l\'éditeur de la page du livre.'],
   fbpub: ['Publication Facebook', 'Vous choisirez le nombre de publications (25 $ chacune), préparerez le texte et l\'image de chacune, puis l\'équipe TBL les publiera sur la page Facebook des Éditions TBL après validation. Vos cinq dernières images seront gardées pour les réutiliser.'],
   fbimage: ['Conception d\'une image Facebook', 'L\'équipe TBL concevra une image publicitaire au format Facebook pour votre livre. Des exemples seront présentés dans la page du service. Le prix sera annoncé bientôt.'],
@@ -1204,8 +1203,9 @@ document.addEventListener('keydown', function (e) {
 
 /* ---------- Services ---------- */
 // livres : nombre de livres à choisir (0, 1 ou 2). duo : seulement des livres publiés de l'auteur.
+// La modification de la page d'un livre n'est pas ici : elle se fait par le bouton « Modifier la page »
+// de l'onglet Livres (retirée des services le 11 octobre, à la demande de Marcel).
 var SERVICES = [
-  { cle: 'corrections', nom: 'Modifier la page d\'un livre', prix: '5 $ ou 10 $ par texte, 10 $ par image', desc: 'Mettre à jour les textes et les images de la page de votre livre. Le prix se calcule selon l\'ampleur des changements.', livres: 1 },
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
   { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
   { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
