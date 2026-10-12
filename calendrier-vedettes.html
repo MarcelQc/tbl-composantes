@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Calendrier des vedettes | Éditions TBL</title>
+<style>
+/* Calendrier de mise en vedette (calendrier-mise-en-vedette.md). Même allure que l'Espace Auteurs : fond noir,
+   cartes sombres, rouge TBL. Une rangée par semaine, ses places de gauche à droite (occupées, choix en cours,
+   libres) ; à droite (ou dessous sur téléphone), le panneau de réservation avec le total en direct. */
+:root{--bg:#000;--card:#16181c;--card2:#111317;--line:#34373e;--txt:#f5f5f5;--muted:#b7bac2;--red:#e52530;--redsoft:#5b2126;--ok:#4cc38a;--orange:#e8a33d;--orangesoft:#3d2c12;--blue:#5b9bf0;--bluesoft:#14233d}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.wrap{width:min(1160px,calc(100% - 28px));margin:auto;padding:18px 0 40px}
+h1{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:6px 0 8px}
+h2{margin:0 0 6px;font-size:1.25rem}
+h3{margin:0 0 10px;font-size:1.05rem}
+p{margin:0}
+.sub,.note{color:var(--muted)}
+.note{font-size:.9rem}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+.btn{border:0;border-radius:9px;padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;cursor:pointer;width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);width:auto;padding:8px 14px;font-weight:normal}
+select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
+
+.entete{margin-bottom:16px}
+/* Même largeur de contenu que l'Éditeur de livre (modifier-livre.html : .pg, max 1000px). */
+.bloc{max-width:1000px;margin:0 auto}
+.vitrine{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:16px}
+.vitrine .titre{flex:1 1 220px}
+.vitrine .livres{display:flex;gap:10px;flex-wrap:wrap}
+.vitrine img,.vitrine .sans-image{width:54px;height:81px}
+
+.mise{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:900px){.mise{grid-template-columns:1fr}}
+
+.legende{width:0;min-width:100%;display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.85rem;color:var(--muted);margin-bottom:12px}
+.legende span{display:inline-flex;gap:6px;align-items:center}
+.legende i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.l-libre{border:1px dashed var(--muted)}.l-res{background:#2b2f37}.l-pay{background:var(--orangesoft);border:1px solid var(--orange)}.l-appr{background:var(--bluesoft);border:1px solid var(--blue)}.l-choix{background:var(--redsoft);border:1px solid var(--red)}
+
+.semaines{display:grid;gap:10px;position:relative;overflow-y:auto;overscroll-behavior:contain}
+.semaines.defile{padding-right:6px}
+.btn.sec.ajout-semaine{display:block;width:100%;margin-top:10px;padding:10px 14px;border-style:dashed}
+.btn.sec.ajout-semaine:hover{border-color:var(--red)}
+.semaine{display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+@media (max-width:560px){.semaine{grid-template-columns:1fr}}
+.semaine .quand b{display:block}
+.semaine .quand span{font-size:.82rem;color:var(--muted)}
+.places{display:grid;grid-template-columns:repeat(var(--nb,4),minmax(0,96px));gap:8px}
+.place{position:relative;border-radius:9px;padding:5px;background:#20232a;border:1px solid transparent;cursor:default;font-size:.8rem;line-height:1.25}
+.place img,.sans-image{width:54px;height:81px;object-fit:cover;border-radius:4px;background:#2b2f37;display:block}
+.place img,.place .sans-image{width:100%;height:auto;aspect-ratio:2/3}
+.place .retirer{font-size:.75rem;text-align:center}
+.sans-image{display:flex;align-items:center;justify-content:center;font-weight:bold;color:var(--muted);font-size:.8rem}
+.place .t{font-weight:bold;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.place .a{color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.place.libre{background:transparent;border:1px dashed #5a5e68;cursor:pointer}
+.place.libre img,.place.libre .sans-image{opacity:.35}
+.place.libre .t{color:var(--muted);font-weight:normal}
+.place.libre:hover{border-color:var(--red)}
+.place.libre.bloque{cursor:not-allowed}
+.place.libre.bloque:hover{border-color:#5a5e68}
+.place.paiement{background:var(--orangesoft);border-color:var(--orange)}
+.place.approbation{background:var(--bluesoft);border-color:var(--blue)}
+.place.paiement .a{color:var(--orange)}
+.place.choix{background:var(--redsoft);border-color:var(--red);cursor:pointer}
+.place.choix .a{color:#ffb3b8}
+.place.retirable{cursor:pointer}
+.place.retirable:hover{border-color:var(--red)}
+.place .retirer{position:absolute;inset:0;border-radius:9px;background:rgba(229,37,48,.92);color:#fff;font-weight:bold;display:flex;align-items:center;justify-content:center}
+
+.panneau{position:sticky;top:12px;display:grid;gap:14px}
+.panneau label{display:block;color:var(--muted);font-size:.9rem;margin-bottom:6px}
+.liste-choix{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.9rem;position:relative;overflow-y:auto;overscroll-behavior:contain}
+.liste-choix.defile{padding-right:6px}
+.liste-choix li{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.liste-choix button{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 4px;font-size:1rem}
+.liste-choix button:hover{color:var(--red)}
+.total{display:grid;gap:3px;font-size:.92rem}
+.total div{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.total .grand{border-top:1px solid var(--line);margin-top:6px;padding-top:6px;font-weight:bold;font-size:1.05rem}
+.total .gratuite{color:var(--ok)}
+.demandes{border-color:var(--blue)}
+.demande{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.9rem}
+.demande+.demande{margin-top:8px}
+.demande ul{margin:4px 0 8px;padding-left:18px;color:var(--muted)}
+.demande .motif{width:100%;margin-bottom:8px;background:#0f1114;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;color:inherit}
+.demande .actions{display:flex;gap:8px}
+.demande .actions .btn{padding:8px 10px;font-size:.88rem}
+.attente{margin-top:12px;font-size:.9rem;border-radius:8px;padding:8px 10px;background:var(--bluesoft);border:1px solid var(--blue)}
+.chrono{margin-top:12px;border:1px solid var(--orange);background:var(--orangesoft);border-radius:8px;padding:10px 12px}
+.chrono-ligne{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.92rem}
+.chrono-ligne b{font-size:1.4rem;font-variant-numeric:tabular-nums;color:var(--orange)}
+.chrono.urgent{border-color:var(--red);background:var(--redsoft)}
+.chrono.urgent .chrono-ligne b{color:#ffb3b8}
+.chrono .note{margin-top:4px;font-size:.82rem}
+.message{margin-top:12px;font-size:.9rem;border-radius:8px;padding:8px 10px;background:var(--card2);border:1px solid var(--line)}
+.message.ok{border-color:var(--ok);color:var(--ok)}
+.message.mal{border-color:var(--red);color:#ffb3b8}
+.defauts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
+.defauts label{color:var(--muted);font-size:.85rem;display:block;margin-bottom:4px}
+.section-admin{margin-top:16px}
+.slider{position:relative;margin-top:12px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px 48px 12px}
+.slider.complet{padding:16px 12px 12px}
+.slider .piste{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none}
+.slider .piste::-webkit-scrollbar{display:none}
+.slider .diapo{flex:0 0 25%;padding:0 8px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+@media (max-width:640px){.slider .diapo{flex-basis:50%}}
+.slider .diapo img,.slider .diapo .sans-image{width:100%;max-width:140px;height:auto;aspect-ratio:2/3;border-radius:6px;object-fit:cover;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.slider .diapo .sans-image{font-size:1.4rem}
+.slider .diapo .t{font-weight:bold;font-size:.9rem;line-height:1.3}
+.slider .diapo .p{font-size:.8rem;color:var(--muted)}
+.slider .fleche{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#20232a;cursor:pointer;font-size:1.1rem;line-height:1}
+.slider .fleche:hover{border-color:var(--red)}
+.slider .prec{left:8px}.slider .suiv{right:8px}
+.slider .points{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.slider .points button{width:9px;height:9px;padding:0;border-radius:50%;border:0;background:#5a5e68;cursor:pointer}
+.slider .points button.actif{background:var(--red)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bloc">
+  <header class="entete">
+    <h1 id="titre-service">Mise en vedette</h1>
+    <p class="sub" id="texte-service">Votre livre dans la vitrine de la page d'accueil et dans le carrousel pendant une semaine, pour 25 $ par semaine (30,18 $ avec les frais de service et les taxes).</p>
+  </header>
+
+  <section class="card vitrine" aria-label="En vitrine cette semaine">
+    <div class="titre"><h2>Cette semaine</h2><p class="note" id="vitrine-dates"></p></div>
+    <div class="livres" id="vitrine"></div>
+  </section>
+
+  <div class="mise">
+    <section aria-label="Semaines à venir">
+      <div class="legende">
+        <span><i class="l-libre"></i>Libre (livre de TBL par défaut)</span>
+        <span><i class="l-res"></i>Réservée</span>
+        <span><i class="l-pay"></i>Paiement en cours</span>
+        <span><i class="l-appr"></i>En attente d'approbation</span>
+        <span><i class="l-choix"></i>Votre choix</span>
+      </div>
+      <div class="semaines" id="semaines"></div>
+      <button type="button" class="btn sec ajout-semaine" id="b-ajout-semaine">+ Ajouter la semaine suivante</button>
+    </section>
+
+    <aside class="panneau">
+      <div class="card demandes" id="demandes" hidden>
+        <h3>Demandes à approuver</h3>
+        <div id="liste-demandes"></div>
+      </div>
+      <div class="card">
+        <h3>Votre réservation</h3>
+        <label for="choix-livre" id="label-livre">Livre à mettre en vedette</label>
+        <select id="choix-livre"></select>
+        <p class="note" style="margin-top:8px">Touchez une place libre pour la choisir. Un livre ne peut occuper qu'une place par semaine.</p>
+      </div>
+      <div class="card">
+        <h3>Semaines choisies</h3>
+        <ul class="liste-choix" id="liste-choix"></ul>
+        <p class="note" id="aucun-choix">Aucune semaine choisie.</p>
+      </div>
+      <div class="card">
+        <div class="total" id="total"></div>
+        <div style="margin-top:12px"><button type="button" class="btn" id="b-reserver" disabled>Réserver</button></div>
+        <div class="chrono" id="chrono" role="timer" aria-live="off" hidden>
+          <div class="chrono-ligne"><span>Places retenues pour vous</span><b id="chrono-temps">5:00</b></div>
+          <p class="note">Terminez le paiement avant la fin du délai pour garantir votre réservation. Après 5 minutes, les places sont libérées.</p>
+
+        </div>
+        <p class="attente" id="attente" hidden>Votre demande attend l'approbation de TBL. Vous pourrez en faire une autre quand elle sera traitée.</p>
+        <p class="message" id="message" hidden></p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card section-admin" id="section-admin" hidden>
+    <h2>Livres de TBL par défaut</h2>
+    <p class="note">Ces livres remplissent les places libres, dans cet ordre. La vitrine n'est jamais vide.</p>
+    <div class="slider" id="slider-defauts" aria-roledescription="carrousel" aria-label="Livres de TBL par défaut">
+      <button type="button" class="fleche prec" aria-label="Livre précédent">‹</button>
+      <div class="piste"></div>
+      <button type="button" class="fleche suiv" aria-label="Livre suivant">›</button>
+      <div class="points"></div>
+    </div>
+    <div class="defauts" id="defauts"></div>
+    <p class="note" style="margin-top:10px">Retirer une réservation : touchez une place réservée, puis « Retirer ? » pour confirmer. Une réservation payée suit la règle de remboursement (note de crédit).</p>
+  </section>
+
+  </div>
+</div>
+
+<script>
+// ===== Calcul de la facture (mêmes règles que calculerFacture, livres-textes.js) =====
+var PRIX_SEMAINE = 2500; // cents
+var TAUX_FRAIS = 0.05, TAUX_TPS = 0.05, TAUX_TVQ = 0.09975;
+function facture(nbSemaines, gratuit) {
+  var sousTotal = nbSemaines * PRIX_SEMAINE;
+  var frais = Math.round(sousTotal * TAUX_FRAIS);
+  var base = sousTotal + frais;
+  var tps = Math.round(base * TAUX_TPS), tvq = Math.round(base * TAUX_TVQ);
+  if (gratuit) { return { sousTotal: sousTotal, frais: frais, gratuite: -base, tps: 0, tvq: 0, total: 0 }; }
+  return { sousTotal: sousTotal, frais: frais, gratuite: 0, tps: tps, tvq: tvq, total: base + tps + tvq };
+}
+function argent(c) {
+  var s = (Math.abs(c) / 100).toFixed(2).replace('.', ',');
+  return (c < 0 ? '-' : '') + s + ' $';
+}
+
+// ===== Semaines : lundi au dimanche, heure du Québec =====
+var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+var NB_SEMAINES = 10; // semaines à réserver affichées au départ ; le bouton du bas en ajoute une à la fois
+// Réservation à l'avance : 26 semaines (auteur payant et admin), 2 semaines en gratuité.
+function limiteSemaines() { return etat.gratuit && !etat.admin ? 2 : 26; }
+function aujourdhuiQuebec() {
+  var t = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return new Date(t + 'T12:00:00');
+}
+function lundi(d) { var r = new Date(d); r.setDate(r.getDate() - ((r.getDay() + 6) % 7)); return r; }
+function plusJours(d, n) { var r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function court(d) { return d.getDate() + ' ' + MOIS[d.getMonth()]; }
+function semaines() {
+  var debut = lundi(aujourdhuiQuebec());
+  var l = [];
+  var n = Math.min(NB_SEMAINES, limiteSemaines());
+  for (var i = 0; i <= n; i++) { l.push(plusJours(debut, 7 * i)); }
+  return l; // l[0] = semaine en cours (vitrine), puis les semaines à réserver
+}
+
+// ===== État =====
+var etat = {
+  role: 'payant', admin: false, gratuit: false, auteurId: null, nbPlaces: 4,
+  livres: [], reservations: [], defauts: [],
+  choix: [],          // [{ semaine, livreId }] : choix en cours de l'auteur
+  livreChoisi: null,
+  aRetirer: null      // { semaine, livreId } : première touche sur une place, en attente de confirmation
+};
+
+function livre(id) { return etat.livres.filter(function (l) { return l.id === id; })[0] || null; }
+function resaSemaine(s) { return etat.reservations.filter(function (r) { return r.semaine === s; }); }
+function choixSemaine(s) { return etat.choix.filter(function (c) { return c.semaine === s; }); }
+function livresProposes() {
+  // Seulement les livres publiés (statut Publier) ; le serveur fait déjà ce filtre.
+  var publies = etat.livres.filter(function (l) { return !l.statut || l.statut === 'Publier'; });
+  return etat.admin ? publies : publies.filter(function (l) { return l.auteurId === etat.auteurId; });
+}
+function dejaPris(s, livreId) {
+  return resaSemaine(s).some(function (r) { return r.livreId === livreId; }) || choixSemaine(s).some(function (c) { return c.livreId === livreId; });
+}
+
+// ===== Dessin =====
+function el(tag, cls, texte) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (texte !== undefined) { n.textContent = texte; } return n; }
+function couverture(l) {
+  if (l && l.image) {
+    var img = el('img'); img.src = l.image; img.alt = '';
+    img.addEventListener('error', function () { img.replaceWith(initiales(l)); });
+    return img;
+  }
+  return initiales(l);
+}
+function initiales(l) {
+  var d = el('div', 'sans-image');
+  d.textContent = l ? l.titre.split(/\s+/).filter(function (m) { return m.length > 2; }).slice(0, 2).map(function (m) { return m[0].toUpperCase(); }).join('') : '?';
+  return d;
+}
+// Une place = la couverture seule ; titre, auteur et statut en info-bulle.
+function carte(cls, l, statut) {
+  var b = el('div', 'place ' + cls);
+  b.appendChild(couverture(l));
+  b.title = (l ? l.titre + ', ' + l.auteurNom : 'Place libre') + (statut ? ' (' + statut + ')' : '');
+  return b;
+}
+
+function rendreVitrine(s) {
+  var v = document.getElementById('vitrine');
+  v.textContent = '';
+  var cle = iso(s);
+  var occupees = resaSemaine(cle).filter(function (r) { return r.statut === 'reservee'; }).map(function (r) { return livre(r.livreId); });
+  var libres = defautsLibres(cle, occupees.length);
+  occupees.concat(libres).slice(0, etat.nbPlaces).forEach(function (l) { var c = couverture(l); c.title = l ? l.titre : ''; v.appendChild(c); });
+  document.getElementById('vitrine-dates').textContent = 'Du ' + court(s) + ' au ' + court(plusJours(s, 6)) + ' : ce que les visiteurs voient en ce moment.';
+}
+
+// Livres de TBL par défaut pour les places libres d'une semaine (sans répéter un livre déjà en vedette).
+function defautsLibres(cle, nbOccupees) {
+  var pris = resaSemaine(cle).map(function (r) { return r.livreId; });
+  return etat.defauts.map(livre).filter(function (l) { return l && pris.indexOf(l.id) < 0; }).slice(0, Math.max(0, etat.nbPlaces - nbOccupees));
+}
+
+function rendreSemaines() {
+  var zone = document.getElementById('semaines');
+  var defilement = zone.scrollTop;
+  zone.textContent = '';
+  var liste = semaines();
+  rendreVitrine(liste[0]);
+  liste.slice(1).forEach(function (s) {
+    var cle = iso(s);
+    var rang = el('div', 'semaine');
+    var q = el('div', 'quand');
+    q.appendChild(el('b', null, 'Semaine du ' + court(s)));
+    q.appendChild(el('span', null, 'au ' + court(plusJours(s, 6))));
+    rang.appendChild(q);
+    var places = el('div', 'places');
+    places.style.setProperty('--nb', etat.nbPlaces);
+
+    var resas = resaSemaine(cle);
+    var choix = choixSemaine(cle);
+    // 1. Places occupées (ordre de réservation)
+    resas.forEach(function (r) {
+      var l = livre(r.livreId);
+      var payee = r.statut === 'reservee';
+      var b = carte(payee ? 'reservee' : r.statut, l, payee ? 'réservée' : (r.statut === 'approbation' ? 'en attente d\'approbation' : 'paiement en cours'));
+      if (etat.admin) {
+        b.classList.add('retirable');
+        b.setAttribute('role', 'button'); b.tabIndex = 0;
+        b.setAttribute('aria-label', 'Retirer ' + (l ? l.titre : '') + ', semaine du ' + court(s));
+        if (etat.aRetirer && etat.aRetirer.semaine === cle && etat.aRetirer.livreId === r.livreId) {
+          b.appendChild(el('div', 'retirer', 'Retirer ?'));
+        }
+        var agir = function () { toucherReservee(cle, r.livreId); };
+        b.addEventListener('click', agir);
+        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); agir(); } });
+      }
+      places.appendChild(b);
+    });
+    // 2. Choix en cours de l'auteur
+    choix.forEach(function (c) {
+      var l = livre(c.livreId);
+      var b = carte('choix', l, 'votre choix');
+      b.setAttribute('role', 'button'); b.tabIndex = 0;
+      b.setAttribute('aria-label', 'Retirer votre choix ' + (l ? l.titre : '') + ', semaine du ' + court(s));
+      var agir = function () { enleverChoix(cle, c.livreId); };
+      b.addEventListener('click', agir);
+      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); agir(); } });
+      places.appendChild(b);
+    });
+    // 3. Places libres (livre de TBL par défaut, pâli)
+    var nbLibres = etat.nbPlaces - resas.length - choix.length;
+    var defauts = defautsLibres(cle, resas.length + choix.length);
+    var bloque = !etat.livreChoisi || dejaPris(cle, etat.livreChoisi);
+    for (var i = 0; i < nbLibres; i++) {
+      var d = defauts[i] || null;
+      var b = carte('libre' + (bloque ? ' bloque' : ''), d, d ? 'libre, livre de TBL par défaut' : '');
+      b.setAttribute('role', 'button'); b.tabIndex = 0;
+      b.setAttribute('aria-label', 'Choisir une place libre, semaine du ' + court(s));
+      if (bloque) {
+        b.setAttribute('aria-disabled', 'true');
+        b.title += '\n' + (etat.livreChoisi ? 'Ce livre est déjà en vedette cette semaine.' : 'Choisissez d\'abord un livre.');
+      }
+      (function (cleS) {
+        var agir = function () { choisirPlace(cleS); };
+        b.addEventListener('click', agir);
+        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); agir(); } });
+      })(cle);
+      places.appendChild(b);
+    }
+    rang.appendChild(places);
+    zone.appendChild(rang);
+  });
+  var ajout = document.getElementById('b-ajout-semaine');
+  ajout.textContent = '+ Ajouter la semaine du ' + court(plusJours(liste[liste.length - 1], 7));
+  ajout.hidden = liste.length - 1 >= limiteSemaines();
+  ajusterHauteur();
+  zone.scrollTop = defilement;
+}
+
+// La liste montre 6 semaines ; au-delà, elle défile.
+var SEMAINES_VISIBLES = 6;
+function ajusterHauteur() {
+  var zone = document.getElementById('semaines');
+  var rangs = zone.children;
+  var trop = rangs.length > SEMAINES_VISIBLES;
+  zone.classList.toggle('defile', trop);
+  zone.style.maxHeight = trop ? (rangs[SEMAINES_VISIBLES - 1].offsetTop + rangs[SEMAINES_VISIBLES - 1].offsetHeight) + 'px' : '';
+}
+window.addEventListener('resize', ajusterHauteur);
+
+var CHOIX_VISIBLES = 8;
+function rendrePanneau() {
+  var sel = document.getElementById('choix-livre');
+  var garde = etat.livreChoisi;
+  sel.textContent = '';
+  var proposes = livresProposes();
+  proposes.forEach(function (l) {
+    var o = el('option', null, etat.admin ? l.titre + ' (' + l.auteurNom + ')' : l.titre);
+    o.value = l.id;
+    sel.appendChild(o);
+  });
+  if (!proposes.length) { sel.appendChild(el('option', null, 'Aucun livre publié')); sel.disabled = true; }
+  else { sel.disabled = false; etat.livreChoisi = proposes.some(function (l) { return l.id === garde; }) ? garde : proposes[0].id; sel.value = etat.livreChoisi; }
+  document.getElementById('label-livre').textContent = etat.admin ? 'Livre à mettre en vedette (tous les livres)' : 'Livre à mettre en vedette (vos livres publiés)';
+
+  var ul = document.getElementById('liste-choix');
+  ul.textContent = '';
+  etat.choix.slice().sort(function (a, b) { return a.semaine < b.semaine ? -1 : 1; }).forEach(function (c) {
+    var li = el('li');
+    var d = new Date(c.semaine + 'T12:00:00');
+    var l = livre(c.livreId);
+    li.appendChild(el('span', null, 'Semaine du ' + court(d) + ' : ' + (l ? l.titre : '')));
+    var x = el('button', null, '×'); x.type = 'button'; x.setAttribute('aria-label', 'Retirer ce choix');
+    x.addEventListener('click', function () { enleverChoix(c.semaine, c.livreId); });
+    li.appendChild(x);
+    ul.appendChild(li);
+  });
+  document.getElementById('aucun-choix').hidden = etat.choix.length > 0;
+  // Au plus 8 semaines choisies visibles ; au-delà, la liste défile.
+  var trop = ul.children.length > CHOIX_VISIBLES;
+  ul.classList.toggle('defile', trop);
+  ul.style.maxHeight = trop ? (ul.children[CHOIX_VISIBLES - 1].offsetTop + ul.children[CHOIX_VISIBLES - 1].offsetHeight) + 'px' : '';
+
+  var n = etat.choix.length;
+  var gratuit = etat.gratuit || etat.admin;
+  var f = facture(n, gratuit);
+  var t = document.getElementById('total');
+  t.textContent = '';
+  function ligne(nom, val, cls) { var d = el('div', cls); d.appendChild(el('span', null, nom)); d.appendChild(el('span', null, argent(val))); t.appendChild(d); }
+  ligne(n + ' semaine' + (n > 1 ? 's' : '') + ' × 25,00 $', f.sousTotal);
+  ligne('Frais de service (5 %)', f.frais);
+  if (f.gratuite) { ligne(etat.admin ? 'Gratuité (réservation de TBL)' : 'Gratuité (services offerts)', f.gratuite, 'gratuite'); }
+  ligne('TPS', f.tps);
+  ligne('TVQ', f.tvq);
+  ligne('Total', f.total, 'grand');
+  var b = document.getElementById('b-reserver');
+  var approbation = etat.gratuit && !etat.admin;
+  var enAttente = approbation && demandeEnAttente(etat.auteurId);
+  b.disabled = n === 0 || enAttente;
+  b.textContent = approbation ? 'Demander la réservation' : (n === 0 ? 'Réserver' : (f.total > 0 ? 'Payer ' + argent(f.total) + ' et réserver' : 'Réserver (0,00 $)'));
+  document.getElementById('attente').hidden = !enAttente;
+  rendreDemandes();
+}
+
+// ===== Approbation (auteur en gratuité) : une seule demande à la fois par auteur =====
+function auteurDe(r) { return r.auteurId || (livre(r.livreId) || {}).auteurId; }
+function demandeEnAttente(auteurId) {
+  return etat.reservations.some(function (r) { return r.statut === 'approbation' && auteurDe(r) === auteurId; });
+}
+function rendreDemandes() {
+  var boite = document.getElementById('demandes');
+  var z = document.getElementById('liste-demandes');
+  z.textContent = '';
+  var parAuteur = {};
+  if (etat.admin) {
+    etat.reservations.filter(function (r) { return r.statut === 'approbation'; }).forEach(function (r) {
+      var a = auteurDe(r);
+      (parAuteur[a] = parAuteur[a] || []).push(r);
+    });
+  }
+  var auteurs = Object.keys(parAuteur);
+  boite.hidden = !auteurs.length;
+  auteurs.forEach(function (a) {
+    var liste = parAuteur[a].slice().sort(function (x, y) { return x.semaine < y.semaine ? -1 : 1; });
+    var l0 = livre(liste[0].livreId);
+    var d = el('div', 'demande');
+    d.appendChild(el('b', null, l0 ? l0.auteurNom : 'Auteur'));
+    var ul = el('ul');
+    liste.forEach(function (r) {
+      var l = livre(r.livreId);
+      ul.appendChild(el('li', null, 'Semaine du ' + court(new Date(r.semaine + 'T12:00:00')) + ' : ' + (l ? l.titre : '')));
+    });
+    d.appendChild(ul);
+    var motif = el('input', 'motif'); motif.type = 'text'; motif.placeholder = 'Motif du refus (facultatif)';
+    motif.setAttribute('aria-label', 'Motif du refus (facultatif)');
+    d.appendChild(motif);
+    var act = el('div', 'actions');
+    var ok = el('button', 'btn', 'Accepter'); ok.type = 'button';
+    ok.addEventListener('click', function () { decider(a, true); });
+    var non = el('button', 'btn sec', 'Refuser'); non.type = 'button';
+    non.addEventListener('click', function () { decider(a, false, motif.value.trim()); });
+    act.appendChild(ok); act.appendChild(non);
+    d.appendChild(act);
+    z.appendChild(d);
+  });
+}
+function decider(auteurId, accepte, motif) {
+  var miennes = function (r) { return r.statut === 'approbation' && auteurDe(r) === auteurId; };
+  if (accepte) {
+    envoyer('tbl-vedette:approuver', { auteurId: auteurId });
+
+  } else {
+    envoyer('tbl-vedette:refuser', { auteurId: auteurId, motif: motif || '' });
+
+  }
+  rendreTout();
+}
+
+function rendreDefauts() {
+  var s = document.getElementById('section-admin');
+  s.hidden = !etat.admin;
+  if (!etat.admin) { return; }
+  var z = document.getElementById('defauts');
+  z.textContent = '';
+  for (var i = 0; i < etat.nbPlaces; i++) {
+    var div = el('div');
+    var lab = el('label', null, 'Place ' + (i + 1)); lab.htmlFor = 'defaut-' + i;
+    var sel = el('select'); sel.id = 'defaut-' + i;
+    // Un livre ne peut être choisi qu'une fois : ceux des autres places sont grisés.
+    var autres = etat.defauts.slice(0, etat.nbPlaces).filter(function (id, j) { return j !== i; });
+    etat.livres.filter(function (l) { return l.tbl; }).forEach(function (l) {
+      var pris = autres.indexOf(l.id) >= 0;
+      var o = el('option', null, pris ? l.titre + ' (déjà choisi)' : l.titre);
+      o.value = l.id; o.disabled = pris;
+      sel.appendChild(o);
+    });
+    sel.value = etat.defauts[i] || '';
+    (function (idx, select) {
+      select.addEventListener('change', function () {
+        var doublon = etat.defauts.some(function (id, j) { return j !== idx && j < etat.nbPlaces && id === select.value; });
+        if (doublon) { select.value = etat.defauts[idx] || ''; return; }
+        etat.defauts[idx] = select.value;
+        envoyer('tbl-vedette:defauts', { livreIds: etat.defauts.slice(0, etat.nbPlaces) });
+        rendreSemaines();
+        rendreDefauts();
+        rendreSlider(idx);
+      });
+    })(i, sel);
+    div.appendChild(lab); div.appendChild(sel);
+    z.appendChild(div);
+  }
+  rendreSlider(0);
+}
+
+// Slider des livres de TBL par défaut : 4 couvertures côte à côte (2 sur téléphone), le titre en dessous.
+// Les flèches et les points n'apparaissent que si tous les livres ne tiennent pas dans la largeur.
+var slider = document.getElementById('slider-defauts');
+var piste = slider.querySelector('.piste');
+function largeurDiapo() { return piste.firstElementChild ? piste.firstElementChild.offsetWidth : 0; }
+function nbPositions() {
+  var w = largeurDiapo();
+  if (!w) { return 1; }
+  return Math.max(1, piste.children.length - Math.round(piste.clientWidth / w) + 1);
+}
+function diapoActive() { var w = largeurDiapo(); return w ? Math.round(piste.scrollLeft / w) : 0; }
+function allerA(i) {
+  var n = nbPositions();
+  i = (i + n) % n;
+  piste.scrollTo({ left: i * largeurDiapo() });
+}
+function majNavigation() {
+  var n = nbPositions();
+  var points = slider.querySelector('.points');
+  if (points.children.length !== n) {
+    points.textContent = '';
+    for (var i = 0; i < n; i++) {
+      var p = el('button'); p.type = 'button'; p.setAttribute('aria-label', 'Position ' + (i + 1));
+      (function (idx) { p.addEventListener('click', function () { allerA(idx); }); })(i);
+      points.appendChild(p);
+    }
+  }
+  slider.querySelectorAll('.fleche').forEach(function (f) { f.hidden = n < 2; });
+  points.hidden = n < 2;
+  piste.style.justifyContent = n < 2 ? 'center' : '';
+  slider.classList.toggle('complet', n < 2);
+  var a = diapoActive();
+  Array.prototype.forEach.call(points.children, function (p, i) { p.classList.toggle('actif', i === a); p.setAttribute('aria-current', i === a ? 'true' : 'false'); });
+}
+function rendreSlider(active) {
+  piste.textContent = '';
+  var n = etat.nbPlaces;
+  for (var i = 0; i < n; i++) {
+    var l = livre(etat.defauts[i]);
+    var d = el('div', 'diapo');
+    d.setAttribute('role', 'group');
+    d.setAttribute('aria-label', 'Place ' + (i + 1) + ' sur ' + n);
+    d.appendChild(couverture(l));
+    d.appendChild(el('div', 't', l ? l.titre : 'Aucun livre choisi'));
+    d.appendChild(el('div', 'p', 'Place ' + (i + 1)));
+    piste.appendChild(d);
+  }
+  piste.style.scrollBehavior = 'auto';
+  piste.scrollLeft = Math.min(active || 0, nbPositions() - 1) * largeurDiapo();
+  piste.style.scrollBehavior = '';
+  majNavigation();
+}
+slider.querySelector('.prec').addEventListener('click', function () { allerA(diapoActive() - 1); });
+slider.querySelector('.suiv').addEventListener('click', function () { allerA(diapoActive() + 1); });
+piste.addEventListener('scroll', function () { clearTimeout(piste._t); piste._t = setTimeout(majNavigation, 60); });
+window.addEventListener('resize', function () { if (piste.children.length) { majNavigation(); } });
+
+function rendreTout() {
+  var promo = etat.nbPlaces === 1;
+  document.getElementById('titre-service').textContent = promo ? 'Courriel promotionnel' : 'Mise en vedette';
+  document.getElementById('texte-service').textContent = promo
+    ? 'Un seul courriel promotionnel par semaine pour tout le site, qui présente votre livre : 25 $ par semaine (30,18 $ avec les frais de service et les taxes).'
+    : 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine, pour 25 $ par semaine (30,18 $ avec les frais de service et les taxes).';
+  rendrePanneau();
+  rendreSemaines();
+  rendreDefauts();
+  lancerChrono();
+}
+
+// ===== Actions =====
+function message(texte, cls) {
+  var m = document.getElementById('message');
+  m.hidden = !texte; m.textContent = texte || ''; m.className = 'message' + (cls ? ' ' + cls : '');
+}
+function choisirPlace(cle) {
+  if (!etat.livreChoisi) { message('Choisissez d\'abord un livre.', 'mal'); return; }
+  if (dejaPris(cle, etat.livreChoisi)) { message('Ce livre est déjà en vedette cette semaine : un livre ne peut occuper qu\'une place par semaine.', 'mal'); return; }
+  if (resaSemaine(cle).length + choixSemaine(cle).length >= etat.nbPlaces) { message('Cette semaine est complète.', 'mal'); return; }
+  etat.choix.push({ semaine: cle, livreId: etat.livreChoisi });
+  message('');
+  rendreTout();
+}
+function enleverChoix(cle, livreId) {
+  etat.choix = etat.choix.filter(function (c) { return !(c.semaine === cle && c.livreId === livreId); });
+  rendreTout();
+}
+// Admin : première touche = « Retirer ? », deuxième touche = retrait confirmé.
+function toucherReservee(cle, livreId) {
+  if (etat.aRetirer && etat.aRetirer.semaine === cle && etat.aRetirer.livreId === livreId) {
+    etat.reservations = etat.reservations.filter(function (r) { return !(r.semaine === cle && r.livreId === livreId); });
+    etat.aRetirer = null;
+    envoyer('tbl-vedette:retirer', { semaine: cle, livreId: livreId });
+    message('Réservation retirée. Si elle était payée, la note de crédit et le remboursement suivent la règle de remboursement.', 'ok');
+  } else {
+    etat.aRetirer = { semaine: cle, livreId: livreId };
+    setTimeout(function () { if (etat.aRetirer && etat.aRetirer.semaine === cle && etat.aRetirer.livreId === livreId) { etat.aRetirer = null; rendreSemaines(); } }, 4000);
+  }
+  rendreSemaines();
+}
+function reserver() {
+  if (!etat.choix.length) { return; }
+  var approbation = etat.gratuit && !etat.admin;
+  if (approbation && demandeEnAttente(etat.auteurId)) { message('Une demande attend déjà l\'approbation de TBL. Vous pourrez en faire une autre quand elle sera traitée.', 'mal'); return; }
+  var gratuit = etat.gratuit || etat.admin;
+  var choix = etat.choix.slice();
+  envoyer('tbl-vedette:reserver', { choix: choix });
+
+}
+
+// ===== Chrono de retenue : 5 minutes pour payer, sinon les places sont libérées =====
+var DELAI_RETENUE = 5 * 60 * 1000;
+var minuterie = null;
+function mesRetenues() {
+  return etat.reservations.filter(function (r) { return r.statut === 'paiement' && r.expire && r.auteurId === etat.auteurId; });
+}
+function majChrono() {
+  var maintenant = Date.now();
+  // Les retenues échues (de tous les auteurs) libèrent leur place.
+  var echues = etat.reservations.filter(function (r) { return r.statut === 'paiement' && r.expire && r.expire <= maintenant; });
+  var miennesEchues = echues.some(function (r) { return r.auteurId === etat.auteurId; });
+  if (echues.length) {
+    etat.reservations = etat.reservations.filter(function (r) { return echues.indexOf(r) < 0; });
+    rendreTout();
+  }
+  var miennes = mesRetenues();
+  var boite = document.getElementById('chrono');
+  if (!miennes.length) {
+    boite.hidden = true;
+    clearInterval(minuterie); minuterie = null;
+    if (miennesEchues) { message('Le délai de 5 minutes est écoulé : les places retenues sont libérées. Vous pouvez les choisir de nouveau.', 'mal'); }
+    return;
+  }
+  var reste = Math.max(0, Math.min.apply(null, miennes.map(function (r) { return r.expire; })) - maintenant);
+  var s = Math.ceil(reste / 1000);
+  boite.hidden = false;
+  boite.classList.toggle('urgent', s <= 60);
+  document.getElementById('chrono-temps').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function lancerChrono() {
+  if (!minuterie && etat.reservations.some(function (r) { return r.statut === 'paiement' && r.expire; })) {
+    minuterie = setInterval(majChrono, 1000);
+  }
+  majChrono();
+}
+
+// ===== Communication avec la page Wix (postMessage) =====
+var EN_WIX = true;
+function envoyer(type, contenu) {
+  var m = Object.assign({ type: type }, contenu || {});
+  if (EN_WIX) { window.parent.postMessage(m, '*'); }
+
+}
+window.addEventListener('message', function (e) {
+  if (!EN_WIX || e.source !== window.parent) { return; }
+  var m = e.data || {};
+  if (m.type === 'tbl-vedette:data') {
+    etat.admin = !!m.estAdmin; etat.gratuit = !!m.gratuit; etat.auteurId = m.auteur ? m.auteur.id : null;
+    // Les semaines passées (avant le lundi de la semaine en cours) sont ignorées.
+    var cetteSemaine = iso(lundi(aujourdhuiQuebec()));
+    etat.livres = m.livres || []; etat.defauts = m.defauts || [];
+    etat.reservations = (m.reservations || []).filter(function (r) { return r.semaine >= cetteSemaine; });
+    etat.nbPlaces = m.nbPlaces || 4; etat.choix = [];
+    rendreTout();
+  }
+});
+
+document.getElementById('choix-livre').addEventListener('change', function () { etat.livreChoisi = this.value; message(''); rendreSemaines(); });
+document.getElementById('b-reserver').addEventListener('click', reserver);
+document.getElementById('b-ajout-semaine').addEventListener('click', function () {
+  NB_SEMAINES = Math.min(NB_SEMAINES + 1, limiteSemaines());
+  rendreSemaines();
+  var zone = document.getElementById('semaines');
+  zone.scrollTop = zone.scrollHeight; // montre la semaine ajoutée
+});
+
+if (EN_WIX) { envoyer('tbl-vedette:ready'); }
+
+</script>
+</body>
+</html>
