@@ -998,6 +998,21 @@ function ouvrirEditeur(livreId) {
 
 }
 
+// Calendrier des vedettes (service « Mise en vedette ») : même principe, dans un nouvel onglet. Le livre se
+// choisit dans le calendrier ; livreId (facultatif) le présélectionne.
+var URL_VEDETTES = 'https://www.editionstbl.ca/miseenvedette';
+function ouvrirVedettes(livreId) {
+  var suffixe = livreId ? '?livre=' + encodeURIComponent(livreId) : '';
+  if (EN_WIX) {
+    var onglet = null;
+    try { onglet = window.open(URL_VEDETTES + suffixe, '_blank'); } catch (e) { onglet = null; }
+    if (onglet) { return; }
+    envoyer({ type: 'ouvrirVedettes', livreId: livreId || '' });
+    return;
+  }
+
+}
+
 // Boutons d'un livre selon son statut et sa copie ouverte (plan du 9 octobre 2026).
 function actionsLivre(l, admin) {
   var zone = el('div', 'actions-livre');
@@ -1224,7 +1239,7 @@ var SERVICES = [
   { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
   { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
   { cle: 'fbimage', nom: 'Conception d\'une image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
-  { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 1 },
+  { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 0, calendrier: true },
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
   { cle: 'couverture', nom: 'Conception de couverture ou du verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
 ];
@@ -1235,6 +1250,10 @@ function livresPourService(service) {
   var livres = (d && d.livres) || [];
   if (service.livres === 2) {
     return livres.filter(function (l) { return l.statut === 'Publier' && l.auteurId === d.auteurId; });
+  }
+  // Mise en vedette : seulement les livres publiés (décision du 12 octobre 2026).
+  if (service.cle === 'vedette') {
+    return livres.filter(function (l) { return l.statut === 'Publier'; });
   }
   return livres;
 }
@@ -1259,6 +1278,16 @@ function carteService(service) {
   carte.appendChild(el('p', 'desc', service.desc));
   var zone = el('div', 'choix-livres');
   var livres = livresPourService(service);
+  // Mise en vedette : le livre et les semaines se choisissent dans le calendrier lui-même.
+  if (service.calendrier) {
+    if (!livres.length) {
+      zone.appendChild(el('p', 'note', 'Offert dès qu\'un de vos livres est publié.'));
+    } else {
+      zone.appendChild(bouton('Ouvrir le calendrier', 'btn petit', function () { ouvrirVedettes(); }));
+    }
+    carte.appendChild(zone);
+    return carte;
+  }
   var besoin = service.livres;
   if (livres.length < besoin) {
     zone.appendChild(el('p', 'note', besoin === 2 ? 'Offert dès que deux de vos livres sont publiés.' : 'Aucun livre disponible pour le moment.'));

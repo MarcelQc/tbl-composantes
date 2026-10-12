@@ -30,6 +30,10 @@ p{margin:0}
 select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
 
 .entete{margin-bottom:16px}
+.barre-haut{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.etat-page{margin-bottom:16px;font-size:1rem}
+/* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
+body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-admin{display:none}
 /* Même largeur de contenu que l'Éditeur de livre (modifier-livre.html : .pg, max 1000px). */
 .bloc{max-width:1000px;margin:0 auto}
 .vitrine{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:16px}
@@ -130,9 +134,15 @@ select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding
 
   <div class="bloc">
   <header class="entete">
+    <div class="barre-haut">
+      <button type="button" class="btn sec" id="b-retour">← Espace Auteurs</button>
+      <button type="button" class="btn sec" id="b-actualiser">↻ Actualiser</button>
+    </div>
     <h1 id="titre-service">Mise en vedette</h1>
     <p class="sub" id="texte-service">Votre livre dans la vitrine de la page d'accueil et dans le carrousel pendant une semaine, pour 25 $ par semaine (30,18 $ avec les frais de service et les taxes).</p>
   </header>
+
+  <p class="message etat-page" id="etat-page" hidden></p>
 
   <section class="card vitrine" aria-label="En vitrine cette semaine">
     <div class="titre"><h2>Cette semaine</h2><p class="note" id="vitrine-dates"></p></div>
@@ -219,7 +229,7 @@ function argent(c) {
 var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 var NB_SEMAINES = 10; // semaines à réserver affichées au départ ; le bouton du bas en ajoute une à la fois
 // Réservation à l'avance : 26 semaines (auteur payant et admin), 2 semaines en gratuité.
-function limiteSemaines() { return etat.gratuit && !etat.admin ? 2 : 26; }
+function limiteSemaines() { return etat.limite || (etat.gratuit && !etat.admin ? 2 : 26); }
 function aujourdhuiQuebec() {
   var t = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   return new Date(t + 'T12:00:00');
@@ -432,7 +442,7 @@ function rendrePanneau() {
   var b = document.getElementById('b-reserver');
   var approbation = etat.gratuit && !etat.admin;
   var enAttente = approbation && demandeEnAttente(etat.auteurId);
-  b.disabled = n === 0 || enAttente;
+  b.disabled = n === 0 || enAttente || !!etat.envoiEnCours;
   b.textContent = approbation ? 'Demander la réservation' : (n === 0 ? 'Réserver' : (f.total > 0 ? 'Payer ' + argent(f.total) + ' et réserver' : 'Réserver (0,00 $)'));
   document.getElementById('attente').hidden = !enAttente;
   rendreDemandes();
@@ -634,6 +644,13 @@ function reserver() {
   var gratuit = etat.gratuit || etat.admin;
   var choix = etat.choix.slice();
   envoyer('tbl-vedette:reserver', { choix: choix });
+  if (EN_WIX) {
+    // La page Wix répond par de nouvelles données (et ouvre la fenêtre de paiement pour un auteur payant).
+    etat.envoiEnCours = true;
+    message(approbation ? 'Envoi de votre demande…' : (gratuit ? 'Réservation en cours…' : 'Préparation du paiement…'), '');
+    rendrePanneau();
+    return;
+  }
 
 }
 
@@ -684,14 +701,49 @@ window.addEventListener('message', function (e) {
   if (!EN_WIX || e.source !== window.parent) { return; }
   var m = e.data || {};
   if (m.type === 'tbl-vedette:data') {
+    etat.envoiEnCours = false;
+    if (m.statut !== 'ok') { afficherEtatPage(m.statut); return; }
+    afficherEtatPage(null);
     etat.admin = !!m.estAdmin; etat.gratuit = !!m.gratuit; etat.auteurId = m.auteur ? m.auteur.id : null;
+    etat.limite = m.limite || null;
     // Les semaines passées (avant le lundi de la semaine en cours) sont ignorées.
     var cetteSemaine = iso(lundi(aujourdhuiQuebec()));
     etat.livres = m.livres || []; etat.defauts = m.defauts || [];
     etat.reservations = (m.reservations || []).filter(function (r) { return r.semaine >= cetteSemaine; });
     etat.nbPlaces = m.nbPlaces || 4; etat.choix = [];
     rendreTout();
+  } else if (m.type === 'tbl-vedette:message') {
+    message(m.texte || '', m.classe || '');
   }
+});
+
+// Message en haut de la page tant que le calendrier n'est pas affiché (chargement, accès refusé, erreur).
+var ETATS_PAGE = {
+  chargement: 'Chargement du calendrier…',
+  connexion: 'Connectez-vous avec votre compte d\'auteur pour réserver une mise en vedette.',
+  refuse: 'Le calendrier des vedettes est réservé aux auteurs des Éditions TBL.',
+  inactif: 'Votre compte d\'auteur est inactif. Écrivez-nous à clients@editionstbl.ca.',
+  erreur: 'Un petit problème de chargement. Touchez ↻ Actualiser pour réessayer.'
+};
+function afficherEtatPage(statut) {
+  var p = document.getElementById('etat-page');
+  document.body.classList.toggle('sans-donnees', !!statut);
+  p.hidden = !statut;
+  p.textContent = statut ? (ETATS_PAGE[statut] || ETATS_PAGE.erreur) : '';
+  p.className = 'message etat-page' + (statut && statut !== 'chargement' ? ' mal' : '');
+}
+
+// Livre choisi dans l'Espace Auteurs (onglet Services) : ?livre=<id>, présélectionné s'il est proposé.
+(function () {
+  var livre = new URLSearchParams(location.search).get('livre');
+  if (livre && /^[0-9a-f-]{36}$/i.test(livre)) { etat.livreChoisi = livre; }
+})();
+
+document.getElementById('b-retour').addEventListener('click', function () { envoyer('tbl-vedette:retour'); });
+document.getElementById('b-actualiser').addEventListener('click', function () {
+  message('');
+  if (EN_WIX) { afficherEtatPage('chargement'); envoyer('tbl-vedette:ready'); return; }
+
 });
 
 document.getElementById('choix-livre').addEventListener('change', function () { etat.livreChoisi = this.value; message(''); rendreSemaines(); });
@@ -703,7 +755,18 @@ document.getElementById('b-ajout-semaine').addEventListener('click', function ()
   zone.scrollTop = zone.scrollHeight; // montre la semaine ajoutée
 });
 
-if (EN_WIX) { envoyer('tbl-vedette:ready'); }
+// La composante peut se charger avant le code de la page : elle redemande ses données jusqu'à la première réponse.
+if (EN_WIX) {
+  afficherEtatPage('chargement');
+  var essais = 0;
+  (function demander() {
+    if (!document.body.classList.contains('sans-donnees') || essais >= 10) { return; }
+    if (document.getElementById('etat-page').textContent !== ETATS_PAGE.chargement) { return; }
+    essais += 1;
+    envoyer('tbl-vedette:ready');
+    setTimeout(demander, 1500);
+  })();
+}
 
 </script>
 </body>
