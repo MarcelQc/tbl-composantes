@@ -889,11 +889,11 @@ const TAUX_TVQ = 0.09975;
 // lignes : [{ nom, montant }] en CENTS (entiers). Frais de service sur le sous-total, puis TPS et TVQ sur
 // le sous-total plus les frais, chacune arrondie au cent. Ex. 100 $ + 100 $ : 210,00 + 10,50 + 20,95 = 241,45 $.
 //
-// options.gratuit (auteur gratuit ou admin, nouveau-livre-et-auteur.md) : une ligne « Ajustements » NÉGATIVE,
+// options.gratuit (auteur gratuit ou admin, nouveau-livre-et-auteur.md) : une ligne « Gratuité » NÉGATIVE,
 // placée après les services et les frais et AVANT les taxes, ramène la base taxable à 0 : TPS, TVQ et total
 // valent 0,00 $. Les frais restent calculés sur les vrais services. Les taxes théoriques (comme sans
-// ajustement) sont gardées pour le bloc « Contrôle ».
-// Ex. 5 $ + 10 $ + 10 $, frais 1,25 $, ajustements −26,25 $, total 0,00 $ ; TPS théorique 1,31 $, TVQ 2,62 $.
+// gratuité) sont gardées pour le bloc « Contrôle ».
+// Ex. 5 $ + 10 $ + 10 $, frais 1,25 $, gratuité −26,25 $, total 0,00 $ ; TPS théorique 1,31 $, TVQ 2,62 $.
 function calculerFacture(lignes, options) {
   const sousTotal = lignes.reduce((s, l) => s + l.montant, 0);
   const frais = Math.round(sousTotal * TAUX_FRAIS_SERVICE);
@@ -901,11 +901,11 @@ function calculerFacture(lignes, options) {
   const tpsTheorique = Math.round(baseReelle * TAUX_TPS);
   const tvqTheorique = Math.round(baseReelle * TAUX_TVQ);
   const gratuit = !!(options && options.gratuit);
-  const ajustement = gratuit ? -baseReelle : 0;
-  const base = baseReelle + ajustement;
+  const montantGratuite = gratuit ? -baseReelle : 0;
+  const base = baseReelle + montantGratuite;
   const tps = gratuit ? 0 : tpsTheorique;
   const tvq = gratuit ? 0 : tvqTheorique;
-  return { lignes, sousTotal, frais, ajustement, tps, tvq, total: base + tps + tvq, tpsTheorique, tvqTheorique, gratuit };
+  return { lignes, sousTotal, frais, montantGratuite, tps, tvq, total: base + tps + tvq, tpsTheorique, tvqTheorique, gratuit };
 }
 /*MODULE-FIN*/
 
@@ -1777,8 +1777,8 @@ function rendreRecap() {
   }
   f.lignes.forEach(function (l) { ligne(l.nom, l.montant); });
   ligne('Frais de service (5' + NBSP + '%)', f.frais);
-  // Auteur gratuit ou admin : ligne d'ajustement négative avant les taxes, total à 0,00 $ (tâche 66)
-  if (f.ajustement) { ligne('Ajustements (services offerts)', f.ajustement); }
+  // Auteur gratuit ou admin : ligne « Gratuité » négative avant les taxes, total à 0,00 $ (tâche 66)
+  if (f.montantGratuite) { ligne('Gratuité (services offerts)', f.montantGratuite); }
   ligne('TPS', f.tps);
   ligne('TVQ', f.tvq);
   ligne('Total', f.total, 'total');
