@@ -1041,10 +1041,8 @@ function carteLivre(l, admin) {
   else if (copie === 'En attente de validation') { pastilles.appendChild(pastilleAttente()); }
   if (pastilles.childNodes.length) { corps.appendChild(pastilles); }
   if (copie === 'Corriger' && l.copie.motifRefus) { corps.appendChild(ligneCourte('motif', 'Motif : ' + l.copie.motifRefus)); }
-  var t = etat.totaux[l.id], ventes = '';
-  if (t) { ventes = pluriel(t.exemplaires, 'exemplaire vendu', 'exemplaires vendus') + ', dont ' + t.viaLiens + ' par vos liens'; }
-  else if (etat.ventesRecues && l.statut === 'Publier') { ventes = 'Aucune vente pour le moment'; }
-  if (ventes) { corps.appendChild(ligneCourte('chiffres', ventes)); }
+  // Les chiffres de vente ne sont plus affichés sur les cartes (demande de Marcel du 12 octobre) : ils sont
+  // dans l'onglet Ventes.
   corps.appendChild(actionsLivre(l, admin));
   return carte;
 }
