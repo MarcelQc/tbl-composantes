@@ -2128,7 +2128,9 @@ async function valider() {
     LIVRE_ID = res.livreId;
     try { history.replaceState(null, '', adresseVue('edition')); } catch (e) { /* ignore */ }
   }
-  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.'), 'ok');
+  // imageCatalogue : null (pas de nouvelle image), { ok: true } ou { ok: false } (image de la boutique à refaire)
+  var boutique = !res.imageCatalogue ? '' : (res.imageCatalogue.ok ? ' Image du produit mise à jour dans la boutique.' : ' Attention : l’image du produit dans la boutique n’a pas été mise à jour.');
+  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.') + boutique, res.imageCatalogue && !res.imageCatalogue.ok ? 'mal' : 'ok');
   await demarrer();
 }
 // Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
