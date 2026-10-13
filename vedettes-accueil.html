@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>En vedette | Éditions TBL</title>
+<style>
+/* Les 4 livres en vedette de la semaine en cours (calendrier des vedettes, CDV). Composante publique, à poser
+   sur la page d'accueil ou dans le carrousel. Elle lit https://www.editionstbl.ca/_functions/vedettesAccueil
+   (backend/http-functions.js), qui applique l'interrupteur Config.vedettesCdv : actif = vedettes réservées puis
+   livres de TBL par défaut ; inactif = les 4 livres de TBL par défaut.
+   Paramètres de l'adresse : ?titre=0 (sans titre), ?theme=clair (texte foncé, pour un fond clair). */
+:root{--txt:#f5f5f5;--muted:#b7bac2;--red:#e52530;--vide:#20232a}
+:root.clair{--txt:#1b1d22;--muted:#5d616b;--vide:#e6e7ea}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.35}
+.wrap{max-width:1000px;margin:0 auto;padding:8px 14px 14px}
+h2{margin:0 0 14px;font-size:clamp(1.25rem,3vw,1.7rem);text-align:center}
+h2 span{color:var(--red)}
+.livres{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+@media (max-width:640px){.livres{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
+.livre{display:flex;flex-direction:column;align-items:center;text-align:center;color:inherit;text-decoration:none}
+.livre .couv{width:100%;max-width:200px;aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:var(--vide);box-shadow:0 8px 22px rgba(0,0,0,.45);transition:transform .2s}
+.livre .couv img{width:100%;height:100%;object-fit:cover;display:block}
+a.livre:hover .couv,a.livre:focus-visible .couv{transform:translateY(-4px)}
+a.livre:focus-visible{outline:2px solid var(--red);outline-offset:4px;border-radius:6px}
+.livre .t{margin-top:10px;font-weight:bold;font-size:.95rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.livre .a{margin-top:2px;font-size:.82rem;color:var(--muted)}
+.chargement .couv{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.chargement .couv{animation:none}.livre .couv{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2 id="titre">En <span>vedette</span> cette semaine</h2>
+  <div class="livres chargement" id="livres" aria-busy="true"></div>
+</div>
+<script>
+var ADRESSE = 'https://www.editionstbl.ca/_functions/vedettesAccueil';
+var params = new URLSearchParams(location.search);
+if (params.get('theme') === 'clair') { document.documentElement.classList.add('clair'); }
+if (params.get('titre') === '0') { document.getElementById('titre').hidden = true; }
+
+var zone = document.getElementById('livres');
+function el(tag, cls, texte) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (texte !== undefined) { n.textContent = texte; } return n; }
+
+// Pendant le chargement : 4 couvertures vides qui pulsent.
+for (var i = 0; i < 4; i++) { var v = el('div', 'livre'); v.appendChild(el('div', 'couv')); zone.appendChild(v); }
+
+function afficher(donnees) {
+  zone.textContent = '';
+  zone.classList.remove('chargement');
+  zone.removeAttribute('aria-busy');
+  var livres = (donnees && donnees.livres) || [];
+  if (!livres.length) { document.body.hidden = true; return; }
+  livres.forEach(function (l) {
+    // Le lien s'ouvre dans la page du site (pas dans le cadre de la composante).
+    var carte = el(l.lien ? 'a' : 'div', 'livre');
+    if (l.lien) { carte.href = l.lien; carte.target = '_top'; }
+    var couv = el('div', 'couv');
+    if (l.image) { var img = el('img'); img.src = l.image; img.alt = 'Couverture de ' + l.titre; img.loading = 'lazy'; couv.appendChild(img); }
+    carte.appendChild(couv);
+    carte.appendChild(el('div', 't', l.titre));
+    if (l.auteur) { carte.appendChild(el('div', 'a', l.auteur)); }
+    zone.appendChild(carte);
+  });
+}
+
+fetch(ADRESSE)
+  .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+  .then(afficher)
+  .catch(function () { afficher(null); }); // en cas d'erreur, la composante reste vide plutôt que d'afficher un message
+</script>
+</body>
+</html>
