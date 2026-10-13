@@ -28,6 +28,7 @@ a.livre:hover .couv,a.livre:focus-visible .couv{transform:translateY(-4px)}
 a.livre:focus-visible{outline:2px solid var(--red);outline-offset:4px;border-radius:6px}
 .livre .t{margin-top:10px;font-weight:bold;font-size:.95rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .livre .st{margin-top:3px;font-size:.84rem;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.livre .cat{margin-top:3px;font-size:.82rem;font-style:italic;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .chargement .couv{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.chargement .couv{animation:none}.livre .couv{transition:none}}
@@ -65,6 +66,7 @@ function afficher(donnees) {
     carte.appendChild(couv);
     carte.appendChild(el('div', 't', l.titre)); // titre, sans le nom de l'auteur (demande de Marcel)
     if (l.sousTitre) { carte.appendChild(el('div', 'st', l.sousTitre)); } // Livres.sousTitre, s'il est rempli
+    if (l.categorie) { carte.appendChild(el('div', 'cat', l.categorie)); } // Livres.categorie, en italique
     zone.appendChild(carte);
   });
 }
