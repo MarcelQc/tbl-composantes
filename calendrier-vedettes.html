@@ -33,7 +33,14 @@ select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding
 .barre-haut{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
 .etat-page{margin-bottom:16px;font-size:1rem}
 /* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
-body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-admin{display:none}
+body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{display:none}
+.actions-haut{display:flex;gap:8px}
+/* Fenêtre surgissante, placée en haut : la composante est haute, le centre de l'iframe serait hors de vue. */
+.fond-fenetre{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:flex;justify-content:center;align-items:flex-start;padding:70px 14px 14px;overflow:auto}
+.fenetre{width:min(760px,100%)}
+.tete-fenetre{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fermer{background:none;border:0;color:var(--muted);font-size:1.6rem;line-height:1;cursor:pointer;padding:0 4px}
+.fermer:hover{color:var(--red)}
 /* Même largeur de contenu que l'Éditeur de livre (modifier-livre.html : .pg, max 1000px). */
 .bloc{max-width:1000px;margin:0 auto}
 .vitrine{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:16px}
@@ -110,7 +117,6 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-ad
 .message.mal{border-color:var(--red);color:#ffb3b8}
 .defauts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
 .defauts label{color:var(--muted);font-size:.85rem;display:block;margin-bottom:4px}
-.section-admin{margin-top:16px}
 .slider{position:relative;margin-top:12px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px 48px 12px}
 .slider.complet{padding:16px 12px 12px}
 .slider .piste{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none}
@@ -136,7 +142,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-ad
   <header class="entete">
     <div class="barre-haut">
       <button type="button" class="btn sec" id="b-retour">← Espace Auteurs</button>
-      <button type="button" class="btn sec" id="b-actualiser">↻ Actualiser</button>
+      <span class="actions-haut">
+        <button type="button" class="btn sec" id="b-defauts" hidden>Livres par défaut</button>
+        <button type="button" class="btn sec" id="b-actualiser">↻ Actualiser</button>
+      </span>
     </div>
     <h1 id="titre-service">Mise en vedette</h1>
     <p class="sub" id="texte-service">Votre livre dans la vitrine de la page d'accueil et dans le carrousel pendant une semaine, pour 25 $ par semaine (30,18 $ avec les frais de service et les taxes).</p>
@@ -177,6 +186,7 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-ad
         <h3>Semaines choisies</h3>
         <ul class="liste-choix" id="liste-choix"></ul>
         <p class="note" id="aucun-choix">Aucune semaine choisie.</p>
+        <p class="note" id="note-max" hidden></p>
       </div>
       <div class="card">
         <div class="total" id="total"></div>
@@ -192,8 +202,13 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-ad
     </aside>
   </div>
 
-  <section class="card section-admin" id="section-admin" hidden>
-    <h2>Livres de TBL par défaut</h2>
+  <!-- Fenêtre des livres par défaut : administrateur seulement (bouton « Livres par défaut » en haut). -->
+  <div class="fond-fenetre" id="fenetre-defauts" hidden>
+  <section class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-defauts">
+    <div class="tete-fenetre">
+      <h2 id="titre-defauts">Livres de TBL par défaut</h2>
+      <button type="button" class="fermer" id="b-fermer-defauts" aria-label="Fermer">×</button>
+    </div>
     <p class="note">Ces livres remplissent les places libres, dans cet ordre. La vitrine n'est jamais vide.</p>
     <div class="slider" id="slider-defauts" aria-roledescription="carrousel" aria-label="Livres de TBL par défaut">
       <button type="button" class="fleche prec" aria-label="Livre précédent">‹</button>
@@ -202,8 +217,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees .section-ad
       <div class="points"></div>
     </div>
     <div class="defauts" id="defauts"></div>
-    <p class="note" style="margin-top:10px">Retirer une réservation : touchez une place réservée, puis « Retirer ? » pour confirmer. Une réservation payée suit la règle de remboursement (note de crédit).</p>
+    <p class="note" style="margin-top:10px">Retirer une réservation : touchez une place réservée dans le calendrier, puis « Retirer ? » pour confirmer. Une réservation payée se rembourse dans Wix.</p>
+    <div style="margin-top:14px;text-align:right"><button type="button" class="btn sec" id="b-ok-defauts">Fermer</button></div>
   </section>
+  </div>
 
   </div>
 </div>
@@ -228,8 +245,10 @@ function argent(c) {
 // ===== Semaines : lundi au dimanche, heure du Québec =====
 var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 var NB_SEMAINES = 10; // semaines à réserver affichées au départ ; le bouton du bas en ajoute une à la fois
-// Réservation à l'avance : 26 semaines (auteur payant et admin), 2 semaines en gratuité.
-function limiteSemaines() { return etat.limite || (etat.gratuit && !etat.admin ? 2 : 26); }
+// Réservation à l'avance : 26 semaines pour tous. En gratuité, une demande compte au plus 2 semaines choisies.
+function limiteSemaines() { return etat.limite || 26; }
+var MAX_CHOIX_GRATUITE = 2;
+function maxChoix() { return etat.gratuit && !etat.admin ? (etat.maxChoix || MAX_CHOIX_GRATUITE) : Infinity; }
 function aujourdhuiQuebec() {
   var t = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   return new Date(t + 'T12:00:00');
@@ -422,6 +441,9 @@ function rendrePanneau() {
     ul.appendChild(li);
   });
   document.getElementById('aucun-choix').hidden = etat.choix.length > 0;
+  var noteMax = document.getElementById('note-max');
+  noteMax.hidden = maxChoix() === Infinity;
+  noteMax.textContent = 'En gratuité : au plus ' + maxChoix() + ' semaines par demande (' + etat.choix.length + ' sur ' + maxChoix() + ').';
   // Au plus 8 semaines choisies visibles ; au-delà, la liste défile.
   var trop = ul.children.length > CHOIX_VISIBLES;
   ul.classList.toggle('defile', trop);
@@ -503,9 +525,8 @@ function decider(auteurId, accepte, motif) {
 }
 
 function rendreDefauts() {
-  var s = document.getElementById('section-admin');
-  s.hidden = !etat.admin;
-  if (!etat.admin) { return; }
+  document.getElementById('b-defauts').hidden = !etat.admin;
+  if (!etat.admin) { fermerDefauts(); return; }
   var z = document.getElementById('defauts');
   z.textContent = '';
   for (var i = 0; i < etat.nbPlaces; i++) {
@@ -535,8 +556,31 @@ function rendreDefauts() {
     div.appendChild(lab); div.appendChild(sel);
     z.appendChild(div);
   }
-  rendreSlider(0);
+  // Le slider se mesure à l'affichage : on ne le dessine que fenêtre ouverte.
+  if (!document.getElementById('fenetre-defauts').hidden) { rendreSlider(0); }
 }
+
+// Fenêtre « Livres de TBL par défaut » (admin seulement).
+var focusAvantDefauts = null;
+function ouvrirDefauts() {
+  if (!etat.admin) { return; }
+  focusAvantDefauts = document.activeElement;
+  document.getElementById('fenetre-defauts').hidden = false;
+  rendreDefauts();
+  rendreSlider(0);
+  document.getElementById('b-fermer-defauts').focus();
+}
+function fermerDefauts() {
+  var f = document.getElementById('fenetre-defauts');
+  if (f.hidden) { return; }
+  f.hidden = true;
+  if (focusAvantDefauts && focusAvantDefauts.focus) { focusAvantDefauts.focus(); }
+}
+document.getElementById('b-defauts').addEventListener('click', ouvrirDefauts);
+document.getElementById('b-fermer-defauts').addEventListener('click', fermerDefauts);
+document.getElementById('b-ok-defauts').addEventListener('click', fermerDefauts);
+document.getElementById('fenetre-defauts').addEventListener('click', function (e) { if (e.target === this) { fermerDefauts(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerDefauts(); } });
 
 // Slider des livres de TBL par défaut : 4 couvertures côte à côte (2 sur téléphone), le titre en dessous.
 // Les flèches et les points n'apparaissent que si tous les livres ne tiennent pas dans la largeur.
@@ -616,6 +660,7 @@ function choisirPlace(cle) {
   if (!etat.livreChoisi) { message('Choisissez d\'abord un livre.', 'mal'); return; }
   if (dejaPris(cle, etat.livreChoisi)) { message('Ce livre est déjà en vedette cette semaine : un livre ne peut occuper qu\'une place par semaine.', 'mal'); return; }
   if (resaSemaine(cle).length + choixSemaine(cle).length >= etat.nbPlaces) { message('Cette semaine est complète.', 'mal'); return; }
+  if (etat.choix.length >= maxChoix()) { message('En gratuité, une demande compte au plus ' + maxChoix() + ' semaines. Retirez un choix pour en ajouter un autre.', 'mal'); return; }
   etat.choix.push({ semaine: cle, livreId: etat.livreChoisi });
   message('');
   rendreTout();
@@ -705,7 +750,7 @@ window.addEventListener('message', function (e) {
     if (m.statut !== 'ok') { afficherEtatPage(m.statut); return; }
     afficherEtatPage(null);
     etat.admin = !!m.estAdmin; etat.gratuit = !!m.gratuit; etat.auteurId = m.auteur ? m.auteur.id : null;
-    etat.limite = m.limite || null;
+    etat.limite = m.limite || null; etat.maxChoix = m.maxChoix || null;
     // Les semaines passées (avant le lundi de la semaine en cours) sont ignorées.
     var cetteSemaine = iso(lundi(aujourdhuiQuebec()));
     etat.livres = m.livres || []; etat.defauts = m.defauts || [];
