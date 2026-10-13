@@ -1234,12 +1234,13 @@ document.addEventListener('keydown', function (e) {
 // livres : nombre de livres à choisir (0, 1 ou 2). duo : seulement des livres publiés de l'auteur.
 // La modification de la page d'un livre n'est pas ici : elle se fait par le bouton « Modifier la page »
 // de l'onglet Livres (retirée des services le 11 octobre, à la demande de Marcel).
+// Mise en vedette en premier (demande de Marcel du 13 octobre 2026) : c'est le premier service offert en ligne.
 var SERVICES = [
+  { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 0, calendrier: true },
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
   { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
   { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
   { cle: 'fbimage', nom: 'Conception d\'une image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
-  { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 0, calendrier: true },
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
   { cle: 'couverture', nom: 'Conception de couverture ou du verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
 ];
