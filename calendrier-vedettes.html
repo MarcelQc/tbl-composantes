@@ -38,6 +38,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 /* Fenêtre surgissante, placée en haut : la composante est haute, le centre de l'iframe serait hors de vue. */
 .fond-fenetre{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:flex;justify-content:center;align-items:flex-start;padding:70px 14px 14px;overflow:auto}
 .fenetre{width:min(760px,100%)}
+.fenetre.petite{width:min(460px,100%)}
+.fenetre.petite p{margin:8px 0 0;line-height:1.5}
+.boutons-fenetre{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.boutons-fenetre .btn{width:auto;padding:10px 18px}
 .tete-fenetre{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .fermer{background:none;border:0;color:var(--muted);font-size:1.6rem;line-height:1;cursor:pointer;padding:0 4px}
 .fermer:hover{color:var(--red)}
@@ -209,7 +213,7 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
   <section class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-defauts">
     <div class="tete-fenetre">
       <h2 id="titre-defauts">Livres de TBL par défaut</h2>
-      <button type="button" class="fermer" id="b-fermer-defauts" aria-label="Fermer">×</button>
+      <button type="button" class="fermer" id="b-fermer-defauts" aria-label="Annuler">×</button>
     </div>
     <p class="note">Ces livres remplissent les places libres, dans cet ordre. La vitrine n'est jamais vide.</p>
     <div class="slider" id="slider-defauts" aria-roledescription="carrousel" aria-label="Livres de TBL par défaut">
@@ -220,7 +224,19 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
     </div>
     <div class="defauts" id="defauts"></div>
     <p class="note" style="margin-top:10px">Retirer une réservation : touchez une place réservée dans le calendrier, puis « Retirer ? » pour confirmer. Une réservation payée se rembourse dans Wix.</p>
-    <div style="margin-top:14px;text-align:right"><button type="button" class="btn sec" id="b-ok-defauts">Fermer</button></div>
+    <div class="boutons-fenetre">
+      <button type="button" class="btn sec" id="b-annuler-defauts">Annuler</button>
+      <button type="button" class="btn" id="b-accepter-defauts">Accepter</button>
+    </div>
+  </section>
+  </div>
+
+  <!-- Avis (ex. limite de semaines en gratuité) : une fenêtre avec le bouton Fermer. -->
+  <div class="fond-fenetre" id="fenetre-avis" hidden>
+  <section class="card fenetre petite" role="alertdialog" aria-modal="true" aria-labelledby="titre-avis" aria-describedby="texte-avis">
+    <h2 id="titre-avis"></h2>
+    <p id="texte-avis"></p>
+    <div class="boutons-fenetre"><button type="button" class="btn" id="b-fermer-avis">Fermer</button></div>
   </section>
   </div>
 
@@ -445,7 +461,8 @@ function rendrePanneau() {
   document.getElementById('aucun-choix').hidden = etat.choix.length > 0;
   var noteMax = document.getElementById('note-max');
   noteMax.hidden = maxChoix() === Infinity;
-  noteMax.textContent = 'En gratuité : au plus ' + maxChoix() + ' semaines par demande (' + etat.choix.length + ' sur ' + maxChoix() + ').';
+  noteMax.textContent = 'En gratuité : au plus ' + maxChoix() + ' semaines par demande (' + etat.choix.length + ' sur ' + maxChoix() + ')'
+    + (etat.gratuitJusqua ? ', jusqu\'au ' + court(new Date(etat.gratuitJusqua + 'T12:00:00')) + ' ' + etat.gratuitJusqua.slice(0, 4) + ', fin de votre période de gratuité.' : '.');
   // Au plus 8 semaines choisies visibles ; au-delà, la liste défile.
   var trop = ul.children.length > CHOIX_VISIBLES;
   ul.classList.toggle('defile', trop);
@@ -526,9 +543,12 @@ function decider(auteurId, accepte, motif) {
   rendreTout();
 }
 
+// Dans la fenêtre, les changements restent un brouillon jusqu'à « Accepter » ; « Annuler » les abandonne.
+function defautsAffiches() { return etat.brouillonDefauts || etat.defauts; }
 function rendreDefauts() {
   document.getElementById('b-defauts').hidden = !etat.admin;
   if (!etat.admin) { fermerDefauts(); return; }
+  var defauts = defautsAffiches();
   var z = document.getElementById('defauts');
   z.textContent = '';
   for (var i = 0; i < etat.nbPlaces; i++) {
@@ -536,21 +556,21 @@ function rendreDefauts() {
     var lab = el('label', null, 'Place ' + (i + 1)); lab.htmlFor = 'defaut-' + i;
     var sel = el('select'); sel.id = 'defaut-' + i;
     // Un livre ne peut être choisi qu'une fois : ceux des autres places sont grisés.
-    var autres = etat.defauts.slice(0, etat.nbPlaces).filter(function (id, j) { return j !== i; });
+    var autres = defauts.slice(0, etat.nbPlaces).filter(function (id, j) { return j !== i; });
     etat.livres.filter(function (l) { return l.tbl; }).forEach(function (l) {
       var pris = autres.indexOf(l.id) >= 0;
       var o = el('option', null, pris ? l.titre + ' (déjà choisi)' : l.titre);
       o.value = l.id; o.disabled = pris;
       sel.appendChild(o);
     });
-    sel.value = etat.defauts[i] || '';
+    sel.value = defauts[i] || '';
     (function (idx, select) {
       select.addEventListener('change', function () {
-        var doublon = etat.defauts.some(function (id, j) { return j !== idx && j < etat.nbPlaces && id === select.value; });
-        if (doublon) { select.value = etat.defauts[idx] || ''; return; }
-        etat.defauts[idx] = select.value;
-        envoyer('tbl-vedette:defauts', { livreIds: etat.defauts.slice(0, etat.nbPlaces) });
-        rendreSemaines();
+        var b = etat.brouillonDefauts;
+        if (!b) { return; }
+        var doublon = b.some(function (id, j) { return j !== idx && j < etat.nbPlaces && id === select.value; });
+        if (doublon) { select.value = b[idx] || ''; return; }
+        b[idx] = select.value;
         rendreDefauts();
         rendreSlider(idx);
       });
@@ -567,22 +587,60 @@ var focusAvantDefauts = null;
 function ouvrirDefauts() {
   if (!etat.admin) { return; }
   focusAvantDefauts = document.activeElement;
+  etat.brouillonDefauts = etat.defauts.slice(0, etat.nbPlaces);
   document.getElementById('fenetre-defauts').hidden = false;
   rendreDefauts();
   rendreSlider(0);
   document.getElementById('b-fermer-defauts').focus();
 }
 function fermerDefauts() {
+  etat.brouillonDefauts = null;
   var f = document.getElementById('fenetre-defauts');
   if (f.hidden) { return; }
   f.hidden = true;
   if (focusAvantDefauts && focusAvantDefauts.focus) { focusAvantDefauts.focus(); }
 }
+function accepterDefauts() {
+  var b = (etat.brouillonDefauts || []).slice(0, etat.nbPlaces);
+  if (b.length < etat.nbPlaces || b.some(function (id) { return !id; })) { return; }
+  var change = b.some(function (id, i) { return id !== etat.defauts[i]; });
+  etat.defauts = b;
+  fermerDefauts();
+  if (change) {
+    envoyer('tbl-vedette:defauts', { livreIds: b });
+    rendreSemaines();
+
+  }
+}
 document.getElementById('b-defauts').addEventListener('click', ouvrirDefauts);
 document.getElementById('b-fermer-defauts').addEventListener('click', fermerDefauts);
-document.getElementById('b-ok-defauts').addEventListener('click', fermerDefauts);
+document.getElementById('b-annuler-defauts').addEventListener('click', fermerDefauts);
+document.getElementById('b-accepter-defauts').addEventListener('click', accepterDefauts);
 document.getElementById('fenetre-defauts').addEventListener('click', function (e) { if (e.target === this) { fermerDefauts(); } });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerDefauts(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerAvis(); fermerDefauts(); } });
+
+// Avis en fenêtre surgissante (bouton Fermer). Placé à la hauteur du dernier clic : la composante est très haute,
+// une fenêtre en haut ou au centre de l'iframe pourrait être hors de vue.
+var dernierClicY = 120;
+document.addEventListener('click', function (e) { dernierClicY = e.clientY; }, true);
+var focusAvantAvis = null;
+function avis(titre, texte) {
+  focusAvantAvis = document.activeElement;
+  document.getElementById('titre-avis').textContent = titre;
+  document.getElementById('texte-avis').textContent = texte;
+  var f = document.getElementById('fenetre-avis');
+  f.style.paddingTop = Math.max(14, dernierClicY - 140) + 'px';
+  f.hidden = false;
+  document.getElementById('b-fermer-avis').focus();
+}
+function fermerAvis() {
+  var f = document.getElementById('fenetre-avis');
+  if (f.hidden) { return; }
+  f.hidden = true;
+  if (focusAvantAvis && focusAvantAvis.focus) { focusAvantAvis.focus(); }
+}
+document.getElementById('b-fermer-avis').addEventListener('click', fermerAvis);
+document.getElementById('fenetre-avis').addEventListener('click', function (e) { if (e.target === this) { fermerAvis(); } });
 
 // Slider des livres de TBL par défaut : 4 couvertures côte à côte (2 sur téléphone), le titre en dessous.
 // Les flèches et les points n'apparaissent que si tous les livres ne tiennent pas dans la largeur.
@@ -622,7 +680,7 @@ function rendreSlider(active) {
   piste.textContent = '';
   var n = etat.nbPlaces;
   for (var i = 0; i < n; i++) {
-    var l = livre(etat.defauts[i]);
+    var l = livre(defautsAffiches()[i]);
     var d = el('div', 'diapo');
     d.setAttribute('role', 'group');
     d.setAttribute('aria-label', 'Place ' + (i + 1) + ' sur ' + n);
@@ -662,7 +720,16 @@ function choisirPlace(cle) {
   if (!etat.livreChoisi) { message('Choisissez d\'abord un livre.', 'mal'); return; }
   if (dejaPris(cle, etat.livreChoisi)) { message('Ce livre est déjà en vedette cette semaine : un livre ne peut occuper qu\'une place par semaine.', 'mal'); return; }
   if (resaSemaine(cle).length + choixSemaine(cle).length >= etat.nbPlaces) { message('Cette semaine est complète.', 'mal'); return; }
-  if (etat.choix.length >= maxChoix()) { message('En gratuité, une demande compte au plus ' + maxChoix() + ' semaines. Retirez un choix pour en ajouter un autre.', 'mal'); return; }
+  if (etat.choix.length >= maxChoix()) {
+    avis('Deux semaines au plus', 'En gratuité, une demande compte au plus ' + maxChoix() + ' semaines. Retirez une de vos semaines choisies pour en ajouter une autre.');
+    return;
+  }
+  // En gratuité, la semaine entière (jusqu'au dimanche) doit tomber dans la période de gratuité de l'auteur.
+  if (etat.gratuitJusqua && !etat.admin && iso(plusJours(new Date(cle + 'T12:00:00'), 6)) > etat.gratuitJusqua) {
+    var fin = new Date(etat.gratuitJusqua + 'T12:00:00');
+    avis('Hors de votre période de gratuité', 'Votre période de gratuité se termine le ' + court(fin) + ' ' + fin.getFullYear() + '. La semaine du ' + court(new Date(cle + 'T12:00:00')) + ' dépasse cette date : choisissez une semaine qui se termine au plus tard le ' + court(fin) + '.');
+    return;
+  }
   etat.choix.push({ semaine: cle, livreId: etat.livreChoisi });
   message('');
   rendreTout();
@@ -752,7 +819,7 @@ window.addEventListener('message', function (e) {
     if (m.statut !== 'ok') { afficherEtatPage(m.statut); return; }
     afficherEtatPage(null);
     etat.admin = !!m.estAdmin; etat.gratuit = !!m.gratuit; etat.auteurId = m.auteur ? m.auteur.id : null;
-    etat.limite = m.limite || null; etat.maxChoix = m.maxChoix || null;
+    etat.limite = m.limite || null; etat.maxChoix = m.maxChoix || null; etat.gratuitJusqua = m.gratuitJusqua || null;
     // Les semaines passées (avant le lundi de la semaine en cours) sont ignorées.
     var cetteSemaine = iso(lundi(aujourdhuiQuebec()));
     etat.livres = m.livres || []; etat.defauts = m.defauts || [];
