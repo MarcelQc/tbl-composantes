@@ -300,8 +300,14 @@ function livresProposes() {
   var publies = etat.livres.filter(function (l) { return !l.statut || l.statut === 'Publier'; });
   return etat.admin ? publies : publies.filter(function (l) { return l.auteurId === etat.auteurId; });
 }
+// Un livre déjà affiché dans la semaine ne peut pas y être choisi : réservé, choisi, ou présent dans une place
+// libre comme livre de TBL par défaut (décision de Marcel du 13 octobre 2026). Le serveur fait la même règle.
+function parDefautSemaine(s, livreId) {
+  return defautsLibres(s, resaSemaine(s).length + choixSemaine(s).length).some(function (l) { return l.id === livreId; });
+}
 function dejaPris(s, livreId) {
-  return resaSemaine(s).some(function (r) { return r.livreId === livreId; }) || choixSemaine(s).some(function (c) { return c.livreId === livreId; });
+  return resaSemaine(s).some(function (r) { return r.livreId === livreId; }) || choixSemaine(s).some(function (c) { return c.livreId === livreId; })
+    || parDefautSemaine(s, livreId);
 }
 
 // ===== Dessin =====
@@ -718,7 +724,12 @@ function message(texte, cls) {
 }
 function choisirPlace(cle) {
   if (!etat.livreChoisi) { message('Choisissez d\'abord un livre.', 'mal'); return; }
-  if (dejaPris(cle, etat.livreChoisi)) { message('Ce livre est déjà en vedette cette semaine : un livre ne peut occuper qu\'une place par semaine.', 'mal'); return; }
+  if (dejaPris(cle, etat.livreChoisi)) {
+    message(parDefautSemaine(cle, etat.livreChoisi)
+      ? 'Ce livre est déjà en vedette cette semaine comme livre de TBL par défaut : choisissez une autre semaine ou un autre livre.'
+      : 'Ce livre est déjà en vedette cette semaine : un livre ne peut occuper qu\'une place par semaine.', 'mal');
+    return;
+  }
   if (resaSemaine(cle).length + choixSemaine(cle).length >= etat.nbPlaces) { message('Cette semaine est complète.', 'mal'); return; }
   if (etat.choix.length >= maxChoix()) {
     avis('Deux semaines au plus', 'En gratuité, une demande compte au plus ' + maxChoix() + ' semaines. Retirez une de vos semaines choisies pour en ajouter une autre.');
