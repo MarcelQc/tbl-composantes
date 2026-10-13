@@ -1001,17 +1001,28 @@ function ouvrirEditeur(livreId) {
 // Calendrier des vedettes (service « Mise en vedette ») : même principe, dans un nouvel onglet. Le livre se
 // choisit dans le calendrier ; livreId (facultatif) le présélectionne.
 var URL_VEDETTES = 'https://www.editionstbl.ca/miseenvedette';
+var ongletVedettes = null;
 function ouvrirVedettes(livreId) {
   var suffixe = livreId ? '?livre=' + encodeURIComponent(livreId) : '';
   if (EN_WIX) {
     var onglet = null;
     try { onglet = window.open(URL_VEDETTES + suffixe, '_blank'); } catch (e) { onglet = null; }
-    if (onglet) { return; }
+    if (onglet) { ongletVedettes = onglet; return; }
     envoyer({ type: 'ouvrirVedettes', livreId: livreId || '' });
     return;
   }
 
 }
+// Bouton « ← Espace Auteurs » du calendrier : il demande (BroadcastChannel, même origine github.io) que
+// l'Espace Auteurs ferme l'onglet qu'il a ouvert. Le calendrier ne peut pas le fermer lui-même : Chrome refuse
+// qu'une iframe d'une autre origine ferme l'onglet de la page Wix.
+var canalVedettes = null;
+try {
+  canalVedettes = new BroadcastChannel('tbl-vedettes');
+  canalVedettes.onmessage = function (m) {
+    if (m.data === 'fermer' && ongletVedettes && !ongletVedettes.closed) { ongletVedettes.close(); }
+  };
+} catch (e) { /* navigateur sans BroadcastChannel : le calendrier ramène à l'Espace Auteurs */ }
 
 // Boutons d'un livre selon son statut et sa copie ouverte (plan du 9 octobre 2026).
 function actionsLivre(l, admin) {

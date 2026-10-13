@@ -853,7 +853,17 @@ function afficherEtatPage(statut) {
   if (livre && /^[0-9a-f-]{36}$/i.test(livre)) { etat.livreChoisi = livre; }
 })();
 
-document.getElementById('b-retour').addEventListener('click', function () { envoyer('tbl-vedette:retour'); });
+// ← Espace Auteurs : le calendrier s'ouvre dans un nouvel onglet depuis l'Espace Auteurs, qui reste ouvert dans le
+// sien. Cet onglet doit simplement se fermer. Chrome refuse qu'une iframe d'une autre origine (github.io dans
+// editionstbl.ca) ferme l'onglet ; mais l'Espace Auteurs, qui l'a ouvert et qui vient aussi de github.io, en a
+// le droit. On le lui demande par BroadcastChannel (même origine). S'il n'y a pas d'Espace Auteurs pour le faire
+// (calendrier ouvert par un lien, un favori ou dans le même onglet), l'onglet est encore là après un court
+// délai : la page Wix ramène alors à l'Espace Auteurs. Vérifié dans Chrome le 13 octobre 2026.
+var CANAL_VEDETTES = 'tbl-vedettes';
+document.getElementById('b-retour').addEventListener('click', function () {
+  try { new BroadcastChannel(CANAL_VEDETTES).postMessage('fermer'); } catch (e) { /* navigateur sans BroadcastChannel */ }
+  setTimeout(function () { envoyer('tbl-vedette:retour'); }, 600);
+});
 document.getElementById('b-actualiser').addEventListener('click', function () {
   message('');
   if (EN_WIX) { afficherEtatPage('chargement'); envoyer('tbl-vedette:ready'); return; }
