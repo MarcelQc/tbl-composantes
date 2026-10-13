@@ -123,14 +123,14 @@ textarea{min-height:96px;resize:vertical}
 .statut.err{color:var(--red)}
 
 /* Livres : cartes horizontales compactes (couverture à gauche), trois par rangée sur ordinateur, TOUTES de
-   la même hauteur. Le titre et la couverture mènent à la page du livre (ou à la fiche d'un Duo). Les textes
+   la même hauteur. Le titre et la couverture mènent à la page du livre (ou à la fiche d'un coffret). Les textes
    secondaires sont coupés au besoin (texte complet au survol) et les boutons restent en bas de la carte.
    La composante HTML Wix a une hauteur FIXE (Velo ne peut pas la changer) : chaque liste a une hauteur
    maximale et défile à l'intérieur. La rangée coupée à moitié montre qu'il y a d'autres livres plus bas. */
 :root{--h-carte-livre:178px;--gap-livres:12px}
 .livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap-livres);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
 #liste-livres{max-height:calc(2.5 * var(--h-carte-livre) + 2 * var(--gap-livres))}
-#liste-duos{max-height:calc(1.5 * var(--h-carte-livre) + var(--gap-livres))}
+#liste-coffrets{max-height:calc(1.5 * var(--h-carte-livre) + var(--gap-livres))}
 .livre{padding:12px;display:flex;gap:12px;height:var(--h-carte-livre);overflow:hidden}
 .livre{transition:box-shadow .4s,border-color .4s}
 .livre.retour{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,37,48,.35)}
@@ -161,12 +161,12 @@ textarea{min-height:96px;resize:vertical}
 .livre .actions-livre .note{margin:0;font-size:.76rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .section-livres{margin-bottom:26px}
 .section-livres>h3{display:flex;align-items:center;gap:10px;margin:0 0 12px}
-.offre-duo{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:space-between;margin-bottom:16px;border-color:var(--ok)}
-.offre-duo h3{margin:0 0 4px}
-.offre-duo p{margin:0}
-.note-duo{margin:0 0 16px}
-.duo .couv{aspect-ratio:1/1;height:auto}
-.duo .contenu-duo{color:var(--muted);font-size:.76rem}
+.offre-coffret{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:space-between;margin-bottom:16px;border-color:var(--ok)}
+.offre-coffret h3{margin:0 0 4px}
+.offre-coffret p{margin:0}
+.note-coffret{margin:0 0 16px}
+.coffret .couv{aspect-ratio:1/1;height:auto}
+.coffret .contenu-coffret{color:var(--muted);font-size:.76rem}
 
 /* Services */
 .services{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
@@ -330,20 +330,20 @@ textarea{min-height:96px;resize:vertical}
         <label for="filtre-livres" class="sub">Afficher</label>
         <select id="filtre-livres" aria-label="Filtrer les livres"><option value="tous">Tous</option><option value="aexaminer">En approbation</option></select>
         <button class="btn petit" type="button" id="btn-nouveau-livre">Nouveau livre</button></div>
-      <div class="card offre-duo" id="offre-duo" hidden>
-        <div><h3>Créez un ensemble de vos livres</h3><p class="sub">Le forfait Duo réunit deux de vos livres publiés dans un ensemble vendu à prix réduit : 50 $, plus les frais de service et les taxes.</p></div>
-        <button class="btn" type="button" id="btn-creer-duo">Créer un ensemble de livres</button>
+      <div class="card offre-coffret" id="offre-coffret" hidden>
+        <div><h3>Créez un coffret de vos livres</h3><p class="sub">Le forfait Coffret réunit plusieurs de vos livres publiés dans un coffret vendu à prix réduit : 50 $, plus les frais de service et les taxes.</p></div>
+        <button class="btn" type="button" id="btn-creer-coffret">Créer un coffret</button>
       </div>
       <section class="section-livres">
         <h3 id="titre-mes-livres">Mes livres</h3>
         <div class="livres" id="liste-livres"></div>
         <div class="card vide" id="vide-livres" hidden>Aucun livre n'est encore associé à votre compte. Dès qu'un livre sera ajouté, il apparaîtra ici.</div>
       </section>
-      <section class="section-livres" id="section-duos">
-        <h3 id="titre-mes-duos">Mes ensembles (Duos)</h3>
-        <p class="note note-duo" id="note-duo" hidden></p>
-        <div class="livres" id="liste-duos"></div>
-        <div class="card vide" id="vide-duos" hidden>Aucun ensemble pour le moment.</div>
+      <section class="section-livres" id="section-coffrets">
+        <h3 id="titre-mes-coffrets">Mes coffrets</h3>
+        <p class="note note-coffret" id="note-coffret" hidden></p>
+        <div class="livres" id="liste-coffrets"></div>
+        <div class="card vide" id="vide-coffrets" hidden>Aucun coffret pour le moment.</div>
       </section>
     </div>
 
@@ -615,7 +615,7 @@ function rendreEspace() {
   rendreServices();
   rendreDocuments();
   construireChoixMois();
-  $('nb-livres').textContent = d.livres.length + (d.duos || []).length;
+  $('nb-livres').textContent = d.livres.length + (d.coffrets || []).length;
   $('nb-documents').textContent = d.documents.generaux.length + d.documents.auteur.length;
 }
 
@@ -1069,9 +1069,9 @@ function pastilleAttente() {
   return p;
 }
 
-// Un Duo de LivresDuo : boutons selon son statut (forfait-duo.md).
-function carteDuo(d, admin) {
-  var carte = el('article', 'card livre duo');
+// Un coffret de la collection Coffrets : boutons selon son statut (forfait-duo.md).
+function carteCoffret(d, admin) {
+  var carte = el('article', 'card livre coffret');
   var page = urlSure(d.page);
   couverture(carte, d.miniature, d.titre, page);
   var corps = el('div', 'corps');
@@ -1079,7 +1079,9 @@ function carteDuo(d, admin) {
   corps.appendChild(titreCarte(d.titre, page));
   if (admin && d.auteurNom) { corps.appendChild(ligneCourte('auteur-livre', 'Auteur : ' + d.auteurNom)); }
   var titres = (d.livres || []).filter(Boolean);
-  if (titres.length) { corps.appendChild(ligneCourte('contenu-duo', 'Livres : ' + titres.join(' et '))); }
+  // Un coffret compte deux livres ou plus : « A, B et C ».
+  var listeTitres = titres.length > 1 ? titres.slice(0, -1).join(', ') + ' et ' + titres[titres.length - 1] : titres.join('');
+  if (titres.length) { corps.appendChild(ligneCourte('contenu-coffret', 'Livres : ' + listeTitres)); }
   var pastilles = el('div', 'pastilles');
   var libelles = { 'Nouveau': ['attente', 'Demande en cours'], 'Payé': ['bleu', 'Payé, en attente de production'], 'En production': ['bleu', 'En production par TBL'], 'Publier': ['ok', 'Publié'] };
   var p = libelles[d.statut];
@@ -1090,13 +1092,13 @@ function carteDuo(d, admin) {
   else if (copie === 'En attente de validation') { pastilles.appendChild(pastilleAttente()); }
   if (pastilles.childNodes.length) { corps.appendChild(pastilles); }
   var zone = el('div', 'actions-livre');
-  if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', function () { bientot('duo', d.titre); })); }
-  else if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre ensemble. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
+  if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', function () { bientot('coffret', d.titre); })); }
+  else if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre coffret. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
   else if (copie === 'En attente de validation') {
     if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', function () { bientot('examiner', d.titre); })); }
     else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', null)); }
   } else if (copie === 'Modifier' || copie === 'Corriger') { zone.appendChild(bouton(copie === 'Corriger' ? 'Reprendre ma correction' : 'Reprendre ma modification', 'btn petit', function () { bientot('edd', d.titre); })); }
-  else if (d.statut === 'Publier') { zone.appendChild(bouton('Modifier le Duo', 'btn sec petit', function () { bientot('edd', d.titre); })); }
+  else if (d.statut === 'Publier') { zone.appendChild(bouton('Modifier le coffret', 'btn sec petit', function () { bientot('edd', d.titre); })); }
   corps.appendChild(zone);
   return carte;
 }
@@ -1104,15 +1106,15 @@ function carteDuo(d, admin) {
 function rendreLivres() {
   var d = etat.donnees;
   var livres = d ? d.livres : [];
-  var duos = d ? (d.duos || []) : [];
+  var coffrets = d ? (d.coffrets || []) : [];
   var admin = estAdmin();
 
   // Administrateur (Auteurs.admin, vérifié par le serveur) : tous les livres de TBL et les demandes à valider
   $('barre-admin').hidden = !admin;
   $('titre-mes-livres').textContent = admin ? 'Livres' : 'Mes livres';
-  $('titre-mes-duos').textContent = admin ? 'Ensembles (Duos)' : 'Mes ensembles (Duos)';
+  $('titre-mes-coffrets').textContent = admin ? 'Coffrets' : 'Mes coffrets';
   if (admin) {
-    var nb = livres.filter(enAttente).length + duos.filter(enAttente).length;
+    var nb = livres.filter(enAttente).length + coffrets.filter(enAttente).length;
     $('txt-admin').textContent = 'Vous voyez tous les livres de TBL. ' + (nb ? pluriel(nb, 'demande attend', 'demandes attendent') + ' votre validation.' : 'Aucune demande à valider pour le moment.');
     remplirFiltreLivres();
     var filtre = $('filtre-livres').value;
@@ -1122,7 +1124,7 @@ function rendreLivres() {
       return true;
     };
     livres = livres.filter(garder);
-    duos = duos.filter(garder);
+    coffrets = coffrets.filter(garder);
   }
 
   var liste = $('liste-livres');
@@ -1130,19 +1132,19 @@ function rendreLivres() {
   livres.forEach(function (l) { liste.appendChild(carteLivre(l, admin)); });
   $('vide-livres').hidden = livres.length > 0;
 
-  var listeDuos = $('liste-duos');
-  vider(listeDuos);
-  duos.forEach(function (x) { listeDuos.appendChild(carteDuo(x, admin)); });
-  $('vide-duos').hidden = duos.length > 0;
+  var listeCoffrets = $('liste-coffrets');
+  vider(listeCoffrets);
+  coffrets.forEach(function (x) { listeCoffrets.appendChild(carteCoffret(x, admin)); });
+  $('vide-coffrets').hidden = coffrets.length > 0;
 
-  // Offre du forfait Duo : dès 2 livres publiés de l'auteur connecté (forfait-duo.md).
-  var offre = (d && d.offreDuo) || {};
-  $('offre-duo').hidden = !offre.offerte;
-  $('btn-creer-duo').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un ensemble de livres';
-  var note = $('note-duo');
+  // Offre du forfait Coffret : dès 2 livres publiés de l'auteur connecté (forfait-duo.md).
+  var offre = (d && d.offreCoffret) || {};
+  $('offre-coffret').hidden = !offre.offerte;
+  $('btn-creer-coffret').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un coffret';
+  var note = $('note-coffret');
   if (!offre.offerte && !admin) {
     note.hidden = false;
-    note.textContent = 'Le forfait Duo vous sera offert dès que deux de vos livres seront publiés (' + (offre.livresPublies || 0) + ' sur 2 pour le moment).';
+    note.textContent = 'Le forfait Coffret vous sera offert dès que deux de vos livres seront publiés (' + (offre.livresPublies || 0) + ' sur 2 pour le moment).';
   } else {
     note.hidden = true;
   }
@@ -1154,8 +1156,8 @@ var BIENTOT = {
   completer: ['Compléter la page du livre', 'Vous pourrez compléter vous-même la page de votre nouveau livre : description, synopsis, note de l\'auteur, extrait, image du livre et portrait. Vous l\'enverrez ensuite en approbation en payant la page du livre (100 $, plus l\'inscription de 100 $ s\'il s\'agit de votre premier livre). L\'équipe TBL la valide avant de la publier.'],
   modifier: ['Modifier la page du livre', 'Vous pourrez modifier vous-même la page de votre livre : description, synopsis, note de l\'auteur, extrait, texte du catalogue, image du livre et portrait. Le prix de vos changements se calcule en direct (5 $ ou 10 $ par texte selon l\'ampleur, 10 $ par image). Vous payez au moment d\'envoyer la page en approbation, puis l\'équipe TBL la valide avant de la publier.'],
   examiner: ['Examiner une demande', 'Vous pourrez comparer la demande avec la version publiée, puis l\'approuver ou la refuser en indiquant un motif. L\'auteur sera avisé par courriel.'],
-  duo: ['Forfait Duo', 'Vous choisirez deux de vos livres publiés, le prix de vente de l\'ensemble (inférieur au total des deux livres) et sa description, puis vous paierez le forfait (50 $, plus les frais de service et les taxes). L\'équipe TBL créera le produit, l\'image de la fiche et deux images publicitaires. Vous activerez ensuite le Duo sur les pages de vos deux livres.'],
-  edd: ['Modifier le Duo', 'Vous pourrez modifier la description, les images et le prix de votre ensemble, et l\'afficher ou le masquer sur les pages de vos deux livres. Les changements passent par la validation de l\'équipe TBL, comme pour la page d\'un livre.'],
+  coffret: ['Forfait Coffret', 'Vous choisirez au moins deux de vos livres publiés, le prix de vente du coffret (inférieur au total des livres) et sa description, puis vous paierez le forfait (50 $, plus les frais de service et les taxes). L\'équipe TBL créera le coffret au catalogue, avec l\'image de la fiche et deux images publicitaires. Vous activerez ensuite le coffret sur les pages de vos livres.'],
+  edd: ['Modifier le coffret', 'Vous pourrez modifier la description, les images et le prix de votre coffret, et l\'afficher ou le masquer sur les pages de vos livres. Les changements passent par la validation de l\'équipe TBL, comme pour la page d\'un livre.'],
   amazon: ['Publication sur Amazon', 'L\'équipe TBL convertira votre livre au format Amazon, créera sa fiche sur Amazon.ca avec votre synopsis, l\'aperçu du livre et une image du verso, puis ajoutera le bouton Amazon sur la page de votre livre (75 $). Le service s\'activera dans l\'éditeur de la page du livre.'],
   fbpub: ['Publication Facebook', 'Vous choisirez le nombre de publications (25 $ chacune), préparerez le texte et l\'image de chacune, puis l\'équipe TBL les publiera sur la page Facebook des Éditions TBL après validation. Vos cinq dernières images seront gardées pour les réutiliser.'],
   fbimage: ['Conception d\'une image Facebook', 'L\'équipe TBL concevra une image publicitaire au format Facebook pour votre livre. Des exemples seront présentés dans la page du service. Le prix sera annoncé bientôt.'],
@@ -1182,7 +1184,7 @@ function bientot(cle, titreLivre) {
   ouvrirFenetre('fenetre-bientot', 'btn-fermer-bientot');
 }
 $('btn-fermer-bientot').addEventListener('click', function () { fermerFenetre('fenetre-bientot'); });
-$('btn-creer-duo').addEventListener('click', function () { bientot('duo'); });
+$('btn-creer-coffret').addEventListener('click', function () { bientot('coffret'); });
 // Confirmation simple : titre, texte, libellé du bouton d'action et action à faire si l'utilisateur confirme.
 var actionConfirmee = null;
 function confirmer(titre, texte, libelle, action) {
@@ -1231,20 +1233,20 @@ document.addEventListener('keydown', function (e) {
 });
 
 /* ---------- Services ---------- */
-// livres : nombre de livres à choisir (0, 1 ou 2). duo : seulement des livres publiés de l'auteur.
+// livres : nombre de livres à choisir (0, 1 ou 2). coffret : seulement des livres publiés de l'auteur.
 // La modification de la page d'un livre n'est pas ici : elle se fait par le bouton « Modifier la page »
 // de l'onglet Livres (retirée des services le 11 octobre, à la demande de Marcel).
 // Mise en vedette en premier (demande de Marcel du 13 octobre 2026) : c'est le premier service offert en ligne.
 var SERVICES = [
   { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 0, calendrier: true },
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
-  { cle: 'duo', nom: 'Forfait Duo', prix: '50 $', desc: 'Un ensemble de deux de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
+  { cle: 'coffret', nom: 'Forfait Coffret', prix: '50 $', desc: 'Un coffret de plusieurs de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
   { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
   { cle: 'fbimage', nom: 'Conception d\'une image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
   { cle: 'couverture', nom: 'Conception de couverture ou du verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
 ];
-// Livres proposés dans les services : ceux de l'auteur, ou tous pour un admin. Le Duo n'accepte que
+// Livres proposés dans les services : ceux de l'auteur, ou tous pour un admin. Le coffret n'accepte que
 // les livres publiés de l'auteur connecté (même pour un admin).
 function livresPourService(service) {
   var d = etat.donnees;
