@@ -51,6 +51,13 @@ h3{margin:0 0 12px;font-size:1.15rem}
 .pastille-nb{background:rgba(255,255,255,.14);border-radius:99px;padding:0 8px;font-size:.8rem;min-width:22px;text-align:center}
 .panneau{padding-top:16px}
 .onglet.actualiser{margin-left:auto;font-weight:normal}
+.onglet.config{font-weight:normal}
+/* Fenêtre Configuration (administrateur) : un réglage par ligne, case à cocher et description. */
+.reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.reglage:first-child{border-top:0}
+.reglage input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--red)}
+.reglage label{font-weight:bold;cursor:pointer}
+.reglage .aide{margin-top:4px}
 
 /* Ventes */
 .barre-mois{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -252,6 +259,7 @@ textarea{min-height:96px;resize:vertical}
       <button class="onglet" role="tab" id="onglet-services" aria-controls="panneau-services" aria-selected="false" tabindex="-1">Services</button>
       <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
       <button class="onglet actualiser" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
+      <button class="onglet config" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
     </div>
 
     <!-- VENTES -->
@@ -440,6 +448,21 @@ textarea{min-height:96px;resize:vertical}
     </div>
   </div>
 
+  <!-- Configuration du site (administrateur) : drapeaux de la collection Config. -->
+  <div class="fond-fenetre" id="fenetre-config" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-config">
+      <h2 id="titre-config">Configuration du site</h2>
+      <p class="sub">Ces réglages s'appliquent tout de suite à tout le site, après l'enregistrement.</p>
+      <div id="config-chargement" class="note" role="status" aria-live="polite">Chargement des réglages…</div>
+      <div id="liste-config"></div>
+      <p class="statut" id="statut-config" role="status" aria-live="polite"></p>
+      <div class="boutons">
+        <button class="btn sec" type="button" id="btn-annuler-config">Annuler</button>
+        <button class="btn" type="button" id="btn-enregistrer-config" disabled>Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -511,6 +534,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatPhoto') { surResultatPhoto(msg); }
   else if (msg.type === 'resultatChoixNouveauLivre') { surChoixNouveauLivre(msg); }
   else if (msg.type === 'resultatNouveauLivre') { surResultatNouveauLivre(msg); }
+  else if (msg.type === 'resultatConfig' || msg.type === 'resultatEnregistrerConfig') { surConfig(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -1122,6 +1146,7 @@ function rendreLivres() {
 
   // Administrateur (Auteurs.admin, vérifié par le serveur) : tous les livres de TBL et les demandes à valider
   $('barre-admin').hidden = !admin;
+  $('btn-config').hidden = !admin;
   $('titre-mes-livres').textContent = admin ? 'Livres' : 'Mes livres';
   $('titre-mes-coffrets').textContent = admin ? 'Coffrets' : 'Mes coffrets';
   if (admin) {
@@ -1238,8 +1263,9 @@ document.addEventListener('keydown', function (e) {
   if (!$('fenetre-confirmer').hidden) { actionConfirmee = null; fermerFenetre('fenetre-confirmer'); }
   else if (!$('fenetre-bientot').hidden) { fermerFenetre('fenetre-bientot'); }
   else if (!$('fenetre-nouveau').hidden) { fermerFenetre('fenetre-nouveau'); }
+  else if (!$('fenetre-config').hidden) { fermerFenetre('fenetre-config'); }
 });
-['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau'].forEach(function (id) {
+['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau', 'fenetre-config'].forEach(function (id) {
   $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
 });
 
@@ -1334,6 +1360,72 @@ function rendreServices() {
   var admin = estAdmin();
   SERVICES.filter(function (s) { return admin || !s.admin; }).forEach(function (s) { liste.appendChild(carteService(s)); });
 }
+
+/* ---------- Configuration du site (administrateur) ---------- */
+// Réglages de la collection Config (ex. vedettesCdv : quelle section Vedette s'affiche sur les pages des livres).
+// La liste vient du serveur, qui revérifie Auteurs.admin à la lecture comme à l'enregistrement. Les cases sont
+// un brouillon : Enregistrer envoie seulement les réglages changés, Annuler ferme sans rien changer.
+function ouvrirConfig() {
+  $('config-chargement').hidden = false;
+  $('config-chargement').textContent = 'Chargement des réglages…';
+  vider($('liste-config'));
+  $('statut-config').textContent = '';
+  $('statut-config').className = 'statut';
+  $('btn-enregistrer-config').disabled = true;
+  etat.config = [];
+  etat.configEnCours = false;
+  ouvrirFenetre('fenetre-config', 'btn-annuler-config');
+  envoyer({ type: 'config' });
+}
+function changementsConfig() {
+  return (etat.config || []).filter(function (r) {
+    var c = $('reglage-' + r.cle);
+    return c && c.checked !== r.actif;
+  }).map(function (r) { return { cle: r.cle, actif: $('reglage-' + r.cle).checked }; });
+}
+function majBoutonConfig() {
+  $('btn-enregistrer-config').disabled = etat.configEnCours || !changementsConfig().length;
+}
+function surConfig(msg) {
+  if ($('fenetre-config').hidden) { return; }
+  etat.configEnCours = false;
+  if (msg.statut !== 'ok') {
+    var texte = msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : (msg.message || 'Impossible de lire ou d\'enregistrer la configuration pour le moment. Réessayez dans quelques instants.');
+    if (msg.type === 'resultatEnregistrerConfig') { $('statut-config').className = 'statut err'; $('statut-config').textContent = texte; majBoutonConfig(); }
+    else { $('config-chargement').textContent = texte; }
+    return;
+  }
+  if (msg.type === 'resultatEnregistrerConfig') { fermerFenetre('fenetre-config'); return; }
+  etat.config = msg.reglages || [];
+  var liste = $('liste-config');
+  vider(liste);
+  if (!etat.config.length) { $('config-chargement').textContent = 'Aucun réglage dans la collection Config.'; return; }
+  $('config-chargement').hidden = true;
+  etat.config.forEach(function (r) {
+    var ligne = el('div', 'reglage');
+    var c = el('input'); c.type = 'checkbox'; c.id = 'reglage-' + r.cle; c.checked = r.actif;
+    c.addEventListener('change', majBoutonConfig);
+    var texte = el('div');
+    var lab = el('label', null, r.titre); lab.htmlFor = c.id;
+    texte.appendChild(lab);
+    if (r.description) { texte.appendChild(el('div', 'aide', r.description)); }
+    ligne.appendChild(c); ligne.appendChild(texte);
+    liste.appendChild(ligne);
+  });
+  majBoutonConfig();
+}
+function enregistrerConfig() {
+  var reglages = changementsConfig();
+  if (!reglages.length) { return; }
+  etat.configEnCours = true;
+  majBoutonConfig();
+  $('statut-config').className = 'statut';
+  $('statut-config').textContent = 'Enregistrement…';
+  envoyer({ type: 'enregistrerConfig', reglages: reglages });
+}
+$('btn-config').addEventListener('click', ouvrirConfig);
+$('btn-annuler-config').addEventListener('click', function () { fermerFenetre('fenetre-config'); });
+$('btn-enregistrer-config').addEventListener('click', enregistrerConfig);
 
 /* ---------- Nouveau livre (administrateur) ---------- */
 // La liste des auteurs et des livres du catalogue vient du serveur, qui revérifie Auteurs.admin.
