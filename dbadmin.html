@@ -245,6 +245,7 @@ a:hover { text-decoration: underline; }
 }
 
 .indicateur-carte.indicateur-montant { border-left-color: var(--green); }
+.indicateur-carte.indicateur-depense { border-left-color: var(--blue); }
 
 .indicateur-valeur {
   font-size: 2.2rem;
@@ -1362,12 +1363,17 @@ select:focus { outline: none; border-color: var(--accent); }
     var montant = !configuree || v.erreurVentes ? '—' :
       Number(v.total).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' });
     var visiteurs = !configuree || v.erreurVisiteurs ? '—' : v.visiteurs;
+    var meta = (v && v.meta) || { configuree: false };
+    var depenseMeta = !meta.configuree || meta.erreur ? '—' :
+      Number(meta.montant).toLocaleString('fr-CA', { style: 'currency', currency: meta.devise || 'CAD' });
 
-    var note = !configuree
-      ? '<p class="empty">Clé API Wix non configurée : ajoutez le secret API_WIX_KEY dans Wix Secrets Manager pour activer les indicateurs de ventes et de visiteurs.</p>'
-      : [v.erreurVentes, v.erreurVisiteurs].filter(Boolean).map(function (m) {
-          return '<p class="empty">' + esc(m) + '</p>';
-        }).join('');
+    var notes = configuree ? [v.erreurVentes, v.erreurVisiteurs] :
+      ['Clé API Wix non configurée : ajoutez le secret API_WIX_KEY dans Wix Secrets Manager pour activer les indicateurs de ventes et de visiteurs.'];
+    notes.push(meta.configuree ? meta.erreur :
+      'Jeton Meta non configuré : ajoutez le secret META_ADS_TOKEN dans Wix Secrets Manager pour afficher la dépense Meta Ads du jour.');
+    var note = notes.filter(Boolean).map(function (m) {
+      return '<p class="empty">' + esc(m) + '</p>';
+    }).join('');
 
     return '<div class="ventes-indicateurs">' +
         '<div class="indicateur-carte"><span class="indicateur-valeur">' + esc(nb) + '</span>' +
@@ -1376,6 +1382,8 @@ select:focus { outline: none; border-color: var(--accent); }
           '<span class="indicateur-label">Montant total des ventes du jour</span></div>' +
         '<div class="indicateur-carte"><span class="indicateur-valeur">' + esc(visiteurs) + '</span>' +
           '<span class="indicateur-label">Visiteurs du site aujourd\'hui</span></div>' +
+        '<div class="indicateur-carte indicateur-depense"><span class="indicateur-valeur">' + esc(depenseMeta) + '</span>' +
+          '<span class="indicateur-label">Dépensé sur Meta Ads aujourd\'hui</span></div>' +
       '</div>' +
       '<div id="ventes-indicateurs-note">' + note + '</div>';
   }
@@ -1384,7 +1392,7 @@ select:focus { outline: none; border-color: var(--accent); }
     var content = document.getElementById('content');
     var r = await Promise.all([
       appeler('getVentesDuJour').catch(function (e) {
-        return { configuree: true, erreurVentes: e.message, erreurVisiteurs: e.message };
+        return { configuree: true, erreurVentes: e.message, erreurVisiteurs: e.message, meta: { configuree: true, erreur: e.message } };
       }),
       appeler('getAccueil'),
       appeler('getNombreAuteurs').catch(function () { return null; }),
