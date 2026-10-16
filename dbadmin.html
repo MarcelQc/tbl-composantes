@@ -1,0 +1,2332 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Éditions TBL — Tableau de bord</title>
+<style>
+/* Jetons des gabarits (Templates\tokens.css, allure de calendrier-vedettes.html). Copiés ici : la page est un fichier autonome. */
+:root {
+  --tbl-bg: #000;
+  --tbl-paper: #16181c;
+  --tbl-paper-2: #111317;
+  --tbl-line: #34373e;
+  --tbl-ink: #f5f5f5;
+  --tbl-muted: #b7bac2;
+  --tbl-accent: #e52530;
+  --tbl-accent-soft: #5b2126;
+  --tbl-ok: #4cc38a;
+  --tbl-orange: #e8a33d;
+  --tbl-orange-soft: #3d2c12;
+  --tbl-blue: #5b9bf0;
+  --tbl-blue-soft: #14233d;
+  --tbl-font-heading: Arial, Helvetica, sans-serif;
+  --tbl-font-body: Arial, Helvetica, sans-serif;
+  --tbl-radius: 14px;
+  --tbl-radius-btn: 9px;
+  --tbl-shadow: 0 6px 18px rgba(0,0,0,.5);
+}
+
+/* Couleurs du tableau de bord, rattachées aux jetons. --accent est le rouge TBL des actions et de la sélection. */
+:root {
+  --bg: var(--tbl-bg);
+  --bg-elevated: var(--tbl-paper-2);
+  --bg-panel: var(--tbl-paper);
+  --bg-hover: #20232a;
+  --border: var(--tbl-line);
+  --border-soft: var(--tbl-line);
+  --text: var(--tbl-ink);
+  --text-dim: var(--tbl-muted);
+  --text-faint: #8a8e97;
+  --accent: var(--tbl-accent);
+  --accent-soft: var(--tbl-accent-soft);
+  --accent-contrast: #fff;
+  --rouge-texte: #ffb3b8;
+  --green: var(--tbl-ok);
+  --green-soft: rgba(76,195,138,.15);
+  --red: var(--tbl-accent);
+  --blue: var(--tbl-blue);
+  --blue-soft: var(--tbl-blue-soft);
+  --orange: var(--tbl-orange);
+  --orange-soft: var(--tbl-orange-soft);
+  --radius: var(--tbl-radius);
+  --radius-btn: var(--tbl-radius-btn);
+  --shadow: var(--tbl-shadow);
+  font-size: 15px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--tbl-font-body);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+html { scrollbar-color: var(--border) var(--bg); scrollbar-width: thin; }
+h1, h2, h3 { font-family: var(--tbl-font-heading); font-weight: bold; }
+button, input, select, textarea { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- Header / nav ---------- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 14px 28px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+.app-header .brand { padding-bottom: 14px; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.brand-logo {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.brand-fallback {
+  display: none;
+  height: 40px;
+  width: 40px;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.brand-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* Onglets style « dossier » (Templates\tabs.html) : l'onglet actif s'ouvre sur la page en dessous. */
+.tabs {
+  display: flex;
+  gap: 4px;
+  align-self: flex-end;
+  align-items: flex-end;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: -1px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  color: var(--text-dim);
+  padding: 10px 18px;
+  border-radius: var(--radius-btn) var(--radius-btn) 0 0;
+  font-family: var(--tbl-font-heading);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: bold;
+  box-shadow: inset 0 2px 0 var(--accent);
+  padding-bottom: 11px;
+}
+
+/* ---------- Content ---------- */
+
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 28px 80px;
+  min-height: calc(100vh - 140px);
+}
+
+/* Onglet Tâches : tableau plus large (3 colonnes serrées à 1100px) --
+   prend 70% de la largeur de la page plutôt que la largeur standard. */
+.content.content-taches {
+  max-width: 70vw;
+}
+
+.view h1 {
+  font-size: 1.6rem;
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.lede {
+  color: var(--text-dim);
+  margin: 0 0 28px;
+  font-size: 0.95rem;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* ---------- Accueil ---------- */
+
+.ventes-indicateurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.indicateur-carte {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow);
+}
+
+.indicateur-carte.indicateur-montant { border-left-color: var(--green); }
+
+.indicateur-valeur {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.indicateur-carte.indicateur-montant .indicateur-valeur { color: var(--green); }
+
+.indicateur-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+#ventes-indicateurs-note { margin: -4px 0 24px; }
+#ventes-indicateurs-note a { cursor: pointer; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow);
+}
+
+.stat-value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-label {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.accueil-columns {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 720px) {
+  .accueil-columns { grid-template-columns: 1fr; }
+}
+
+.quick-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-links li a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
+}
+.quick-links li a:hover {
+  background: var(--bg-hover);
+  text-decoration: none;
+  border-color: var(--accent-soft);
+}
+
+.forum-preview-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 0.88rem;
+}
+.forum-preview-item:last-child { border-bottom: none; }
+.forum-preview-meta { color: var(--text-faint); font-size: 0.78rem; }
+
+/* ---------- Documentation ---------- */
+
+.doc-section {
+  margin-bottom: 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.doc-section h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.doc-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  cursor: pointer;
+  background: var(--bg-elevated);
+  user-select: none;
+}
+.doc-section-header:hover { background: var(--bg-hover); }
+
+.doc-section-chevron {
+  display: inline-block;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+.doc-section.open .doc-section-chevron { transform: rotate(90deg); }
+
+.doc-section-body {
+  display: none;
+  padding: 18px;
+  border-top: 1px solid var(--border-soft);
+}
+.doc-section.open .doc-section-body { display: block; }
+
+.doc-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.doc-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-card-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-transform: capitalize;
+}
+
+.doc-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-dim);
+  align-self: flex-start;
+}
+
+.doc-actions { margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Skills ---------- */
+
+.skills-boutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.skill-bouton {
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  border: 1px solid var(--border-soft);
+  padding: 8px 14px;
+  border-radius: var(--radius-btn);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.skill-bouton:hover { background: var(--bg-hover); color: var(--text); }
+.skill-bouton.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent-soft);
+  font-weight: 600;
+}
+
+.skills-detail { max-width: 820px; }
+
+.skill-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.skill-detail-header h2 { margin: 0 0 6px; font-size: 1.2rem; }
+.skill-detail-description { margin: 0; color: var(--text-dim); font-size: 0.88rem; }
+
+/* Boutons (Templates\action-buttons.html et confirm-modal.html) :
+   secondaire = contour, la bordure passe au rouge au survol ; principal = rouge TBL, texte blanc gras. */
+.btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: var(--radius-btn);
+  font-size: 0.88rem;
+  font-weight: normal;
+  cursor: pointer;
+  transition: border-color 0.15s, filter 0.15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); text-decoration: none; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: bold;
+  padding: 10px 18px;
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btn-sm { padding: 6px 10px; font-size: 0.8rem; }
+
+/* ---------- Forum ---------- */
+
+.forum-compose { margin-bottom: 26px; }
+.field-row { display: flex; gap: 12px; margin-bottom: 10px; }
+.field-row label, .forum-compose > label { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-dim); flex: 1; }
+
+input[type="text"], textarea {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-btn);
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+input[type="text"]:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.forum-compose textarea { margin-bottom: 12px; width: 100%; }
+
+.forum-liste { display: flex; flex-direction: column; gap: 14px; }
+
+.forum-msg {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.forum-msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.forum-msg-auteur { font-weight: 600; color: var(--accent); font-size: 0.9rem; }
+.forum-msg-date { color: var(--text-faint); font-size: 0.75rem; }
+.forum-msg-texte { white-space: pre-wrap; font-size: 0.92rem; line-height: 1.5; }
+
+.forum-reponses {
+  margin-top: 12px;
+  padding-left: 18px;
+  border-left: 2px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.forum-reponse-toggle {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  display: flex;
+  gap: 8px;
+}
+
+.forum-msg-actions {
+  margin-top: 8px;
+}
+
+.delete-message-btn, .delete-reponse-btn {
+  color: var(--text-faint);
+}
+.delete-message-btn:hover, .delete-reponse-btn:hover {
+  color: var(--rouge-texte);
+  border-color: var(--red);
+  background: var(--accent-soft);
+}
+
+.forum-reply-box {
+  margin-top: 8px;
+  display: none;
+  gap: 8px;
+  flex-direction: column;
+}
+.forum-reply-box.open { display: flex; }
+.forum-reply-box textarea { width: 100%; }
+
+/* ---------- Auteurs ---------- */
+
+.auteurs-liste { display: flex; flex-direction: column; gap: 18px; }
+
+.auteur-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.auteur-nom { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
+
+.oeuvre {
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+}
+.oeuvre:first-child { border-top: none; }
+
+.oeuvre-titre { font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+
+.oeuvre-docs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.doc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text);
+}
+.doc-pill:hover { background: var(--bg-hover); text-decoration: none; border-color: var(--accent-soft); }
+.doc-pill.manuscrit { border-color: var(--accent-soft); }
+.doc-pill.analyse_pdf, .doc-pill.analyse_html { color: var(--green); }
+
+.auteurs-archives-section {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
+}
+.auteurs-archives-section h2 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin: 0 0 14px;
+}
+.auteurs-liste-archives .auteur-card { opacity: 0.7; }
+.auteurs-liste-archives .auteur-card:hover { opacity: 1; }
+
+/* ---------- Rencontres ---------- */
+
+.rencontres-liste { display: flex; flex-direction: column; gap: 20px; }
+
+.rencontre-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.rencontre-header {
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  background: var(--bg-elevated);
+}
+
+.rencontre-titre-group { display: flex; flex-direction: column; gap: 2px; }
+.rencontre-date { font-weight: 700; font-size: 1rem; }
+.rencontre-titre { color: var(--text-dim); font-size: 0.82rem; }
+
+/* Pastilles de statut (Templates\status-badge.html) : fond teinté et point de couleur. */
+.rencontre-status, .pbi-statut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rencontre-status::before, .pbi-statut::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.rencontre-status.en-cours, .pbi-statut.en_cours { background: var(--orange-soft); color: var(--orange); }
+.rencontre-status.terminee, .pbi-statut.termine { background: var(--green-soft); color: var(--green); }
+.rencontre-status.a-venir, .pbi-statut.nouveau { background: var(--blue-soft); color: var(--blue); }
+.rencontre-status.a-determiner { background: var(--bg-hover); color: var(--text-dim); }
+
+.rencontre-body { padding: 18px; display: none; border-top: 1px solid var(--border-soft); }
+.rencontre-body.open { display: block; }
+
+.rencontre-groupe { margin-bottom: 16px; }
+.rencontre-groupe-titre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.rencontre-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.88rem;
+}
+
+.rencontre-item-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.rencontre-item input[type="checkbox"] {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.rencontre-item-texte { flex: 1; }
+.rencontre-item.checked .rencontre-item-texte { color: var(--text-dim); text-decoration: line-through; }
+
+.rencontre-item-supprimer {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.rencontre-item-supprimer:hover { color: var(--rouge-texte); }
+
+.rencontre-subsection { margin-top: 18px; }
+.rencontre-subsection h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  margin: 0 0 8px;
+}
+
+.rencontre-original-text {
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-btn);
+  padding: 10px 12px;
+}
+
+.rencontre-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rencontre-comment-box { flex: 1; min-width: 240px; }
+.rencontre-comment-box label { display: block; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 6px; }
+.rencontre-comment-box textarea { width: 100%; }
+
+/* ---------- Markdown viewer (documentation) ---------- */
+
+.md-viewer {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  line-height: 1.6;
+  max-width: 820px;
+}
+.md-viewer h1, .md-viewer h2, .md-viewer h3 { color: var(--text); }
+.md-viewer h1 { font-size: 1.4rem; }
+.md-viewer h2 { font-size: 1.15rem; margin-top: 26px; }
+.md-viewer h3 { font-size: 1rem; margin-top: 18px; }
+.md-viewer code { background: var(--bg-elevated); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+.md-viewer pre { background: var(--bg-elevated); padding: 12px 14px; border-radius: 6px; overflow-x: auto; }
+.md-viewer table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.88rem; }
+.md-viewer th, .md-viewer td { border: 1px solid var(--border-soft); padding: 6px 10px; text-align: left; }
+.md-viewer ul, .md-viewer ol { padding-left: 22px; }
+.md-viewer a { color: var(--accent); }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  z-index: 100;
+  overflow-y: auto;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 860px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,.6);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.modal-header h2 { margin: 0; font-size: 1.05rem; }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px 24px; max-height: 70vh; overflow-y: auto; }
+
+/* Fenêtre de confirmation (Templates\confirm-modal.html), au-dessus des autres fenêtres. */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+.confirm-overlay.open { display: flex; }
+.confirm-box {
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 50px rgba(0,0,0,.6);
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+}
+.confirm-box h3 { margin: 0 0 10px; font-size: 1.15rem; }
+.confirm-box p { margin: 0 0 20px; font-size: 0.92rem; line-height: 1.5; color: var(--text-dim); }
+.confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ---------- Configuration (bouton global) ---------- */
+
+.btn-config {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-btn);
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-config:hover { color: var(--text); border-color: var(--accent); }
+
+select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-btn);
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+select:focus { outline: none; border-color: var(--accent); }
+
+.btn-supprimer {
+  color: var(--text-faint);
+}
+.btn-supprimer:hover {
+  color: var(--rouge-texte);
+  border-color: var(--red);
+  background: var(--accent-soft);
+}
+
+/* ---------- Tâches (Kanban + PBI) ---------- */
+
+.taches-toolbar { margin-bottom: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.taches-entete-colonnes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 4px;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+}
+.taches-entete-colonnes span:nth-child(1) { color: var(--blue); }
+.taches-entete-colonnes span:nth-child(2) { color: var(--orange); }
+.taches-entete-colonnes span:nth-child(3) { color: var(--green); }
+
+.taches-swimlanes { display: flex; flex-direction: column; gap: 16px; }
+
+.taches-swimlane {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.taches-swimlane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.taches-swimlane-titre { font-weight: 600; font-size: 0.95rem; }
+
+.taches-swimlane-chevron {
+  display: inline-block;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-right: 6px;
+}
+
+.taches-swimlane.collapsee .taches-swimlane-header { margin-bottom: 0; }
+.taches-swimlane.collapsee .taches-swimlane-colonnes { display: none; }
+
+.taches-count {
+  display: inline-block;
+  min-width: 20px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--rouge-texte);
+  background: var(--accent-soft);
+  border-radius: 99px;
+  padding: 1px 8px;
+  margin-left: 4px;
+}
+
+.taches-swimlane-colonnes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.taches-dropzone {
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-btn);
+  padding: 8px;
+  min-height: 56px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.taches-dropzone.drag-over { border-color: var(--accent); background: var(--bg-hover); }
+
+.tache-carte {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: grab;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tache-carte:hover { border-color: var(--accent); }
+.tache-carte.dragging { opacity: 0.4; }
+
+.tache-carte-titre {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.tache-carte-titre-texte {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-numero {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+
+.tache-assigne-pill {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--rouge-texte);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.tache-piece-jointe-icone { margin-left: 6px; font-size: 0.8rem; }
+
+/* .pbi-statut : couleurs avec .rencontre-status (section Rencontres) */
+.pbi-statut { font-size: 0.72rem; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+
+.taches-swimlane-titre .tache-assigne-pill { margin-left: 8px; vertical-align: middle; }
+
+.tache-pieces-jointes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.tache-piece-jointe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .taches-entete-colonnes, .taches-swimlane-colonnes { grid-template-columns: 1fr; }
+}
+
+/* ---------- Footer ---------- */
+
+.app-footer {
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  padding: 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ---------- Ajouts propres à la version en ligne (non présents dans le tableau local) ---------- */
+
+/* Réunions archivées : discrètes, en bas de l'onglet Rencontres */
+.archives {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.archives h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.archive-ligne {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-soft);
+}
+.archive-ligne:last-child { border-bottom: none; }
+
+/* PartnerID : tableau en lecture seule */
+.partner-id-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.partner-id-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.partner-id-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-soft); }
+.partner-id-table tr:last-child td { border-bottom: none; }
+.partner-id-code { font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace; color: var(--accent); }
+
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Éditions TBL">
+    <div class="brand-text">
+      <span class="brand-title">Éditions TBL</span>
+      <span class="brand-subtitle">Tableau de bord</span>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn" data-tab="accueil">Accueil</button>
+    <button class="tab-btn" data-tab="forum">Forum</button>
+    <button class="tab-btn" data-tab="rencontres">Rencontres</button>
+    <button class="tab-btn" data-tab="taches">Tâches</button>
+    <button class="tab-btn" data-tab="partner-id">PartnerID</button>
+    <button class="tab-btn" data-tab="publicite">Publicité</button>
+  </nav>
+</header>
+
+<main id="content" class="content">
+  <p class="empty">Chargement…</p>
+</main>
+
+<footer class="app-footer">
+  <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================== Pont avec la page Velo ===================== */
+
+  var etat = { admin: null, pret: false };
+  var attentes = {};
+  var compteur = 0;
+
+  // La page est servie par GitHub Pages et chargée dans la composante HTML #dashboard de /dbadmin
+  // (comme l'Espace Auteurs) : on n'accepte que les messages de cette page parente
+  // (site publié, ou Aperçu dans l'éditeur Wix). Le backend vérifie l'administrateur à chaque appel.
+  var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+  function origineAutorisee(origine) {
+    return ORIGINES_PERMISES.some(function (motif) { return motif.test(origine); });
+  }
+
+  function envoyerAuParent(message) {
+    if (window.parent === window) return;
+    window.parent.postMessage(message, '*');
+  }
+
+  // Appelle une fonction du backend Velo et renvoie une promesse de son résultat.
+  function appeler(action) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resoudre, rejeter) {
+      var reqId = ++compteur;
+      attentes[reqId] = { resoudre: resoudre, rejeter: rejeter };
+      envoyerAuParent({ action: action, reqId: reqId, args: args });
+    });
+  }
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent || !origineAutorisee(event.origin)) return; // seuls les messages de la page parente sont acceptés
+    var d = event.data || {};
+    if (d.action === 'init') {
+      etat.admin = d.admin;
+      etat.pret = true;
+      renderTab(currentTab());
+      return;
+    }
+    if (d.reqId && attentes[d.reqId]) {
+      var attente = attentes[d.reqId];
+      delete attentes[d.reqId];
+      if (d.ok) attente.resoudre(d.data);
+      else attente.rejeter(new Error(d.error || 'Erreur inconnue'));
+    }
+  });
+
+  /* ===================== Outils ===================== */
+
+  var MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+    'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var MEMBRES_EQUIPE = ['Marcel', 'Martin'];
+  var STATUTS_PBI = [
+    { valeur: 'nouveau', label: 'Nouveau' },
+    { valeur: 'en_cours', label: 'En cours' },
+    { valeur: 'termine', label: 'Terminé' },
+  ];
+
+  function esc(valeur) {
+    return String(valeur == null ? '' : valeur)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function formatDateFr(iso) {
+    try {
+      return new Date(iso).toLocaleString('fr-CA', {
+        timeZone: 'America/Toronto', dateStyle: 'medium', timeStyle: 'short'
+      });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  // « 15 août 2026 »
+  function formatDateLongue(isoDate) {
+    var p = String(isoDate).split('-').map(Number);
+    return p[2] + ' ' + MOIS_FR[p[1] - 1] + ' ' + p[0];
+  }
+
+  function todayIso() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+  }
+
+  function rencontreStatus(dateIso, terminee) {
+    if (terminee) return { cls: 'terminee', label: 'Terminée' };
+    if (!dateIso) return { cls: 'a-determiner', label: 'À déterminer' };
+    if (dateIso > todayIso()) return { cls: 'a-venir', label: 'À venir' };
+    return { cls: 'en-cours', label: 'En cours' };
+  }
+
+  function statutPbiLabel(valeur) {
+    return (STATUTS_PBI.find(function (s) { return s.valeur === valeur; }) || STATUTS_PBI[0]).label;
+  }
+
+  function optionsResponsableHtml(actuel) {
+    return ['<option value="">(Non assigné)</option>']
+      .concat(MEMBRES_EQUIPE.map(function (n) {
+        return '<option value="' + esc(n) + '"' + (n === actuel ? ' selected' : '') + '>' + esc(n) + '</option>';
+      })).join('');
+  }
+
+  function optionsStatutPbiHtml(actuel) {
+    return STATUTS_PBI.map(function (s) {
+      return '<option value="' + s.valeur + '"' + (s.valeur === (actuel || 'nouveau') ? ' selected' : '') + '>' + s.label + '</option>';
+    }).join('');
+  }
+
+  /* ----- Fenêtres modales (identiques au tableau local) ----- */
+
+  var modalEl = null;
+  function ensureModal() {
+    if (modalEl) return modalEl;
+    modalEl = document.createElement('div');
+    modalEl.className = 'modal-backdrop';
+    modalEl.innerHTML =
+      '<div class="modal-box">' +
+        '<div class="modal-header"><h2 id="modal-title"></h2>' +
+        '<button class="modal-close" aria-label="Fermer">&times;</button></div>' +
+        '<div class="modal-body" id="modal-body"></div>' +
+      '</div>';
+    document.body.appendChild(modalEl);
+    modalEl.querySelector('.modal-close').addEventListener('click', closeModal);
+    modalEl.addEventListener('click', function (e) { if (e.target === modalEl) closeModal(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+    return modalEl;
+  }
+  function closeModal() {
+    if (confirmEl && confirmEl.classList.contains('open')) { confirmEl.classList.remove('open'); confirmAction = null; return; }
+    if (modalEl) modalEl.classList.remove('open');
+  }
+
+  /* ----- Fenêtre de confirmation (Templates\confirm-modal.html) ----- */
+
+  var confirmEl = null;
+  var confirmAction = null;
+  function ensureConfirm() {
+    if (confirmEl) return confirmEl;
+    confirmEl = document.createElement('div');
+    confirmEl.className = 'confirm-overlay';
+    confirmEl.innerHTML =
+      '<div class="confirm-box" role="dialog" aria-modal="true">' +
+        '<h3 id="confirm-titre"></h3>' +
+        '<p id="confirm-message"></p>' +
+        '<div class="confirm-actions">' +
+          '<button class="btn" id="confirm-annuler">Annuler</button>' +
+          '<button class="btn btn-primary" id="confirm-ok"></button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(confirmEl);
+    function fermer() { confirmEl.classList.remove('open'); confirmAction = null; }
+    confirmEl.querySelector('#confirm-annuler').addEventListener('click', fermer);
+    confirmEl.addEventListener('click', function (e) { if (e.target === confirmEl) fermer(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modalEl) fermer(); });
+    confirmEl.querySelector('#confirm-ok').addEventListener('click', function () {
+      var action = confirmAction;
+      fermer();
+      if (action) action();
+    });
+    return confirmEl;
+  }
+  // Demande une confirmation avant une action importante ; « action » ne s'exécute que sur le bouton rouge.
+  function confirmer(titre, message, libelle, action) {
+    var el = ensureConfirm();
+    el.querySelector('#confirm-titre').textContent = titre;
+    el.querySelector('#confirm-message').textContent = message;
+    el.querySelector('#confirm-ok').textContent = libelle || 'Supprimer';
+    confirmAction = action;
+    el.classList.add('open');
+    el.querySelector('#confirm-annuler').focus();
+  }
+  function openModal(titre, corpsHtml) {
+    var el = ensureModal();
+    el.querySelector('#modal-title').textContent = titre;
+    el.querySelector('#modal-body').innerHTML = corpsHtml;
+    el.classList.add('open');
+  }
+
+  // Affiche une erreur dans une fenêtre, ou exécute l'action puis recharge la vue.
+  function signaler(promesse, recharger) {
+    return promesse.then(function () {
+      if (recharger) recharger();
+    }).catch(function (e) {
+      alert(e.message);
+    });
+  }
+
+  /* ===================== Navigation ===================== */
+
+  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'partner-id', 'publicite'];
+
+  function currentTab() {
+    var t = location.hash.slice(1);
+    return ONGLETS.indexOf(t) >= 0 ? t : 'accueil';
+  }
+
+  function setActiveTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+  }
+
+  async function renderTab(tab) {
+    if (!etat.pret) return;
+    if (ONGLETS.indexOf(tab) < 0) tab = 'accueil';
+    setActiveTab(tab);
+    var content = document.getElementById('content');
+    content.classList.toggle('content-taches', tab === 'taches');
+
+    if (!etat.admin) {
+      content.innerHTML = '<h1>Accès réservé</h1>' +
+        '<p class="lede">Cette page est réservée aux administrateurs des Éditions TBL. ' +
+        'Connecte-toi avec ton compte membre pour continuer.</p>';
+      return;
+    }
+
+    content.innerHTML = '<p class="empty">Chargement…</p>';
+    try {
+      if (tab === 'accueil') await initAccueil();
+      else if (tab === 'forum') await initForum();
+      else if (tab === 'rencontres') await initRencontres();
+      else if (tab === 'partner-id') await initPartnerId();
+      else if (tab === 'publicite') await initPublicite();
+      else await initTaches();
+    } catch (e) {
+      content.insertAdjacentHTML('beforeend', '<p class="empty">Erreur de chargement : ' + esc(e.message) + '</p>');
+    }
+  }
+
+  document.getElementById('tabs').addEventListener('click', function (e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var tab = btn.dataset.tab;
+    if (location.hash.slice(1) === tab) renderTab(tab);
+    else location.hash = '#' + tab;
+  });
+
+  window.addEventListener('hashchange', function () { renderTab(currentTab()); });
+
+  /* ===================== Accueil ===================== */
+
+  function indicateursVentesHtml(v) {
+    var configuree = v && v.configuree !== false;
+    var nb = !configuree || v.erreurVentes ? '—' : v.count;
+    var montant = !configuree || v.erreurVentes ? '—' :
+      Number(v.total).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' });
+    var visiteurs = !configuree || v.erreurVisiteurs ? '—' : v.visiteurs;
+
+    var note = !configuree
+      ? '<p class="empty">Clé API Wix non configurée : ajoutez le secret API_WIX_KEY dans Wix Secrets Manager pour activer les indicateurs de ventes et de visiteurs.</p>'
+      : [v.erreurVentes, v.erreurVisiteurs].filter(Boolean).map(function (m) {
+          return '<p class="empty">' + esc(m) + '</p>';
+        }).join('');
+
+    return '<div class="ventes-indicateurs">' +
+        '<div class="indicateur-carte"><span class="indicateur-valeur">' + esc(nb) + '</span>' +
+          '<span class="indicateur-label">Ventes aujourd\'hui</span></div>' +
+        '<div class="indicateur-carte indicateur-montant"><span class="indicateur-valeur">' + esc(montant) + '</span>' +
+          '<span class="indicateur-label">Montant total des ventes du jour</span></div>' +
+        '<div class="indicateur-carte"><span class="indicateur-valeur">' + esc(visiteurs) + '</span>' +
+          '<span class="indicateur-label">Visiteurs du site aujourd\'hui</span></div>' +
+      '</div>' +
+      '<div id="ventes-indicateurs-note">' + note + '</div>';
+  }
+
+  async function initAccueil() {
+    var content = document.getElementById('content');
+    var r = await Promise.all([
+      appeler('getVentesDuJour').catch(function (e) {
+        return { configuree: true, erreurVentes: e.message, erreurVisiteurs: e.message };
+      }),
+      appeler('getAccueil'),
+      appeler('getNombreAuteurs').catch(function () { return null; }),
+      appeler('getResumeRencontres'),
+    ]);
+    var ventes = r[0], accueil = r[1], nbAuteurs = r[2], rencontres = r[3];
+
+    var apercu = (accueil.derniersMessages || []).slice(0, 3).map(function (m) {
+      var texte = m.texte.length > 140 ? m.texte.slice(0, 140) + '…' : m.texte;
+      return '<div class="forum-preview-item"><div class="forum-msg-auteur">' + esc(m.auteur) + '</div>' +
+        '<div>' + esc(texte) + '</div>' +
+        '<div class="forum-preview-meta">' + esc(formatDateFr(m.created_at)) + '</div></div>';
+    }).join('') || '<p class="empty">Aucun message pour le moment.</p>';
+
+    content.innerHTML =
+      indicateursVentesHtml(ventes) +
+      '<h1>Bienvenue sur le tableau de bord des Éditions TBL</h1>' +
+      '<p class="lede">Ce tableau de bord centralise les échanges d\'équipe, le suivi des rencontres et les tâches.</p>' +
+      '<div class="stat-grid">' +
+        '<div class="stat-card"><span class="stat-value">' + esc(nbAuteurs === null ? '—' : nbAuteurs) + '</span><span class="stat-label">Auteurs suivis</span></div>' +
+        '<div class="stat-card"><span class="stat-value">' + esc(accueil.nbMessages) + '</span><span class="stat-label">Messages au forum</span></div>' +
+        '<div class="stat-card"><span class="stat-value">' + esc(rencontres.nombre) + '</span><span class="stat-label">Rencontres enregistrées</span></div>' +
+        '<div class="stat-card"><span class="stat-value">' +
+          esc(rencontres.prochaine ? formatDateLongue(rencontres.prochaine) : 'Aucune définie') +
+          '</span><span class="stat-label">Prochaine rencontre</span></div>' +
+      '</div>' +
+      '<div class="accueil-columns">' +
+        '<div class="panel"><h2>Derniers messages du forum</h2>' + apercu + '</div>' +
+        '<div class="panel"><h2>Sections disponibles</h2><ul class="quick-links">' +
+          '<li><a href="#forum">Forum — messages internes</a></li>' +
+          '<li><a href="#rencontres">Rencontres — ordres du jour et suivi</a></li>' +
+          '<li><a href="#taches">Tâches — PBI et suivi</a></li>' +
+        '</ul></div>' +
+      '</div>';
+  }
+
+  /* ===================== Forum ===================== */
+
+  function forumMessageHtml(m) {
+    var reponses = (m.reponses || []).map(function (r) {
+      return '<div class="forum-msg" style="background:var(--bg-elevated);">' +
+        '<div class="forum-msg-header"><span class="forum-msg-auteur">' + esc(r.auteur) + '</span>' +
+        '<span class="forum-msg-date">' + esc(formatDateFr(r.date)) + '</span></div>' +
+        '<div class="forum-msg-texte">' + esc(r.texte) + '</div>' +
+        '<div class="forum-msg-actions"><button class="btn btn-sm delete-reponse-btn" data-reponse-id="' + esc(r.id) + '">Supprimer</button></div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="forum-msg" data-id="' + esc(m.id) + '">' +
+      '<div class="forum-msg-header"><span class="forum-msg-auteur">' + esc(m.auteur) + '</span>' +
+      '<span class="forum-msg-date">' + esc(formatDateFr(m.date)) + '</span></div>' +
+      '<div class="forum-msg-texte">' + esc(m.texte) + '</div>' +
+      (reponses ? '<div class="forum-reponses">' + reponses + '</div>' : '') +
+      '<div class="forum-reponse-toggle">' +
+        '<button class="btn btn-sm reply-toggle-btn" data-id="' + esc(m.id) + '">Répondre</button>' +
+        '<button class="btn btn-sm archiver-message-btn" data-id="' + esc(m.id) + '">Archiver</button>' +
+        '<button class="btn btn-sm delete-message-btn" data-id="' + esc(m.id) + '">Supprimer</button>' +
+      '</div>' +
+      '<div class="forum-reply-box" id="reply-box-' + esc(m.id) + '">' +
+        '<textarea class="reply-texte" rows="2" placeholder="Votre réponse…"></textarea>' +
+        '<button class="btn btn-primary btn-sm reply-submit-btn" data-id="' + esc(m.id) + '">Envoyer la réponse</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function conversationArchiveeHtml(m) {
+    var extrait = m.texte.length > 80 ? m.texte.slice(0, 80) + '…' : m.texte;
+    var nb = m.reponses.length;
+    return '<div class="archive-ligne">' +
+      '<span><strong>' + esc(m.auteur) + '</strong> · ' + esc(extrait) + '</span>' +
+      '<span>' + esc(formatDateFr(m.date)) + (nb ? ' · ' + nb + ' réponse' + (nb > 1 ? 's' : '') : '') + '</span>' +
+      '<button class="btn btn-sm desarchiver-message-btn" data-id="' + esc(m.id) + '">Désarchiver</button>' +
+    '</div>';
+  }
+
+  async function refreshForumListe() {
+    var brut = await appeler('getForum');
+    var messages = brut.map(function (m) {
+      return {
+        id: m.id, auteur: m.auteur, texte: m.texte, date: m.created_at, archivee: m.archivee,
+        reponses: (m.forum_reponses || []).map(function (r) {
+          return { id: r.id, auteur: r.auteur, texte: r.texte, date: r.created_at };
+        }),
+      };
+    }).sort(function (a, b) {
+      // Du plus récent au plus ancien.
+      return new Date(b.date) - new Date(a.date);
+    });
+    var actifs = messages.filter(function (m) { return !m.archivee; });
+    var archives = messages.filter(function (m) { return m.archivee; });
+
+    var liste = document.getElementById('forum-liste');
+    liste.innerHTML = actifs.length
+      ? actifs.map(forumMessageHtml).join('')
+      : '<p class="empty">Aucun message pour le moment. Soyez le premier à écrire !</p>';
+    document.getElementById('forum-archives').innerHTML = archives.length
+      ? '<div class="archives"><h3>Conversations archivées</h3>' + archives.map(conversationArchiveeHtml).join('') + '</div>'
+      : '';
+  }
+
+  async function initForum() {
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<h1>Forum</h1>' +
+      '<p class="lede">Laissez un message pour l\'équipe et répondez aux messages existants.</p>' +
+      '<div class="forum-compose panel">' +
+        '<label>Message<textarea id="forum-texte" rows="3" placeholder="Écrire un message…"></textarea></label>' +
+        '<button class="btn btn-primary" id="forum-envoyer">Publier</button>' +
+      '</div>' +
+      '<div id="forum-liste" class="forum-liste"></div>' +
+      '<div id="forum-archives"></div>';
+
+    document.getElementById('forum-archives').addEventListener('click', function (e) {
+      var btn = e.target.closest('.desarchiver-message-btn');
+      if (!btn) return;
+      signaler(appeler('setMessageArchive', btn.dataset.id, false), refreshForumListe);
+    });
+
+    document.getElementById('forum-envoyer').addEventListener('click', function (e) {
+      var champ = document.getElementById('forum-texte');
+      var texte = champ.value.trim();
+      if (!texte) return;
+      var btn = e.currentTarget;
+      btn.disabled = true;
+      signaler(appeler('postMessage', texte), function () {
+        champ.value = '';
+        refreshForumListe();
+      }).finally(function () { btn.disabled = false; });
+    });
+
+    var liste = document.getElementById('forum-liste');
+    liste.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.classList.contains('reply-toggle-btn')) {
+        document.getElementById('reply-box-' + btn.dataset.id).classList.toggle('open');
+      } else if (btn.classList.contains('reply-submit-btn')) {
+        var box = document.getElementById('reply-box-' + btn.dataset.id);
+        var texte = box.querySelector('.reply-texte').value.trim();
+        if (!texte) return;
+        signaler(appeler('postReponse', btn.dataset.id, texte), refreshForumListe);
+      } else if (btn.classList.contains('delete-message-btn')) {
+        confirmer('Supprimer ce message ?', 'Le message et toutes ses réponses seront supprimés.', 'Supprimer', function () {
+          signaler(appeler('supprimerMessage', btn.dataset.id), refreshForumListe);
+        });
+      } else if (btn.classList.contains('archiver-message-btn')) {
+        signaler(appeler('setMessageArchive', btn.dataset.id, true), refreshForumListe);
+      } else if (btn.classList.contains('delete-reponse-btn')) {
+        confirmer('Supprimer cette réponse ?', 'La réponse sera retirée du fil de discussion.', 'Supprimer', function () {
+          signaler(appeler('supprimerReponse', btn.dataset.reponseId), refreshForumListe);
+        });
+      }
+    });
+
+    await refreshForumListe();
+  }
+
+  /* ===================== Rencontres ===================== */
+
+  function rencontreNormalisee(r) {
+    return {
+      id: r.id,
+      titre: r.titre,
+      date: r.date_rencontre || null,
+      terminee: !!r.terminee,
+      archivee: !!r.archivee,
+      commentaire: r.commentaire_general || '',
+      notes: r.notes || '',
+      decisions: r.decisions || '',
+      groupes: (r.rencontre_groupes || []).map(function (g) {
+        return {
+          id: g.id,
+          titre: g.titre,
+          items: (g.rencontre_points || []).map(function (p) {
+            return { id: p.id, texte: p.texte, coche: !!p.coche };
+          }),
+        };
+      }),
+      actions: (r.rencontre_actions || []).map(function (a) {
+        return { id: a.id, texte: a.texte, coche: !!a.coche };
+      }),
+    };
+  }
+
+  function pointHtml(it) {
+    return '<div class="rencontre-item ' + (it.coche ? 'checked' : '') + '" data-id="' + esc(it.id) + '">' +
+      '<label class="rencontre-item-label">' +
+        '<input type="checkbox" class="coche-point" data-id="' + esc(it.id) + '"' + (it.coche ? ' checked' : '') + '>' +
+        '<span class="rencontre-item-texte">' + esc(it.texte) + '</span>' +
+      '</label>' +
+      '<button class="rencontre-item-supprimer supprimer-point-btn" title="Retirer ce point" data-id="' + esc(it.id) + '">&times;</button>' +
+    '</div>';
+  }
+
+  function actionHtml(a) {
+    return '<div class="rencontre-item ' + (a.coche ? 'checked' : '') + '">' +
+      '<label class="rencontre-item-label">' +
+        '<input type="checkbox" class="coche-action" data-id="' + esc(a.id) + '"' + (a.coche ? ' checked' : '') + '>' +
+        '<span class="rencontre-item-texte">' + esc(a.texte) + '</span>' +
+      '</label>' +
+    '</div>';
+  }
+
+  function rencontreCardHtml(r) {
+    var statut = rencontreStatus(r.date, r.terminee);
+    var groupesHtml = r.groupes.map(function (g) {
+      return '<div class="rencontre-groupe">' +
+        '<div class="rencontre-groupe-titre"><span>' + esc(g.titre) + '</span>' +
+        '<button class="btn btn-sm ajouter-point-btn" data-groupe-id="' + esc(g.id) + '" data-groupe-titre="' + esc(g.titre) + '">+ Point</button></div>' +
+        (g.items.map(pointHtml).join('') || '<p class="empty">Aucun point dans cette section.</p>') +
+      '</div>';
+    }).join('') || '<p class="empty">Aucun point à l\'ordre du jour.</p>';
+
+    var actionsHtml = r.actions.length
+      ? '<div class="rencontre-subsection"><h3>Actions à suivre</h3>' + r.actions.map(actionHtml).join('') + '</div>'
+      : '';
+    var notesHtml = r.notes
+      ? '<div class="rencontre-subsection"><h3>Notes de rencontre</h3><div class="rencontre-original-text">' + esc(r.notes) + '</div></div>'
+      : '';
+    var decisionsHtml = r.decisions
+      ? '<div class="rencontre-subsection"><h3>Décisions</h3><div class="rencontre-original-text">' + esc(r.decisions) + '</div></div>'
+      : '';
+
+    return '<div class="rencontre-card" data-id="' + esc(r.id) + '" data-date="' + esc(r.date || '') + '">' +
+      '<div class="rencontre-header">' +
+        '<div class="rencontre-titre-group">' +
+          '<span class="rencontre-date">' + (r.date ? esc(formatDateLongue(r.date)) : 'Date à déterminer') + '</span>' +
+          '<span class="rencontre-titre">' + esc(r.titre) + '</span>' +
+        '</div>' +
+        '<span class="rencontre-status ' + statut.cls + '">' + statut.label + '</span>' +
+      '</div>' +
+      '<div class="rencontre-body">' +
+        '<div class="doc-actions" style="margin-bottom:12px;">' +
+          '<button class="btn btn-sm ajouter-section-btn" data-id="' + esc(r.id) + '">+ Ajouter une section</button>' +
+        '</div>' +
+        groupesHtml + actionsHtml + notesHtml + decisionsHtml +
+        '<div class="rencontre-footer">' +
+          '<div class="rencontre-comment-box">' +
+            '<label>Commentaires (propres au tableau de bord)</label>' +
+            '<textarea rows="2" class="rencontre-commentaire" data-id="' + esc(r.id) + '" placeholder="Ajouter un commentaire sur cette rencontre…">' + esc(r.commentaire) + '</textarea>' +
+          '</div>' +
+          '<button class="btn ' + (r.terminee ? '' : 'btn-primary') + ' rencontre-toggle-termine" data-id="' + esc(r.id) + '" data-terminee="' + (r.terminee ? '1' : '0') + '">' +
+            (r.terminee ? 'Rouvrir la réunion' : 'Marquer comme terminée') + '</button>' +
+        '</div>' +
+        '<div class="doc-actions" style="margin-top:14px;">' +
+          '<button class="btn btn-sm modifier-date-btn" data-id="' + esc(r.id) + '" data-date="' + esc(r.date || '') + '">Modifier la date</button>' +
+          '<button class="btn btn-sm archiver-btn" data-id="' + esc(r.id) + '">Archiver</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function ligneArchiveeHtml(r) {
+    return '<div class="archive-ligne">' +
+      '<span>' + esc(r.titre) + '</span>' +
+      '<span>' + (r.date ? esc(formatDateLongue(r.date)) : 'À déterminer') + '</span>' +
+      '<button class="btn btn-sm desarchiver-btn" data-id="' + esc(r.id) + '">Désarchiver</button>' +
+    '</div>';
+  }
+
+  /* ----- Fenêtres de la section Rencontres ----- */
+
+  function openPlanifierRencontreModal() {
+    var aujourdhui = todayIso();
+    openModal('Planifier une rencontre',
+      '<div class="field-row"><label style="flex:1;">Date de la rencontre' +
+        '<input type="date" id="planifier-date" min="' + aujourdhui + '" value="' + aujourdhui + '"></label></div>' +
+      '<label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-dim); margin-bottom:4px;">' +
+        '<input type="checkbox" id="planifier-indetermine"> Date à déterminer (à définir plus tard)</label>' +
+      '<p class="empty" id="planifier-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="planifier-confirmer-btn">Créer la rencontre</button></div>');
+    var erreurEl = document.getElementById('planifier-erreur');
+    var dateInput = document.getElementById('planifier-date');
+    var indetermine = document.getElementById('planifier-indetermine');
+    indetermine.addEventListener('change', function () { dateInput.disabled = indetermine.checked; });
+    document.getElementById('planifier-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      erreurEl.hidden = true;
+      var date = null;
+      if (!indetermine.checked) {
+        date = dateInput.value;
+        if (!date) return;
+        if (date < aujourdhui) {
+          erreurEl.textContent = 'La date doit être aujourd\'hui ou ultérieure.';
+          erreurEl.hidden = false;
+          return;
+        }
+      }
+      btn.disabled = true;
+      appeler('creerRencontre', date).then(function () {
+        closeModal();
+        refreshRencontresListe();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openModifierDateModal(id, dateActuelle) {
+    openModal('Modifier la date de la rencontre',
+      '<div class="field-row"><label style="flex:1;">Date de la rencontre' +
+        '<input type="date" id="modifier-date" value="' + esc(dateActuelle || '') + '"></label></div>' +
+      '<label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-dim); margin-bottom:4px;">' +
+        '<input type="checkbox" id="modifier-indetermine"' + (dateActuelle ? '' : ' checked') + '> Date à déterminer</label>' +
+      '<p class="empty" id="modifier-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="modifier-confirmer-btn">Enregistrer</button></div>');
+    var erreurEl = document.getElementById('modifier-erreur');
+    var dateInput = document.getElementById('modifier-date');
+    var indetermine = document.getElementById('modifier-indetermine');
+    dateInput.disabled = indetermine.checked;
+    indetermine.addEventListener('change', function () { dateInput.disabled = indetermine.checked; });
+    document.getElementById('modifier-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      erreurEl.hidden = true;
+      var date = null;
+      if (!indetermine.checked) {
+        date = dateInput.value;
+        if (!date) return;
+      }
+      btn.disabled = true;
+      appeler('setDateRencontre', id, date).then(function () {
+        closeModal();
+        refreshRencontresListe(id);
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openAjouterSectionModal(rencontreId) {
+    openModal('Ajouter une section à l\'ordre du jour',
+      '<div class="field-row"><label style="flex:1;">Titre de la section' +
+        '<input type="text" id="section-titre" placeholder="Ex. : Suivi projet X" maxlength="200"></label></div>' +
+      '<p class="empty" id="section-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="section-confirmer-btn">Ajouter</button></div>');
+    var erreurEl = document.getElementById('section-erreur');
+    var input = document.getElementById('section-titre');
+    input.focus();
+    document.getElementById('section-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var titre = input.value.trim();
+      erreurEl.hidden = true;
+      if (!titre) return;
+      btn.disabled = true;
+      appeler('ajouterGroupe', rencontreId, titre).then(function () {
+        closeModal();
+        refreshRencontresListe(rencontreId);
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openAjouterPointModal(groupeId, groupeTitre, rencontreId) {
+    openModal('Ajouter un point — ' + groupeTitre,
+      '<label style="display:block;">Texte du point' +
+        '<textarea id="point-texte" rows="2" placeholder="Décrire le point à discuter…" style="width:100%; margin-top:6px;"></textarea></label>' +
+      '<p class="empty" id="point-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="point-confirmer-btn">Ajouter</button></div>');
+    var erreurEl = document.getElementById('point-erreur');
+    var input = document.getElementById('point-texte');
+    input.focus();
+    document.getElementById('point-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var texte = input.value.trim();
+      erreurEl.hidden = true;
+      if (!texte) return;
+      btn.disabled = true;
+      appeler('ajouterPoint', groupeId, texte).then(function () {
+        closeModal();
+        refreshRencontresListe(rencontreId);
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  async function refreshRencontresListe(idAOuvrir) {
+    var liste = document.getElementById('rencontres-liste');
+    var archives = document.getElementById('rencontres-archives');
+    if (!liste) return;
+
+    // On garde ouvertes les rencontres déjà ouvertes avant le rafraîchissement.
+    var ouvertes = {};
+    liste.querySelectorAll('.rencontre-body.open').forEach(function (b) {
+      ouvertes[b.closest('.rencontre-card').dataset.id] = true;
+    });
+    if (idAOuvrir) ouvertes[idAOuvrir] = true;
+
+    var toutes = (await appeler('getRencontres')).map(rencontreNormalisee);
+    var actives = toutes.filter(function (r) { return !r.archivee; });
+    var archivees = toutes.filter(function (r) { return r.archivee; });
+
+    liste.innerHTML = actives.length
+      ? actives.map(rencontreCardHtml).join('')
+      : '<p class="empty">Aucune rencontre active pour le moment.</p>';
+    archives.innerHTML = archivees.length
+      ? '<div class="archives"><h3>Réunions archivées</h3>' + archivees.map(ligneArchiveeHtml).join('') + '</div>'
+      : '';
+
+    liste.querySelectorAll('.rencontre-card').forEach(function (carte) {
+      if (ouvertes[carte.dataset.id]) carte.querySelector('.rencontre-body').classList.add('open');
+    });
+  }
+
+  async function initRencontres() {
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<h1>Rencontres</h1>' +
+      '<p class="lede">Ordres du jour de la plus récente à la plus ancienne. Les cases cochées et les commentaires sont propres au tableau de bord.</p>' +
+      '<div class="doc-actions">' +
+        '<button class="btn btn-primary" id="planifier-rencontre-btn">+ Planifier une rencontre</button>' +
+      '</div>' +
+      '<div id="rencontres-liste" class="rencontres-liste"></div>' +
+      '<div id="rencontres-archives"></div>';
+
+    document.getElementById('planifier-rencontre-btn').addEventListener('click', openPlanifierRencontreModal);
+
+    var liste = document.getElementById('rencontres-liste');
+    var archives = document.getElementById('rencontres-archives');
+
+    // Délégation : toutes les actions de la liste passent par ces trois écouteurs.
+    liste.addEventListener('click', function (e) {
+      var header = e.target.closest('.rencontre-header');
+      if (header) {
+        header.nextElementSibling.classList.toggle('open');
+        return;
+      }
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.classList.contains('ajouter-section-btn')) {
+        openAjouterSectionModal(btn.dataset.id);
+      } else if (btn.classList.contains('ajouter-point-btn')) {
+        openAjouterPointModal(btn.dataset.groupeId, btn.dataset.groupeTitre, btn.closest('.rencontre-card').dataset.id);
+      } else if (btn.classList.contains('modifier-date-btn')) {
+        openModifierDateModal(btn.dataset.id, btn.dataset.date || null);
+      } else if (btn.classList.contains('supprimer-point-btn')) {
+        var rencontreId = btn.closest('.rencontre-card').dataset.id;
+        confirmer('Retirer ce point ?', 'Le point sera retiré de l\'ordre du jour de la rencontre.', 'Retirer', function () {
+          signaler(appeler('supprimerPoint', btn.dataset.id), function () {
+            refreshRencontresListe(rencontreId);
+          });
+        });
+      } else if (btn.classList.contains('rencontre-toggle-termine')) {
+        var nouvelEtat = btn.dataset.terminee !== '1';
+        signaler(appeler('setRencontreEtat', btn.dataset.id, { terminee: nouvelEtat }), function () {
+          refreshRencontresListe(btn.dataset.id);
+        });
+      } else if (btn.classList.contains('archiver-btn')) {
+        signaler(appeler('setRencontreArchivee', btn.dataset.id, true), function () {
+          refreshRencontresListe();
+        });
+      }
+    });
+
+    liste.addEventListener('change', function (e) {
+      var cb = e.target;
+      if (cb.classList.contains('coche-point')) {
+        cb.closest('.rencontre-item').classList.toggle('checked', cb.checked);
+        signaler(appeler('setPointCoche', cb.dataset.id, cb.checked), null);
+      } else if (cb.classList.contains('coche-action')) {
+        cb.closest('.rencontre-item').classList.toggle('checked', cb.checked);
+        signaler(appeler('setActionCoche', cb.dataset.id, cb.checked), null);
+      }
+    });
+
+    // Commentaire général : enregistré après une courte pause dans la saisie.
+    var minuteries = {};
+    liste.addEventListener('input', function (e) {
+      var ta = e.target;
+      if (!ta.classList.contains('rencontre-commentaire')) return;
+      var id = ta.dataset.id;
+      clearTimeout(minuteries[id]);
+      minuteries[id] = setTimeout(function () {
+        appeler('setRencontreEtat', id, { commentaire_general: ta.value }).catch(function () {});
+      }, 600);
+    });
+
+    archives.addEventListener('click', function (e) {
+      var btn = e.target.closest('.desarchiver-btn');
+      if (!btn) return;
+      signaler(appeler('setRencontreArchivee', btn.dataset.id, false), function () {
+        refreshRencontresListe();
+      });
+    });
+
+    await refreshRencontresListe();
+  }
+
+  /* ===================== Tâches ===================== */
+
+  var cleCollapsees = 'tbl-taches-collapsees';
+  var tachesCollapsees;
+  try {
+    tachesCollapsees = new Set(JSON.parse(localStorage.getItem(cleCollapsees) || '[]'));
+  } catch (_) {
+    tachesCollapsees = new Set();
+  }
+  function sauvegarderCollapsees() {
+    try {
+      localStorage.setItem(cleCollapsees, JSON.stringify(Array.from(tachesCollapsees)));
+    } catch (_) { /* navigation privée, stockage bloqué : on ignore */ }
+  }
+
+  function tacheCarteHtml(t) {
+    var pill = t.assigne ? '<span class="tache-assigne-pill">' + esc(t.assigne) + '</span>' : '';
+    var numero = t.numero != null ? '<span class="item-numero">#' + esc(t.numero) + '</span>' : '';
+    return '<div class="tache-carte" draggable="true" data-id="' + esc(t.id) + '">' +
+      '<div class="tache-carte-titre" title="' + esc(t.titre) + '">' + numero +
+        '<span class="tache-carte-titre-texte">' + esc(t.titre) + '</span></div>' +
+      pill +
+    '</div>';
+  }
+
+  function tachesSwimlaneHtml(pbi, taches) {
+    var pbiId = pbi ? pbi.id : '';
+    var titre = pbi ? pbi.titre : 'To-Do';
+    var collapsee = tachesCollapsees.has(pbiId);
+    var numeroPill = pbi && pbi.numero != null ? '<span class="item-numero">#' + esc(pbi.numero) + '</span>' : '';
+    var statutPill = pbi ? '<span class="pbi-statut ' + esc(pbi.statut || 'nouveau') + '">' + statutPbiLabel(pbi.statut) + '</span>' : '';
+    var responsablePill = pbi && pbi.responsable ? '<span class="tache-assigne-pill">' + esc(pbi.responsable) + '</span>' : '';
+    var actionsPbi = pbi
+      ? '<button class="btn btn-sm modifier-pbi-btn" data-id="' + esc(pbi.id) + '"' +
+          ' data-titre="' + esc(pbi.titre) + '" data-responsable="' + esc(pbi.responsable || '') + '"' +
+          ' data-statut="' + esc(pbi.statut || 'nouveau') + '" data-numero="' + esc(pbi.numero != null ? pbi.numero : '') + '">Modifier</button>' +
+        '<button class="btn btn-sm archiver-pbi-btn" data-id="' + esc(pbi.id) + '">Archiver</button>' +
+        '<button class="btn btn-sm supprimer-pbi-btn" data-id="' + esc(pbi.id) + '" data-nb="' + taches.length + '">Supprimer</button>'
+      : '';
+
+    var parColonne = { nouveau: [], en_cours: [], termine: [] };
+    taches.forEach(function (t) { if (parColonne[t.colonne]) parColonne[t.colonne].push(t); });
+    function colonne(cle) {
+      return '<div class="taches-dropzone" data-pbi-id="' + esc(pbiId) + '" data-colonne="' + cle + '">' +
+        parColonne[cle].map(tacheCarteHtml).join('') + '</div>';
+    }
+
+    return '<div class="taches-swimlane ' + (collapsee ? 'collapsee' : '') + '" data-pbi-id="' + esc(pbiId) + '">' +
+      '<div class="taches-swimlane-header toggle-swimlane">' +
+        '<span class="taches-swimlane-titre">' +
+          '<span class="taches-swimlane-chevron">' + (collapsee ? '▸' : '▾') + '</span>' +
+          numeroPill + ' ' + esc(titre) + ' <span class="taches-count">' + taches.length + '</span>' +
+          statutPill + responsablePill +
+        '</span>' +
+        '<div class="doc-actions" style="margin:0;">' +
+          '<button class="btn btn-sm nouvelle-tache-btn" data-pbi-id="' + esc(pbiId) + '">+ Tâche</button>' +
+          actionsPbi +
+        '</div>' +
+      '</div>' +
+      '<div class="taches-swimlane-colonnes">' + colonne('nouveau') + colonne('en_cours') + colonne('termine') + '</div>' +
+    '</div>';
+  }
+
+  function openNouveauPbiModal() {
+    openModal('Nouveau PBI',
+      '<label style="display:block;">Titre du PBI' +
+        '<input type="text" id="pbi-titre" placeholder="Ex. : Refonte page d\'accueil" maxlength="200" style="width:100%; margin-top:6px;"></label>' +
+      '<div class="field-row" style="margin-top:10px;">' +
+        '<label style="flex:1;">Responsable<select id="pbi-responsable">' + optionsResponsableHtml('') + '</select></label>' +
+        '<label style="flex:1;">Statut<select id="pbi-statut">' + optionsStatutPbiHtml('nouveau') + '</select></label>' +
+      '</div>' +
+      '<p class="empty" id="pbi-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="pbi-confirmer-btn">Créer</button></div>');
+    var erreurEl = document.getElementById('pbi-erreur');
+    var input = document.getElementById('pbi-titre');
+    input.focus();
+    document.getElementById('pbi-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var titre = input.value.trim();
+      erreurEl.hidden = true;
+      if (!titre) return;
+      btn.disabled = true;
+      appeler('creerPbi', {
+        titre: titre,
+        responsable: document.getElementById('pbi-responsable').value,
+        statut: document.getElementById('pbi-statut').value,
+      }).then(function () {
+        closeModal();
+        refreshTachesListe();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openModifierPbiModal(id, titreActuel, responsableActuel, statutActuel, numeroActuel) {
+    openModal('Modifier le PBI' + (numeroActuel ? ' #' + numeroActuel : ''),
+      '<label style="display:block;">Titre du PBI' +
+        '<input type="text" id="pbi-titre" value="' + esc(titreActuel) + '" maxlength="200" style="width:100%; margin-top:6px;"></label>' +
+      '<div class="field-row" style="margin-top:10px;">' +
+        '<label style="flex:1;">Responsable<select id="pbi-responsable">' + optionsResponsableHtml(responsableActuel) + '</select></label>' +
+        '<label style="flex:1;">Statut<select id="pbi-statut">' + optionsStatutPbiHtml(statutActuel) + '</select></label>' +
+      '</div>' +
+      '<p class="empty" id="pbi-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="pbi-confirmer-btn">Enregistrer</button></div>');
+    var erreurEl = document.getElementById('pbi-erreur');
+    var input = document.getElementById('pbi-titre');
+    input.focus();
+    document.getElementById('pbi-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var titre = input.value.trim();
+      erreurEl.hidden = true;
+      if (!titre) return;
+      btn.disabled = true;
+      appeler('modifierPbi', id, {
+        titre: titre,
+        responsable: document.getElementById('pbi-responsable').value,
+        statut: document.getElementById('pbi-statut').value,
+      }).then(function () {
+        closeModal();
+        refreshTachesListe();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openNouvelleTacheModal(pbiId) {
+    openModal('Nouvelle tâche',
+      '<label style="display:block;">Titre (une ligne)' +
+        '<input type="text" id="tache-titre" placeholder="Ex. : Corriger le lien Facebook" maxlength="100" style="width:100%; margin-top:6px;"></label>' +
+      '<label style="display:block; margin-top:10px;">Description (optionnel), pour les détails</label>' +
+      '<textarea id="tache-description" rows="4" style="width:100%; margin-top:6px;"></textarea>' +
+      '<p class="empty" id="tache-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="tache-confirmer-btn">Créer</button></div>');
+    var erreurEl = document.getElementById('tache-erreur');
+    var titreInput = document.getElementById('tache-titre');
+    titreInput.focus();
+    document.getElementById('tache-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var titre = titreInput.value.trim();
+      erreurEl.hidden = true;
+      if (!titre) return;
+      btn.disabled = true;
+      appeler('creerTache', {
+        titre: titre,
+        description: document.getElementById('tache-description').value.trim(),
+        pbi_id: pbiId || null,
+      }).then(function () {
+        closeModal();
+        refreshTachesListe();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  function openTacheDetailModal(id, donnees) {
+    var t = donnees.taches.find(function (x) { return x.id === id; });
+    if (!t) return;
+    var optionsPbi = ['<option value="">(To-Do)</option>'].concat(donnees.pbis.map(function (p) {
+      return '<option value="' + esc(p.id) + '"' + (p.id === t.pbi_id ? ' selected' : '') + '>' + esc(p.titre) + '</option>';
+    })).join('');
+    var optionsAssigne = ['<option value="">(Non assigné)</option>'].concat(MEMBRES_EQUIPE.map(function (n) {
+      return '<option value="' + esc(n) + '"' + (n === t.assigne ? ' selected' : '') + '>' + esc(n) + '</option>';
+    })).join('');
+
+    openModal('Détail de la tâche' + (t.numero != null ? ' #' + t.numero : ''),
+      '<label style="display:block;">Titre (une ligne)' +
+        '<input type="text" id="tache-titre" value="' + esc(t.titre) + '" maxlength="100" style="width:100%; margin-top:6px;"></label>' +
+      '<label style="display:block; margin-top:10px;">Description, pour les détails</label>' +
+      '<textarea id="tache-description" rows="4" style="width:100%; margin-top:6px;">' + esc(t.description || '') + '</textarea>' +
+      '<div class="field-row" style="margin-top:10px;">' +
+        '<label style="flex:1;">PBI<select id="tache-pbi">' + optionsPbi + '</select></label>' +
+        '<label style="flex:1;">Assigné à<select id="tache-assigne">' + optionsAssigne + '</select></label>' +
+      '</div>' +
+      '<p class="empty" id="tache-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px; justify-content:space-between;">' +
+        '<button class="btn btn-supprimer" id="tache-supprimer-btn">Supprimer la tâche</button>' +
+        '<button class="btn btn-primary" id="tache-enregistrer-btn">Enregistrer</button>' +
+      '</div>');
+
+    var erreurEl = document.getElementById('tache-erreur');
+
+    document.getElementById('tache-enregistrer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var titre = document.getElementById('tache-titre').value.trim();
+      erreurEl.hidden = true;
+      if (!titre) return;
+      var assigne = document.getElementById('tache-assigne').value;
+      btn.disabled = true;
+      appeler('modifierTache', t.id, {
+        titre: titre,
+        description: document.getElementById('tache-description').value.trim(),
+        pbi_id: document.getElementById('tache-pbi').value || null,
+      }).then(function () {
+        if (assigne !== (t.assigne || '')) return appeler('assignerTache', t.id, assigne);
+      }).then(function () {
+        closeModal();
+        refreshTachesListe();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+
+    document.getElementById('tache-supprimer-btn').addEventListener('click', function () {
+      confirmer('Supprimer cette tâche ?', 'La tâche sera supprimée du tableau.', 'Supprimer', function () {
+        signaler(appeler('supprimerTache', t.id), function () {
+          closeModal();
+          refreshTachesListe();
+        });
+      });
+    });
+  }
+
+  function pbiArchiveHtml(pbi, nbTaches) {
+    var numero = pbi.numero != null ? '<span class="item-numero">#' + esc(pbi.numero) + '</span> ' : '';
+    return '<div class="archive-ligne">' +
+      '<span>' + numero + esc(pbi.titre) + '</span>' +
+      '<span>' + nbTaches + ' tâche' + (nbTaches > 1 ? 's' : '') + '</span>' +
+      '<button class="btn btn-sm desarchiver-pbi-btn" data-id="' + esc(pbi.id) + '">Désarchiver</button>' +
+    '</div>';
+  }
+
+  async function refreshTachesListe() {
+    var swimlanes = document.getElementById('taches-swimlanes');
+    var archives = document.getElementById('taches-archives');
+    if (!swimlanes) return;
+    var brut = await appeler('getTaches');
+    var tousPbis = brut.pbis || [];
+    var toutesTaches = brut.taches || [];
+
+    // Un PBI archivé quitte le Kanban avec ses tâches : il ne reste que dans la section du bas.
+    var pbisArchives = tousPbis.filter(function (p) { return p.archivee; });
+    var idsArchives = {};
+    pbisArchives.forEach(function (p) { idsArchives[p.id] = true; });
+    var donnees = {
+      pbis: tousPbis.filter(function (p) { return !p.archivee; }),
+      taches: toutesTaches.filter(function (t) { return !t.archivee && !idsArchives[t.pbi_id]; }),
+    };
+
+    if (archives) {
+      archives.innerHTML = pbisArchives.length
+        ? '<div class="archives"><h3>PBI archivés</h3>' + pbisArchives.map(function (p) {
+            return pbiArchiveHtml(p, toutesTaches.filter(function (t) { return t.pbi_id === p.id; }).length);
+          }).join('') + '</div>'
+        : '';
+    }
+
+    var parPbi = {};
+    donnees.taches.forEach(function (t) {
+      var cle = t.pbi_id || '';
+      (parPbi[cle] = parPbi[cle] || []).push(t);
+    });
+
+    var blocs = donnees.pbis.map(function (pbi) {
+      return tachesSwimlaneHtml(pbi, parPbi[pbi.id] || []);
+    });
+    blocs.push(tachesSwimlaneHtml(null, parPbi[''] || []));
+    swimlanes.innerHTML = blocs.join('');
+
+    swimlanes.querySelectorAll('.toggle-swimlane').forEach(function (header) {
+      header.addEventListener('click', function () {
+        var swimlane = header.closest('.taches-swimlane');
+        var pbiId = swimlane.dataset.pbiId;
+        var collapsee = tachesCollapsees.has(pbiId);
+        if (collapsee) tachesCollapsees.delete(pbiId);
+        else tachesCollapsees.add(pbiId);
+        sauvegarderCollapsees();
+        swimlane.classList.toggle('collapsee', !collapsee);
+        header.querySelector('.taches-swimlane-chevron').textContent = collapsee ? '▾' : '▸';
+      });
+    });
+
+    swimlanes.querySelectorAll('.nouvelle-tache-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openNouvelleTacheModal(btn.dataset.pbiId);
+      });
+    });
+
+    swimlanes.querySelectorAll('.modifier-pbi-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openModifierPbiModal(btn.dataset.id, btn.dataset.titre, btn.dataset.responsable, btn.dataset.statut, btn.dataset.numero);
+      });
+    });
+
+    swimlanes.querySelectorAll('.supprimer-pbi-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var nb = Number(btn.dataset.nb) || 0;
+        var detail = nb ? ' et ses ' + nb + ' tâche' + (nb > 1 ? 's' : '') : '';
+        confirmer('Supprimer ce PBI ?', 'Le PBI' + detail + ' sera supprimé définitivement. Cette action ne peut pas être annulée.', 'Supprimer', function () {
+          signaler(appeler('supprimerPbiComplet', btn.dataset.id), refreshTachesListe);
+        });
+      });
+    });
+
+    swimlanes.querySelectorAll('.archiver-pbi-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        signaler(appeler('setPbiArchive', btn.dataset.id, true), refreshTachesListe);
+      });
+    });
+
+    swimlanes.querySelectorAll('.tache-carte').forEach(function (carte) {
+      carte.addEventListener('click', function () { openTacheDetailModal(carte.dataset.id, donnees); });
+      carte.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', carte.dataset.id);
+        carte.classList.add('dragging');
+      });
+      carte.addEventListener('dragend', function () { carte.classList.remove('dragging'); });
+    });
+
+    swimlanes.querySelectorAll('.taches-dropzone').forEach(function (zone) {
+      zone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+      });
+      zone.addEventListener('dragleave', function () { zone.classList.remove('drag-over'); });
+      zone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        var id = e.dataTransfer.getData('text/plain');
+        if (!id) return;
+        // Le backend assigne automatiquement l'administrateur connecté, comme le tableau local.
+        appeler('deplacerTache', id, zone.dataset.colonne).catch(function (err) {
+          alert(err.message);
+        }).finally(refreshTachesListe);
+      });
+    });
+  }
+
+  async function initTaches() {
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<h1>Tâches</h1>' +
+      '<p class="lede">Glissez une carte d\'une colonne à l\'autre. Passer en « En cours » vous assigne la tâche ; revenir à « Nouveaux » retire l\'assignation.</p>' +
+      '<div class="taches-toolbar"><button class="btn btn-primary" id="nouveau-pbi-btn">+ Nouveau PBI</button></div>' +
+      '<div class="taches-entete-colonnes"><span>Nouveaux</span><span>En cours</span><span>Terminés</span></div>' +
+      '<div id="taches-swimlanes" class="taches-swimlanes"></div>' +
+      '<div id="taches-archives"></div>';
+    document.getElementById('nouveau-pbi-btn').addEventListener('click', openNouveauPbiModal);
+    document.getElementById('taches-archives').addEventListener('click', function (e) {
+      var btn = e.target.closest('.desarchiver-pbi-btn');
+      if (!btn) return;
+      signaler(appeler('setPbiArchive', btn.dataset.id, false), refreshTachesListe);
+    });
+    await refreshTachesListe();
+  }
+
+  /* ===================== PartnerID ===================== */
+
+  // Liste en lecture seule. Elle est mise à jour par le skill dashboard-export-partnerID.
+  // Ordre d'affichage des types, avec le titre de chaque tableau.
+  var TYPES_PARTNER_ID = [
+    { cle: 'Facebook', titre: 'Facebook' },
+    { cle: 'Infolettre', titre: 'Infolettre' },
+    { cle: 'Partenaire', titre: 'Partenaires' },
+    { cle: 'Facebook France', titre: 'Facebook France' },
+  ];
+
+  async function initPartnerId() {
+    var content = document.getElementById('content');
+    var lignes = await appeler('getPartnerIds');
+
+    var sections = TYPES_PARTNER_ID.map(function (t) {
+      var du_type = lignes.filter(function (p) { return p.type === t.cle; });
+      var corps = du_type.map(function (p) {
+        return '<tr><td class="partner-id-code">' + esc(p.partner_id) + '</td>' +
+          '<td>' + esc(p.cible) + '</td></tr>';
+      }).join('');
+      return '<div class="panel">' +
+        '<h2>' + esc(t.titre) + '</h2>' +
+        (du_type.length
+          ? '<table class="partner-id-table"><thead><tr>' +
+              '<th>Partner ID</th><th>Livre / Partenaire</th>' +
+            '</tr></thead><tbody>' + corps + '</tbody></table>'
+          : '<p class="empty">Aucun partner ID pour ce type.</p>') +
+      '</div>';
+    }).join('');
+
+    content.innerHTML =
+      '<h1>PartnerID</h1>' +
+      '<p class="lede">Partner ID actifs, regroupés par type (liste en lecture seule).</p>' +
+      sections;
+  }
+
+  /* ===================== Publicité ===================== */
+
+  // Résumé de l'onglet Dashboard du classeur Suivi_Publicités_Facebook.xlsx (lecture seule).
+  // Mis à jour manuellement par le skill dashboard-export-publicite.
+  async function initPublicite() {
+    var content = document.getElementById('content');
+    var lignes = await appeler('getResumePublicite');
+
+    var intro = '<h1>Publicité</h1>';
+    if (!lignes.length) {
+      content.innerHTML = intro +
+        '<p class="lede">Résumé des 30 derniers jours du suivi des publicités Facebook.</p>' +
+        '<div class="panel"><p class="empty">Aucun résumé enregistré pour le moment.</p></div>';
+      return;
+    }
+
+    function argent(v) {
+      return v == null ? '—' : Number(v).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' });
+    }
+    function decimal(v) {
+      return v == null ? '—' : Number(v).toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Toutes les lignes ont la même période : on la prend sur la première.
+    var periode = lignes[0];
+
+    var corps = lignes.map(function (l) {
+      var total = l.ad_set === 'TOTAL';
+      var gras = total ? ' style="font-weight:700;"' : '';
+      return '<tr' + gras + '>' +
+        '<td>' + esc(l.ad_set) + '</td>' +
+        '<td>' + argent(l.depense) + '</td>' +
+        '<td>' + argent(l.ventes) + '</td>' +
+        '<td>' + decimal(l.roas) + '</td>' +
+        '<td>' + (total ? '' : esc(l.recommandation || '')) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    content.innerHTML = intro +
+      '<p class="lede">Les 30 derniers jours : du ' + esc(formatDateLongue(periode.periode_debut)) +
+        ' au ' + esc(formatDateLongue(periode.periode_fin)) +
+        '. Mis à jour le ' + esc(formatDateFr(periode.synchronise_le)) + '.</p>' +
+      '<p class="lede">ROAS = Nombre de $ gagnés par $ dépensé. ROAS sous 1 = on perd de l\'argent</p>' +
+      '<div class="panel" style="overflow-x:auto;">' +
+        '<table class="partner-id-table tableau-stats"><thead><tr>' +
+          '<th>Ad Set</th><th>Dépense</th><th>Ventes</th><th>ROAS</th><th>Recommandation</th>' +
+        '</tr></thead><tbody>' + corps + '</tbody></table>' +
+      '</div>';
+  }
+
+  /* ===================== Accueil : démarrage ===================== */
+
+  // Signale à la page Velo que l'iframe est prête ; la page répond avec la session.
+  envoyerAuParent({ action: 'ready' });
+})();
+
+</script>
+</body>
+</html>
