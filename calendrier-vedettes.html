@@ -9,7 +9,9 @@
 /* Calendrier de mise en vedette (calendrier-mise-en-vedette.md). Même allure que l'Espace Auteurs : fond noir,
    cartes sombres, rouge TBL. Une rangée par semaine, ses places de gauche à droite (occupées, choix en cours,
    libres) ; à droite (ou dessous sur téléphone), le panneau de réservation avec le total en direct. */
-:root{--bg:#000;--card:#16181c;--card2:#111317;--line:#34373e;--txt:#f5f5f5;--muted:#b7bac2;--red:#e52530;--redsoft:#5b2126;--ok:#4cc38a;--orange:#e8a33d;--orangesoft:#3d2c12;--blue:#5b9bf0;--bluesoft:#14233d}
+/* Jetons des gabarits (Templates\tokens.css, tirés de cette page). Copiés ici : la composante est un fichier autonome. */
+:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-radius:14px;--tbl-radius-btn:9px}
+:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:var(--tbl-paper-2);--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--red:var(--tbl-accent);--redsoft:var(--tbl-accent-soft);--ok:var(--tbl-ok);--orange:var(--tbl-orange);--orangesoft:var(--tbl-orange-soft);--blue:var(--tbl-blue);--bluesoft:var(--tbl-blue-soft)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{background:var(--bg)}
@@ -23,10 +25,12 @@ h3{margin:0 0 10px;font-size:1.05rem}
 p{margin:0}
 .sub,.note{color:var(--muted)}
 .note{font-size:.9rem}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
-.btn{border:0;border-radius:9px;padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;cursor:pointer;width:100%}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:20px}
+.btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;cursor:pointer;width:100%}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);width:auto;padding:8px 14px;font-weight:normal}
+.btn.sec:hover:not(:disabled){border-color:var(--red);filter:none}
 select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
 
 .entete{margin-bottom:16px}

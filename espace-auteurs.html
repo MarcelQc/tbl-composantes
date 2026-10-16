@@ -6,23 +6,29 @@
 <meta name="robots" content="noindex">
 <title>Espace Auteurs | Éditions TBL</title>
 <style>
-:root{--bg:#000;--card:#16181c;--card2:#111317;--line:#34373e;--txt:#f5f5f5;--muted:#b7bac2;--red:#e52530;--redsoft:#5b2126;--ok:#4cc38a}
+/* Jetons des gabarits (Templates\tokens.css, allure de calendrier-vedettes.html). Copiés ici : la composante est un fichier autonome. */
+:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:none}
+/* Couleurs de l'EDA, rattachées aux jetons. --red est le rouge TBL des actions ; --or est gardé comme alias des éléments actifs (rouge aussi). */
+:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:var(--tbl-paper-2);--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--red:var(--tbl-accent);--rouge-texte:#ffb3b8;--redsoft:var(--tbl-accent-soft);--ok:var(--tbl-ok);--or:var(--tbl-accent);--or-fonce:var(--tbl-muted)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
 html,body{background:var(--bg)} /* noir pur : identique au fond de la page Wix, sans lueur ni bordure visible autour de la composante */
 html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin} /* barre de défilement sombre si elle apparaît */
-body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.55}
+body{margin:0;color:var(--txt);font-family:var(--tbl-font-body);line-height:1.55}
+h1,h2,h3{font-family:var(--tbl-font-heading);font-weight:bold}
 .wrap{width:min(1160px,calc(100% - 28px));margin:auto}
 button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+:focus-visible{outline:2px solid var(--or);outline-offset:2px}
 
 main.wrap{padding-top:8px}
 
 /* Cartes */
-.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:26px}
+/* Dans le panneau d'un onglet (déjà sur fond « papier »), les cartes sont un ton plus foncé. */
+.panneau .card{background:var(--card2)}
 .centre{text-align:center;max-width:640px;margin:10px auto 0}
-.centre svg{width:96px;height:96px;color:var(--red);margin-bottom:8px}
+.centre svg{width:96px;height:96px;color:var(--or);margin-bottom:8px}
 .centre h2{margin:0 0 8px}
 .sub,.note{color:var(--muted)}
 .note{font-size:.92rem}
@@ -30,32 +36,36 @@ h2{margin:0 0 5px;font-size:1.5rem;line-height:1.15}
 h3{margin:0 0 12px;font-size:1.15rem}
 
 /* Boutons */
-.btn{border:0;border-radius:9px;padding:12px 20px;background:var(--red);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
 .btn:hover:not(:disabled){filter:brightness(1.1)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
-.btn.sec:hover:not(:disabled){border-color:var(--red)}
+.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:normal}
+.btn.sec:hover:not(:disabled){border-color:var(--red);filter:none}
 .btn.petit{padding:8px 14px;font-size:.92rem}
-.mail{color:var(--red);font-weight:bold;text-decoration:none}
+.mail{color:var(--or);font-weight:bold;text-decoration:none}
 
 /* Chargement */
-.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
 @keyframes tour{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}html{scroll-behavior:auto}}
 
 /* Onglets */
-.onglets{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin-bottom:6px;border-bottom:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-.onglet{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:11px 20px;font-weight:bold;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--muted)}
-.onglet:hover{border-color:var(--red);color:var(--txt)}
-.onglet[aria-selected="true"]{background:var(--red);border-color:var(--red);color:#fff}
-.pastille-nb{background:rgba(255,255,255,.14);border-radius:99px;padding:0 8px;font-size:.8rem;min-width:22px;text-align:center}
-.panneau{padding-top:16px}
-.onglet.actualiser{margin-left:auto;font-weight:normal}
-.onglet.config{font-weight:normal}
+/* Onglets style « dossier » (Templates\tabs.html) : l'onglet actif se fond dans le panneau en dessous. */
+.onglets{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding:2px 2px 0;scrollbar-width:none}
+.onglets::-webkit-scrollbar{display:none}
+.onglet{flex:0 0 auto;border:1px solid var(--line);border-bottom:0;background:var(--card2);border-radius:var(--tbl-radius-btn) var(--tbl-radius-btn) 0 0;padding:10px 18px;font-family:var(--tbl-font-heading);font-size:.98rem;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--or-fonce);white-space:nowrap}
+.onglet:hover{color:var(--txt)}
+.onglet[aria-selected="true"]{background:var(--card);color:var(--txt);font-weight:bold;box-shadow:inset 0 2px 0 var(--red)}
+.pastille-nb{background:var(--redsoft);color:var(--rouge-texte);border-radius:99px;padding:0 8px;font-family:var(--tbl-font-body);font-size:.78rem;font-weight:600;min-width:22px;text-align:center}
+.panneau{background:var(--card);border:1px solid var(--line);border-radius:0 var(--tbl-radius) var(--tbl-radius) var(--tbl-radius);padding:20px}
+/* Actualiser et Configuration : boutons secondaires (Templates\action-buttons.html), à droite de la barre. */
+.onglet.actualiser,.onglet.config{align-self:center;margin-bottom:6px;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:transparent;color:var(--txt);font-family:var(--tbl-font-body);font-size:.9rem;font-weight:normal;padding:8px 14px}
+.onglet.actualiser{margin-left:auto}
+.onglet.actualiser:hover,.onglet.config:hover{border-color:var(--red);color:var(--txt)}
 /* Fenêtre Configuration (administrateur) : un réglage par ligne, case à cocher et description. */
 .reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
 .reglage:first-child{border-top:0}
-.reglage input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--red)}
+.reglage input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--or)}
 .reglage label{font-weight:bold;cursor:pointer}
 .reglage .aide{margin-top:4px}
 
@@ -64,7 +74,7 @@ h3{margin:0 0 12px;font-size:1.15rem}
 .barre-mois label{color:var(--muted);margin-right:8px}
 select,input[type=text],textarea{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%}
 select{width:auto;min-width:200px}
-select:focus,input:focus,textarea:focus{border-color:var(--red);outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--or);outline:none}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
 .kpi{padding:20px}
 .kpi .etiquette{color:var(--muted);font-size:.92rem}
@@ -78,9 +88,9 @@ select:focus,input:focus,textarea:focus{border-color:var(--red);outline:none}
 .barre{cursor:pointer}
 .barre rect{fill:var(--redsoft)}
 .barre:hover rect,.barre:focus rect{fill:#9b2b33}
-.barre.actif rect{fill:var(--red)}
+.barre.actif rect{fill:var(--or)}
 .barre .zone,.barre:hover .zone,.barre:focus .zone,.barre.actif .zone{fill:transparent}
-.graphique text{fill:var(--muted);font-family:Arial,Helvetica,sans-serif;font-size:11px}
+.graphique text{fill:var(--muted);font-family:var(--tbl-font-body);font-size:11px}
 .graphique .barre.actif text.lib{fill:var(--txt);font-weight:bold}
 .vide{color:var(--muted);text-align:center;padding:26px 10px}
 
@@ -112,12 +122,12 @@ select:focus,input:focus,textarea:focus{border-color:var(--red);outline:none}
 .zone-docs .meta{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .zone-docs .meta>*{margin-right:10px}
 .zone-docs .pastille{display:inline-block;line-height:1.4;vertical-align:middle}
-.btn.mini{padding:6px 10px;font-size:.85rem;border-radius:8px}
+.btn.mini{padding:6px 10px;font-size:.85rem;border-radius:var(--tbl-radius-btn)}
 
 /* Fiche auteur */
 .fiche{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
 .photo-bloc{text-align:center}
-.photo-cadre{width:180px;height:180px;border-radius:50%;margin:0 auto 14px;border:2px solid var(--line);overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--red);font-family:Georgia,serif}
+.photo-cadre{width:180px;height:180px;border-radius:50%;margin:0 auto 14px;border:2px solid var(--line);overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--or);font-family:var(--tbl-font-heading)}
 .photo-cadre img{width:100%;height:100%;object-fit:cover;display:block}
 .champ{margin-bottom:16px}
 .champ label{display:block;font-weight:bold;margin-bottom:6px}
@@ -127,7 +137,7 @@ textarea{min-height:96px;resize:vertical}
 .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px}
 .statut{min-height:1.4em;color:var(--muted)}
 .statut.ok{color:var(--ok)}
-.statut.err{color:var(--red)}
+.statut.err{color:var(--rouge-texte)}
 
 /* Livres : cartes horizontales compactes (couverture à gauche), trois par rangée sur ordinateur, TOUTES de
    la même hauteur. Le titre et la couverture mènent à la page du livre (ou à la fiche d'un coffret). Les textes
@@ -142,25 +152,27 @@ textarea{min-height:96px;resize:vertical}
 .livre{transition:box-shadow .4s,border-color .4s}
 .livre.retour{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,37,48,.35)}
 .livre .lien-couv{flex:0 0 72px;align-self:flex-start;display:block;border-radius:6px;color:inherit;text-decoration:none}
-.livre .lien-couv:hover .couv{border-color:var(--red)}
+.livre .lien-couv:hover .couv{border-color:var(--or)}
 .livre .couv{width:72px;aspect-ratio:2/3;border-radius:6px;background:var(--card2);border:1px solid var(--line);object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.68rem;text-align:center;padding:4px}
 .livre>.couv{flex:0 0 72px;align-self:flex-start}
 .livre .corps{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
 .livre h3{margin:0;font-size:.95rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex-shrink:0}
 .livre h3 a{color:inherit;text-decoration:none}
-.livre h3 a:hover{color:var(--red);text-decoration:underline}
+.livre h3 a:hover{color:var(--or);text-decoration:underline}
 .une-ligne{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pastilles{display:flex;flex-wrap:wrap;gap:5px}
 .livre .pastilles{flex-wrap:nowrap;overflow:hidden}
-.pastille{border:1px solid var(--line);border-radius:99px;padding:1px 8px;font-size:.74rem;color:var(--muted);white-space:nowrap}
-.pastille.ok{border-color:var(--ok);color:var(--ok)}
-.pastille.rouge{border-color:var(--red);color:var(--red)}
+/* Pastilles de statut (Templates\status-badge.html) : fond teinté et point de couleur. */
+.pastille{border:0;border-radius:99px;padding:2px 9px;font-size:.74rem;font-weight:600;background:#20232a;color:var(--muted);white-space:nowrap}
+.pastille::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px}
+.pastille.ok{background:rgba(76,195,138,.15);color:var(--ok)}
+.pastille.rouge{background:var(--redsoft);color:var(--rouge-texte)}
 .barre-admin{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px;padding:14px 18px;border-color:#c792ff}
 .barre-admin strong{color:#c792ff}
 .barre-admin select{min-width:180px}
 .livre .auteur-livre{color:var(--muted);font-size:.8rem}
-.pastille.attente{border-color:#FFCB05;color:#FFCB05}
-.pastille.bleu{border-color:#4d9fff;color:#4d9fff}
+.pastille.attente{background:var(--tbl-orange-soft);color:var(--tbl-orange)}
+.pastille.bleu{background:var(--tbl-blue-soft);color:var(--tbl-blue)}
 .livre .chiffres{color:var(--muted);font-size:.78rem}
 .livre .motif{border-left:3px solid var(--red);padding:2px 8px;color:var(--txt);font-size:.76rem;background:var(--card2);border-radius:0 6px 6px 0}
 .livre .actions-livre{display:flex;flex-wrap:nowrap;gap:6px;margin-top:auto}
@@ -187,14 +199,14 @@ textarea{min-height:96px;resize:vertical}
 
 /* Fenêtres (bientôt disponible, nouveau livre) */
 .fond-fenetre{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;padding:60px 14px;z-index:20;overflow:auto}
-.fenetre{width:min(560px,100%);padding:26px}
+.fenetre{width:min(560px,100%);padding:26px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
 .fenetre h2{margin-bottom:12px}
 .fenetre p{margin:0 0 12px}
 .fenetre .champ select{width:100%;min-width:0}
 .fenetre .boutons{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px}
 .fenetre .apercu-produit{display:flex;gap:12px;align-items:center;margin-top:8px;color:var(--muted);font-size:.9rem}
 .fenetre .apercu-produit img{width:60px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
-.etiquette-bientot{display:inline-block;border:1px solid #FFCB05;color:#FFCB05;border-radius:99px;padding:1px 10px;font-size:.8rem;margin-bottom:10px}
+.etiquette-bientot{display:inline-block;border:0;background:var(--tbl-orange-soft);color:var(--tbl-orange);font-weight:600;border-radius:99px;padding:1px 10px;font-size:.8rem;margin-bottom:10px}
 
 /* Documents */
 .colonnes-docs{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
