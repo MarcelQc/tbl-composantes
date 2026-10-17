@@ -66,6 +66,9 @@ h3{margin:0 0 12px;font-size:1.15rem}
 .reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
 .reglage:first-child{border-top:0}
 .reglage input{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--or)}
+.reglage input[type=number]{width:76px;height:auto;margin-top:0;background:#0f1114;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:7px 9px}
+.reglage input[type=number]:focus{border-color:var(--red);outline:none}
+.reglage input.invalide{border-color:var(--red)}
 .reglage label{font-weight:bold;cursor:pointer}
 .reglage .aide{margin-top:4px}
 
@@ -1396,21 +1399,46 @@ function ouvrirConfig() {
   ouvrirFenetre('fenetre-config', 'btn-annuler-config');
   envoyer({ type: 'config' });
 }
+// Deux sortes de réglages (config.js) : « case » (actif, case à cocher) et « nombre » (valeur, entier de 1 à 30,
+// ex. vedettesMaxGratuit). Une valeur saisie invalide vaut NaN et bloque l'enregistrement.
+function valeurReglage(r) {
+  var c = $('reglage-' + r.cle);
+  if (!c) { return null; }
+  if (r.type !== 'nombre') { return c.checked; }
+  var n = Number(c.value);
+  return c.value !== '' && Number.isInteger(n) && n >= 1 && n <= 30 ? n : NaN;
+}
 function changementsConfig() {
   return (etat.config || []).filter(function (r) {
+    var v = valeurReglage(r);
+    return r.type === 'nombre' ? v !== r.valeur : v !== null && v !== r.actif;
+  }).map(function (r) {
+    var v = valeurReglage(r);
+    return r.type === 'nombre' ? { cle: r.cle, valeur: v } : { cle: r.cle, actif: v };
+  });
+}
+function configInvalide() {
+  return (etat.config || []).some(function (r) {
+    var invalide = r.type === 'nombre' && Number.isNaN(valeurReglage(r));
     var c = $('reglage-' + r.cle);
-    return c && c.checked !== r.actif;
-  }).map(function (r) { return { cle: r.cle, actif: $('reglage-' + r.cle).checked }; });
+    if (c && r.type === 'nombre') { c.classList.toggle('invalide', invalide); }
+    return invalide;
+  });
 }
 function majBoutonConfig() {
-  $('btn-enregistrer-config').disabled = etat.configEnCours || !changementsConfig().length;
+  var invalide = configInvalide();
+  if (!etat.configEnCours) {
+    $('statut-config').className = invalide ? 'statut err' : 'statut';
+    $('statut-config').textContent = invalide ? 'Entrez un nombre entier de 1 à 30.' : '';
+  }
+  $('btn-enregistrer-config').disabled = etat.configEnCours || invalide || !changementsConfig().length;
 }
 function surConfig(msg) {
   if ($('fenetre-config').hidden) { return; }
   etat.configEnCours = false;
   if (msg.statut !== 'ok') {
     var texte = msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : (msg.message || 'Impossible de lire ou d\'enregistrer la configuration pour le moment. Réessayez dans quelques instants.');
-    if (msg.type === 'resultatEnregistrerConfig') { $('statut-config').className = 'statut err'; $('statut-config').textContent = texte; majBoutonConfig(); }
+    if (msg.type === 'resultatEnregistrerConfig') { majBoutonConfig(); $('statut-config').className = 'statut err'; $('statut-config').textContent = texte; }
     else { $('config-chargement').textContent = texte; }
     return;
   }
@@ -1422,8 +1450,14 @@ function surConfig(msg) {
   $('config-chargement').hidden = true;
   etat.config.forEach(function (r) {
     var ligne = el('div', 'reglage');
-    var c = el('input'); c.type = 'checkbox'; c.id = 'reglage-' + r.cle; c.checked = r.actif;
-    c.addEventListener('change', majBoutonConfig);
+    var c = el('input'); c.id = 'reglage-' + r.cle;
+    if (r.type === 'nombre') {
+      c.type = 'number'; c.min = 1; c.max = 30; c.step = 1; c.value = r.valeur;
+      c.addEventListener('input', majBoutonConfig);
+    } else {
+      c.type = 'checkbox'; c.checked = r.actif;
+      c.addEventListener('change', majBoutonConfig);
+    }
     var texte = el('div');
     var lab = el('label', null, r.titre); lab.htmlFor = c.id;
     texte.appendChild(lab);

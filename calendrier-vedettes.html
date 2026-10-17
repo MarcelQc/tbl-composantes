@@ -39,6 +39,15 @@ select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding
 /* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
 body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{display:none}
 .actions-haut{display:flex;gap:8px}
+/* Fenêtre Configuration (administrateur) : un réglage par ligne, comme dans l'Espace Auteurs. */
+.reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.reglage:first-child{border-top:0}
+.reglage input[type=checkbox]{width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:var(--red)}
+.reglage input[type=number]{width:76px;flex:0 0 auto;background:#0f1114;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:7px 9px;color:inherit;font:inherit}
+.reglage input[type=number]:focus{border-color:var(--red);outline:none}
+.reglage input.invalide{border-color:var(--red)}
+.reglage label{font-weight:bold;cursor:pointer}
+.reglage .aide{color:var(--muted);font-size:.85rem;margin-top:4px}
 /* Fenêtre surgissante, placée en haut : la composante est haute, le centre de l'iframe serait hors de vue. */
 .fond-fenetre{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:flex;justify-content:center;align-items:flex-start;padding:70px 14px 14px;overflow:auto}
 .fenetre{width:min(760px,100%)}
@@ -153,6 +162,7 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
     <div class="barre-haut">
       <button type="button" class="btn sec" id="b-retour">← Espace Auteurs</button>
       <span class="actions-haut">
+        <button type="button" class="btn sec" id="b-config" title="Réglages de la mise en vedette (administrateur)" hidden>⚙ Configuration</button>
         <button type="button" class="btn sec" id="b-defauts" hidden>Livres par défaut</button>
         <button type="button" class="btn sec" id="b-actualiser">↻ Actualiser</button>
       </span>
@@ -235,7 +245,25 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
   </section>
   </div>
 
-  <!-- Avis (ex. limite de semaines en gratuité) : une fenêtre avec le bouton Fermer. -->
+  <!-- Configuration : administrateur seulement (bouton « ⚙ Configuration » en haut). Réglages de la collection Config
+       dont la clé commence par « vedettes » : nombre de semaines par demande (gratuit, payant), section affichée. -->
+  <div class="fond-fenetre" id="fenetre-config" hidden>
+  <section class="card fenetre petite" role="dialog" aria-modal="true" aria-labelledby="titre-config">
+    <div class="tete-fenetre">
+      <h2 id="titre-config">Configuration</h2>
+      <button type="button" class="fermer" id="b-fermer-config" aria-label="Annuler">×</button>
+    </div>
+    <p class="note" id="config-chargement" role="status" aria-live="polite">Chargement des réglages…</p>
+    <div id="liste-config"></div>
+    <p class="message" id="statut-config" role="status" aria-live="polite" hidden></p>
+    <div class="boutons-fenetre">
+      <button type="button" class="btn sec" id="b-annuler-config">Annuler</button>
+      <button type="button" class="btn" id="b-enregistrer-config" disabled>Enregistrer</button>
+    </div>
+  </section>
+  </div>
+
+  <!-- Avis (ex. limite de semaines par demande) : une fenêtre avec le bouton Fermer. -->
   <div class="fond-fenetre" id="fenetre-avis" hidden>
   <section class="card fenetre petite" role="alertdialog" aria-modal="true" aria-labelledby="titre-avis" aria-describedby="texte-avis">
     <h2 id="titre-avis"></h2>
@@ -267,10 +295,17 @@ function argent(c) {
 // ===== Semaines : lundi au dimanche, heure du Québec =====
 var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 var NB_SEMAINES = 10; // semaines à réserver affichées au départ ; le bouton du bas en ajoute une à la fois
-// Réservation à l'avance : 26 semaines pour tous. En gratuité, une demande compte au plus 2 semaines choisies.
+// Réservation à l'avance : 26 semaines pour tous. Nombre de semaines par demande : réglages Config
+// vedettesMaxGratuit (1 par défaut) et vedettesMaxPayant (4 par défaut), envoyés par le serveur (maxChoix).
+// Aucune limite pour un admin. Le serveur revérifie la limite à la réservation.
 function limiteSemaines() { return etat.limite || 26; }
-var MAX_CHOIX_GRATUITE = 2;
-function maxChoix() { return etat.gratuit && !etat.admin ? (etat.maxChoix || MAX_CHOIX_GRATUITE) : Infinity; }
+var MAX_CHOIX_GRATUIT = 1, MAX_CHOIX_PAYANT = 4;
+function maxChoix() {
+  if (etat.admin) { return Infinity; }
+  return etat.maxChoix || (etat.gratuit ? MAX_CHOIX_GRATUIT : MAX_CHOIX_PAYANT);
+}
+function semaines_(n) { return n + ' semaine' + (n > 1 ? 's' : ''); }
+function quiLimite() { return etat.gratuit ? 'En gratuité' : 'Par réservation'; }
 function aujourdhuiQuebec() {
   var t = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   return new Date(t + 'T12:00:00');
@@ -471,7 +506,7 @@ function rendrePanneau() {
   document.getElementById('aucun-choix').hidden = etat.choix.length > 0;
   var noteMax = document.getElementById('note-max');
   noteMax.hidden = maxChoix() === Infinity;
-  noteMax.textContent = 'En gratuité : au plus ' + maxChoix() + ' semaines par demande (' + etat.choix.length + ' sur ' + maxChoix() + ')'
+  noteMax.textContent = quiLimite() + ' : au plus ' + semaines_(maxChoix()) + ' (' + etat.choix.length + ' sur ' + maxChoix() + ')'
     + (etat.gratuitJusqua ? ', jusqu\'au ' + court(new Date(etat.gratuitJusqua + 'T12:00:00')) + ' ' + etat.gratuitJusqua.slice(0, 4) + ', fin de votre période de gratuité.' : '.');
   // Au plus 8 semaines choisies visibles ; au-delà, la liste défile.
   var trop = ul.children.length > CHOIX_VISIBLES;
@@ -557,7 +592,8 @@ function decider(auteurId, accepte, motif) {
 function defautsAffiches() { return etat.brouillonDefauts || etat.defauts; }
 function rendreDefauts() {
   document.getElementById('b-defauts').hidden = !etat.admin;
-  if (!etat.admin) { fermerDefauts(); return; }
+  document.getElementById('b-config').hidden = !etat.admin;
+  if (!etat.admin) { fermerDefauts(); fermerConfig(); return; }
   var defauts = defautsAffiches();
   var z = document.getElementById('defauts');
   z.textContent = '';
@@ -627,7 +663,7 @@ document.getElementById('b-fermer-defauts').addEventListener('click', fermerDefa
 document.getElementById('b-annuler-defauts').addEventListener('click', fermerDefauts);
 document.getElementById('b-accepter-defauts').addEventListener('click', accepterDefauts);
 document.getElementById('fenetre-defauts').addEventListener('click', function (e) { if (e.target === this) { fermerDefauts(); } });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerAvis(); fermerDefauts(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerAvis(); fermerDefauts(); fermerConfig(); } });
 
 // Avis en fenêtre surgissante (bouton Fermer). Placé à la hauteur du dernier clic : la composante est très haute,
 // une fenêtre en haut ou au centre de l'iframe pourrait être hors de vue.
@@ -650,6 +686,113 @@ function fermerAvis() {
   if (focusAvantAvis && focusAvantAvis.focus) { focusAvantAvis.focus(); }
 }
 document.getElementById('b-fermer-avis').addEventListener('click', fermerAvis);
+
+// ===== Fenêtre « ⚙ Configuration » (admin seulement) =====
+// Réglages Config de la mise en vedette, lus et enregistrés par le serveur (qui revérifie Auteurs.admin).
+// Un réglage « case » se coche ; un réglage « nombre » se saisit (entier de 1 à 30). Les changements restent
+// un brouillon jusqu'à « Enregistrer » ; « Annuler » ferme sans rien changer.
+var NOMBRE_CONFIG_MIN = 1, NOMBRE_CONFIG_MAX = 30;
+var focusAvantConfig = null;
+function ouvrirConfig() {
+  if (!etat.admin) { return; }
+  focusAvantConfig = document.activeElement;
+  etat.config = null; etat.configEnCours = false;
+  document.getElementById('liste-config').textContent = '';
+  var ch = document.getElementById('config-chargement');
+  ch.hidden = false; ch.textContent = 'Chargement des réglages…';
+  statutConfig('', '');
+  document.getElementById('b-enregistrer-config').disabled = true;
+  document.getElementById('fenetre-config').hidden = false;
+  document.getElementById('b-annuler-config').focus();
+  envoyer('tbl-vedette:config');
+
+}
+function fermerConfig() {
+  var f = document.getElementById('fenetre-config');
+  if (f.hidden) { return; }
+  f.hidden = true;
+  etat.config = null;
+  if (focusAvantConfig && focusAvantConfig.focus) { focusAvantConfig.focus(); }
+}
+function statutConfig(texte, classe) {
+  var p = document.getElementById('statut-config');
+  p.hidden = !texte; p.textContent = texte || ''; p.className = 'message' + (classe ? ' ' + classe : '');
+}
+function valeurSaisie(r) {
+  var c = document.getElementById('reglage-' + r.cle);
+  if (!c) { return null; }
+  if (r.type !== 'nombre') { return c.checked; }
+  var n = Number(c.value);
+  return c.value !== '' && Number.isInteger(n) && n >= NOMBRE_CONFIG_MIN && n <= NOMBRE_CONFIG_MAX ? n : NaN;
+}
+function changementsConfig() {
+  return (etat.config || []).filter(function (r) {
+    var v = valeurSaisie(r);
+    return r.type === 'nombre' ? v !== r.valeur : v !== r.actif;
+  }).map(function (r) {
+    var v = valeurSaisie(r);
+    return r.type === 'nombre' ? { cle: r.cle, valeur: v } : { cle: r.cle, actif: v };
+  });
+}
+function majBoutonConfig() {
+  var invalide = (etat.config || []).some(function (r) {
+    var v = valeurSaisie(r);
+    var c = document.getElementById('reglage-' + r.cle);
+    if (c && r.type === 'nombre') { c.classList.toggle('invalide', Number.isNaN(v)); }
+    return r.type === 'nombre' && Number.isNaN(v);
+  });
+  statutConfig(invalide ? 'Entrez un nombre entier de ' + NOMBRE_CONFIG_MIN + ' à ' + NOMBRE_CONFIG_MAX + '.' : '', invalide ? 'mal' : '');
+  document.getElementById('b-enregistrer-config').disabled = etat.configEnCours || invalide || !changementsConfig().length;
+}
+// Réponse du serveur : la liste des réglages (lecture) ou le résultat d'un enregistrement.
+function surConfig(m, enregistrement) {
+  if (document.getElementById('fenetre-config').hidden) { return; }
+  etat.configEnCours = false;
+  if (!m || m.statut !== 'ok') {
+    var texte = m && m.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : ((m && m.message) || 'Impossible de lire ou d\'enregistrer la configuration pour le moment. Réessayez dans quelques instants.');
+    if (enregistrement) { majBoutonConfig(); statutConfig(texte, 'mal'); }
+    else { document.getElementById('config-chargement').textContent = texte; }
+    return;
+  }
+  if (enregistrement) { fermerConfig(); message(m.message || 'Configuration enregistrée.', 'ok'); return; }
+  etat.config = m.reglages || [];
+  var liste = document.getElementById('liste-config');
+  liste.textContent = '';
+  if (!etat.config.length) { document.getElementById('config-chargement').textContent = 'Aucun réglage de mise en vedette dans la collection Config.'; return; }
+  document.getElementById('config-chargement').hidden = true;
+  etat.config.forEach(function (r) {
+    var ligne = el('div', 'reglage');
+    var c = el('input'); c.id = 'reglage-' + r.cle;
+    if (r.type === 'nombre') {
+      c.type = 'number'; c.min = NOMBRE_CONFIG_MIN; c.max = NOMBRE_CONFIG_MAX; c.step = 1; c.value = r.valeur;
+      c.addEventListener('input', majBoutonConfig);
+    } else {
+      c.type = 'checkbox'; c.checked = r.actif;
+      c.addEventListener('change', majBoutonConfig);
+    }
+    var texte = el('div');
+    var lab = el('label', null, r.titre); lab.htmlFor = c.id;
+    texte.appendChild(lab);
+    if (r.description) { texte.appendChild(el('div', 'aide', r.description)); }
+    ligne.appendChild(c); ligne.appendChild(texte);
+    liste.appendChild(ligne);
+  });
+  majBoutonConfig();
+}
+function enregistrerConfig() {
+  var reglages = changementsConfig();
+  if (!reglages.length || reglages.some(function (r) { return Number.isNaN(r.valeur); })) { return; }
+  etat.configEnCours = true;
+  majBoutonConfig();
+  statutConfig('Enregistrement…', '');
+  envoyer('tbl-vedette:enregistrerConfig', { reglages: reglages });
+
+}
+document.getElementById('b-config').addEventListener('click', ouvrirConfig);
+document.getElementById('b-fermer-config').addEventListener('click', fermerConfig);
+document.getElementById('b-annuler-config').addEventListener('click', fermerConfig);
+document.getElementById('b-enregistrer-config').addEventListener('click', enregistrerConfig);
+document.getElementById('fenetre-config').addEventListener('click', function (e) { if (e.target === this) { fermerConfig(); } });
 document.getElementById('fenetre-avis').addEventListener('click', function (e) { if (e.target === this) { fermerAvis(); } });
 
 // Slider des livres de TBL par défaut : 4 couvertures côte à côte (2 sur téléphone), le titre en dessous.
@@ -736,7 +879,7 @@ function choisirPlace(cle) {
   }
   if (resaSemaine(cle).length + choixSemaine(cle).length >= etat.nbPlaces) { message('Cette semaine est complète.', 'mal'); return; }
   if (etat.choix.length >= maxChoix()) {
-    avis('Deux semaines au plus', 'En gratuité, une demande compte au plus ' + maxChoix() + ' semaines. Retirez une de vos semaines choisies pour en ajouter une autre.');
+    avis(semaines_(maxChoix()) + ' au plus', quiLimite() + ', vous pouvez choisir au plus ' + semaines_(maxChoix()) + '. Retirez une semaine choisie pour en ajouter une autre.');
     return;
   }
   // En gratuité, la semaine entière (jusqu'au dimanche) doit tomber dans la période de gratuité de l'auteur.
@@ -843,6 +986,10 @@ window.addEventListener('message', function (e) {
     rendreTout();
   } else if (m.type === 'tbl-vedette:message') {
     message(m.texte || '', m.classe || '');
+  } else if (m.type === 'tbl-vedette:config') {
+    surConfig(m, false);
+  } else if (m.type === 'tbl-vedette:configEnregistree') {
+    surConfig(m, true);
   }
 });
 
