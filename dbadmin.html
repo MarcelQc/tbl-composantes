@@ -1084,6 +1084,88 @@ select:focus { outline: none; border-color: var(--accent); }
 .partner-id-table tr:last-child td { border-bottom: none; }
 .partner-id-code { font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace; color: var(--accent); }
 
+/* ---------- Téléphones (720 px et moins) : l'affichage desktop n'est pas touché ---------- */
+
+.mobile-seulement { display: none; }
+
+@media (max-width: 720px) {
+  .mobile-seulement { display: block; }
+  span.mobile-seulement { display: inline; }
+  .desktop-seulement { display: none; }
+
+  /* En-tête : logo sur une ligne, onglets pleine largeur en dessous (défilement horizontal) */
+  .app-header { padding: 10px 16px 0; gap: 8px; }
+  .app-header .brand { padding-bottom: 6px; }
+  .brand { min-width: 0; gap: 10px; }
+  .brand-logo { height: 32px; }
+  .tabs { width: 100%; }
+  .tab-btn { padding: 9px 12px; font-size: 0.85rem; }
+  .tab-btn.active { padding-bottom: 10px; }
+
+  /* Contenu : marges de 16 px, l'onglet Tâches prend toute la largeur */
+  .content { padding: 20px 16px 48px; }
+  .content.content-taches { max-width: none; }
+  .view h1, .content h1 { font-size: 1.35rem; }
+  .lede { margin-bottom: 18px; font-size: 0.9rem; }
+  .panel { padding: 14px; }
+
+  /* Accueil : indicateurs et statistiques sur deux colonnes */
+  .ventes-indicateurs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .indicateur-carte { padding: 14px; }
+  .indicateur-valeur { font-size: 1.45rem; overflow-wrap: anywhere; }
+  .indicateur-label { font-size: 0.78rem; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .stat-card { padding: 14px; }
+  .stat-value { font-size: 1.35rem; overflow-wrap: anywhere; }
+
+  /* Formulaires : champs empilés, police de 16 px pour éviter le zoom automatique sur iPhone */
+  .field-row { flex-direction: column; gap: 10px; }
+  input[type="text"], input[type="date"], textarea, select { font-size: 16px; max-width: 100%; }
+  .btn-sm { padding: 8px 12px; }
+
+  /* Forum */
+  .forum-msg { padding: 12px; }
+  .forum-msg-header { flex-wrap: wrap; gap: 2px 10px; }
+  .forum-reponses { padding-left: 10px; }
+  .forum-reponse-toggle { flex-wrap: wrap; }
+
+  /* Rencontres */
+  .rencontre-header { padding: 12px 14px; }
+  .rencontre-body { padding: 14px; }
+  .rencontre-comment-box { min-width: 0; flex-basis: 100%; }
+  .archive-ligne { flex-wrap: wrap; }
+
+  /* Tâches : une seule colonne, chaque zone porte le nom de sa colonne */
+  .taches-entete-colonnes { display: none; }
+  .taches-swimlane { padding: 12px; }
+  .taches-swimlane-colonnes { gap: 10px; }
+  .taches-dropzone { min-height: 0; }
+  .taches-dropzone::before {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .taches-dropzone[data-colonne="nouveau"]::before { content: "Nouveaux"; color: var(--blue); }
+  .taches-dropzone[data-colonne="en_cours"]::before { content: "En cours"; color: var(--orange); }
+  .taches-dropzone[data-colonne="termine"]::before { content: "Terminés"; color: var(--green); }
+  .tache-carte { cursor: pointer; }
+  .tache-carte-titre-texte { white-space: normal; }
+
+  /* Tableaux : défilement horizontal au besoin plutôt que de déborder de l'écran */
+  .partner-id-table { font-size: 0.85rem; }
+  .partner-id-table th, .partner-id-table td { padding: 7px 8px; }
+  .partner-id-table td { overflow-wrap: anywhere; }
+  .tableau-stats td { overflow-wrap: normal; white-space: nowrap; }
+  .tableau-stats td:last-child { white-space: normal; min-width: 180px; }
+
+  /* Fenêtres */
+  .modal-backdrop { padding: 12px; }
+  .modal-header { padding: 12px 16px; }
+  .modal-body { padding: 16px; max-height: 80vh; }
+  .confirm-box { padding: 18px; }
+}
+
 </style>
 </head>
 <body>
@@ -2056,6 +2138,10 @@ select:focus { outline: none; border-color: var(--accent); }
       return '<option value="' + esc(n) + '"' + (n === t.assigne ? ' selected' : '') + '>' + esc(n) + '</option>';
     })).join('');
 
+    var optionsColonne = [['nouveau', 'Nouveaux'], ['en_cours', 'En cours'], ['termine', 'Terminés']].map(function (c) {
+      return '<option value="' + c[0] + '"' + (c[0] === t.colonne ? ' selected' : '') + '>' + c[1] + '</option>';
+    }).join('');
+
     openModal('Détail de la tâche' + (t.numero != null ? ' #' + t.numero : ''),
       '<label style="display:block;">Titre (une ligne)' +
         '<input type="text" id="tache-titre" value="' + esc(t.titre) + '" maxlength="100" style="width:100%; margin-top:6px;"></label>' +
@@ -2064,6 +2150,10 @@ select:focus { outline: none; border-color: var(--accent); }
       '<div class="field-row" style="margin-top:10px;">' +
         '<label style="flex:1;">PBI<select id="tache-pbi">' + optionsPbi + '</select></label>' +
         '<label style="flex:1;">Assigné à<select id="tache-assigne">' + optionsAssigne + '</select></label>' +
+      '</div>' +
+      // Sur téléphone, le glisser-déposer ne fonctionne pas : la colonne se choisit ici.
+      '<div class="field-row mobile-seulement" style="margin-top:10px;">' +
+        '<label style="flex:1;">Colonne<select id="tache-colonne">' + optionsColonne + '</select></label>' +
       '</div>' +
       '<p class="empty" id="tache-erreur" hidden></p>' +
       '<div class="doc-actions" style="margin-top:16px; justify-content:space-between;">' +
@@ -2079,11 +2169,15 @@ select:focus { outline: none; border-color: var(--accent); }
       erreurEl.hidden = true;
       if (!titre) return;
       var assigne = document.getElementById('tache-assigne').value;
+      var colonne = document.getElementById('tache-colonne').value;
       btn.disabled = true;
       appeler('modifierTache', t.id, {
         titre: titre,
         description: document.getElementById('tache-description').value.trim(),
         pbi_id: document.getElementById('tache-pbi').value || null,
+      }).then(function () {
+        // Le déplacement d'abord (il assigne ou désassigne selon la colonne), puis le choix manuel s'il a changé.
+        if (colonne !== t.colonne) return appeler('deplacerTache', t.id, colonne);
       }).then(function () {
         if (assigne !== (t.assigne || '')) return appeler('assignerTache', t.id, assigne);
       }).then(function () {
@@ -2228,7 +2322,8 @@ select:focus { outline: none; border-color: var(--accent); }
     var content = document.getElementById('content');
     content.innerHTML =
       '<h1>Tâches</h1>' +
-      '<p class="lede">Glissez une carte d\'une colonne à l\'autre. Passer en « En cours » vous assigne la tâche ; revenir à « Nouveaux » retire l\'assignation.</p>' +
+      '<p class="lede"><span class="desktop-seulement">Glissez une carte d\'une colonne à l\'autre.</span>' +
+        '<span class="mobile-seulement">Touchez une carte pour changer sa colonne.</span> Passer en « En cours » vous assigne la tâche ; revenir à « Nouveaux » retire l\'assignation.</p>' +
       '<div class="taches-toolbar"><button class="btn btn-primary" id="nouveau-pbi-btn">+ Nouveau PBI</button></div>' +
       '<div class="taches-entete-colonnes"><span>Nouveaux</span><span>En cours</span><span>Terminés</span></div>' +
       '<div id="taches-swimlanes" class="taches-swimlanes"></div>' +
