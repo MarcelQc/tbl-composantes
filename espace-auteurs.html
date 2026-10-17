@@ -1346,9 +1346,16 @@ function carteService(service) {
     carte.appendChild(zone);
     return carte;
   }
+  // Services à un livre : plus de liste « Choisir un livre » (demande de Marcel du 17 octobre 2026),
+  // le bouton Continuer suffit. Le Forfait Coffret garde ses deux listes (le choix des livres fait la demande).
+  if (besoin === 1) {
+    zone.appendChild(bouton('Continuer', 'btn petit', function () { bientot(service.cle); }));
+    carte.appendChild(zone);
+    return carte;
+  }
   var choix = [];
   for (var i = 0; i < besoin; i++) {
-    choix.push(selectLivres(livres, besoin === 2 ? (i === 0 ? 'Premier livre' : 'Deuxième livre') : 'Choisir un livre'));
+    choix.push(selectLivres(livres, i === 0 ? 'Premier livre' : 'Deuxième livre'));
     zone.appendChild(choix[i]);
   }
   var continuer = bouton('Continuer', 'btn petit', function () {
