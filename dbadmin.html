@@ -1115,6 +1115,68 @@ select:focus { outline: none; border-color: var(--accent); }
 
 .mobile-seulement { display: none; }
 
+/* Rencontres : icône calendrier à côté de la date et petite boîte calendrier */
+.rencontre-date { display: inline-flex; align-items: center; gap: 8px; }
+.rencontre-date-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+}
+.rencontre-date-btn:hover { color: var(--text); border-color: var(--accent); }
+
+.calendrier-pop {
+  position: fixed;
+  z-index: 900;
+  width: 260px;
+  padding: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--tbl-shadow);
+  font-size: 0.85rem;
+}
+.calendrier-pop.occupe { opacity: .6; pointer-events: none; }
+.calendrier-entete { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-weight: 700; }
+.calendrier-nav {
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.calendrier-nav:hover { border-color: var(--accent); }
+.calendrier-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.calendrier-jsem { padding: 4px 0; font-size: 0.72rem; font-weight: 700; color: var(--text-faint); }
+.calendrier-jour {
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.calendrier-jour:hover { background: var(--bg-hover); }
+.calendrier-jour.aujourdhui { border-color: var(--border); font-weight: 700; }
+.calendrier-jour.choisi { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 700; }
+.calendrier-erreur { margin: 8px 0 0; color: var(--rouge-texte); font-size: 0.8rem; }
+.calendrier-pied { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-soft); text-align: right; }
+.calendrier-lien { background: none; border: 0; padding: 4px 0; color: var(--text-dim); font-size: 0.8rem; cursor: pointer; }
+.calendrier-lien:hover { color: var(--text); text-decoration: underline; }
+
 @media (max-width: 720px) {
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
@@ -1714,7 +1776,10 @@ select:focus { outline: none; border-color: var(--accent); }
     return '<div class="rencontre-card" data-id="' + esc(r.id) + '" data-date="' + esc(r.date || '') + '">' +
       '<div class="rencontre-header">' +
         '<div class="rencontre-titre-group">' +
-          '<span class="rencontre-date">' + (r.date ? esc(formatDateLongue(r.date)) : 'Date à déterminer') + '</span>' +
+          '<span class="rencontre-date">' + (r.date ? esc(formatDateLongue(r.date)) : 'Date à déterminer') +
+            '<button type="button" class="rencontre-date-btn" data-id="' + esc(r.id) + '" data-date="' + esc(r.date || '') + '"' +
+              ' title="Changer la date" aria-label="Changer la date de la rencontre">' + ICONE_CALENDRIER + '</button>' +
+          '</span>' +
           '<span class="rencontre-titre">' + esc(r.titre) + '</span>' +
         '</div>' +
         '<span class="rencontre-status ' + statut.cls + '">' + statut.label + '</span>' +
@@ -1787,37 +1852,121 @@ select:focus { outline: none; border-color: var(--accent); }
     });
   }
 
-  function openModifierDateModal(id, dateActuelle) {
-    openModal('Modifier la date de la rencontre',
-      '<div class="field-row"><label style="flex:1;">Date de la rencontre' +
-        '<input type="date" id="modifier-date" value="' + esc(dateActuelle || '') + '"></label></div>' +
-      '<label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-dim); margin-bottom:4px;">' +
-        '<input type="checkbox" id="modifier-indetermine"' + (dateActuelle ? '' : ' checked') + '> Date à déterminer</label>' +
-      '<p class="empty" id="modifier-erreur" hidden></p>' +
-      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="modifier-confirmer-btn">Enregistrer</button></div>');
-    var erreurEl = document.getElementById('modifier-erreur');
-    var dateInput = document.getElementById('modifier-date');
-    var indetermine = document.getElementById('modifier-indetermine');
-    dateInput.disabled = indetermine.checked;
-    indetermine.addEventListener('change', function () { dateInput.disabled = indetermine.checked; });
-    document.getElementById('modifier-confirmer-btn').addEventListener('click', function (e) {
-      var btn = e.currentTarget;
-      erreurEl.hidden = true;
-      var date = null;
-      if (!indetermine.checked) {
-        date = dateInput.value;
-        if (!date) return;
+  /* ----- Petite boîte calendrier : changer la date d'une rencontre active ----- */
+
+  // N'importe quelle date est permise, passée ou à venir. Le serveur refuse seulement une date
+  // déjà prise par une autre rencontre ; le message s'affiche alors dans la boîte.
+  var ICONE_CALENDRIER =
+    '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor"' +
+    ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>';
+  var JOURS_COURTS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  var calendrierEl = null;
+
+  function fermerCalendrier() {
+    if (calendrierEl) calendrierEl.remove();
+    calendrierEl = null;
+  }
+
+  function isoDuJour(annee, mois, jour) {
+    return annee + '-' + String(mois + 1).padStart(2, '0') + '-' + String(jour).padStart(2, '0');
+  }
+
+  function ouvrirCalendrier(ancre, id, dateActuelle) {
+    var memeRencontre = calendrierEl && calendrierEl.dataset.id === id;
+    fermerCalendrier();
+    if (memeRencontre) return; // un deuxième clic sur l'icône referme la boîte
+
+    var depart = (dateActuelle || todayIso()).split('-').map(Number);
+    var annee = depart[0];
+    var mois = depart[1] - 1;
+    var el = document.createElement('div');
+    el.className = 'calendrier-pop';
+    el.dataset.id = id;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', 'Choisir la date de la rencontre');
+    document.getElementById('content').appendChild(el);
+    calendrierEl = el;
+
+    function dessiner(message) {
+      var decalage = (new Date(Date.UTC(annee, mois, 1)).getUTCDay() + 6) % 7; // semaine du lundi au dimanche
+      var nbJours = new Date(Date.UTC(annee, mois + 1, 0)).getUTCDate();
+      var aujourdhui = todayIso();
+      var cases = JOURS_COURTS.map(function (j) { return '<span class="calendrier-jsem">' + j + '</span>'; }).join('');
+      for (var i = 0; i < decalage; i++) cases += '<span></span>';
+      for (var jour = 1; jour <= nbJours; jour++) {
+        var iso = isoDuJour(annee, mois, jour);
+        cases += '<button type="button" class="calendrier-jour' +
+          (iso === dateActuelle ? ' choisi' : '') + (iso === aujourdhui ? ' aujourdhui' : '') +
+          '" data-date="' + iso + '">' + jour + '</button>';
       }
-      btn.disabled = true;
+      el.innerHTML =
+        '<div class="calendrier-entete">' +
+          '<button type="button" class="calendrier-nav" data-pas="-1" aria-label="Mois précédent">&lsaquo;</button>' +
+          '<span>' + MOIS_FR[mois] + ' ' + annee + '</span>' +
+          '<button type="button" class="calendrier-nav" data-pas="1" aria-label="Mois suivant">&rsaquo;</button>' +
+        '</div>' +
+        '<div class="calendrier-grille">' + cases + '</div>' +
+        (message ? '<p class="calendrier-erreur">' + esc(message) + '</p>' : '') +
+        '<div class="calendrier-pied">' +
+          '<button type="button" class="calendrier-lien" data-action="indeterminee">Date à déterminer</button>' +
+        '</div>';
+    }
+
+    function placer() {
+      var r = ancre.getBoundingClientRect();
+      var largeur = el.offsetWidth;
+      var hauteur = el.offsetHeight;
+      var gauche = Math.min(Math.max(8, r.left), window.innerWidth - largeur - 8);
+      var haut = r.bottom + 6;
+      if (haut + hauteur > window.innerHeight - 8 && r.top - hauteur - 6 > 8) haut = r.top - hauteur - 6;
+      el.style.left = Math.max(8, gauche) + 'px';
+      el.style.top = haut + 'px';
+    }
+
+    function enregistrer(date) {
+      if (date === (dateActuelle || null)) { fermerCalendrier(); return; }
+      el.classList.add('occupe');
       appeler('setDateRencontre', id, date).then(function () {
-        closeModal();
+        fermerCalendrier();
         refreshRencontresListe(id);
       }).catch(function (err) {
-        erreurEl.textContent = err.message;
-        erreurEl.hidden = false;
-      }).finally(function () { btn.disabled = false; });
+        el.classList.remove('occupe');
+        dessiner(err.message);
+        placer();
+      });
+    }
+
+    el.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn || el.classList.contains('occupe')) return;
+      if (btn.classList.contains('calendrier-nav')) {
+        mois += Number(btn.dataset.pas);
+        if (mois < 0) { mois = 11; annee--; }
+        if (mois > 11) { mois = 0; annee++; }
+        dessiner();
+        placer();
+      } else if (btn.classList.contains('calendrier-jour')) {
+        enregistrer(btn.dataset.date);
+      } else if (btn.dataset.action === 'indeterminee') {
+        enregistrer(null);
+      }
     });
+
+    el.placer = placer;
+    dessiner();
+    placer();
   }
+
+  // Fermeture : clic ailleurs ou touche Échap. Au défilement ou au changement de taille, la boîte suit sa date.
+  document.addEventListener('mousedown', function (e) {
+    if (calendrierEl && !calendrierEl.contains(e.target) &&
+        !e.target.closest('.rencontre-date-btn, .modifier-date-btn')) fermerCalendrier();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerCalendrier(); });
+  function replacerCalendrier() { if (calendrierEl) calendrierEl.placer(); }
+  window.addEventListener('scroll', replacerCalendrier, true);
+  window.addEventListener('resize', replacerCalendrier);
 
   function openAjouterSectionModal(rencontreId) {
     openModal('Ajouter une section à l\'ordre du jour',
@@ -1915,6 +2064,11 @@ select:focus { outline: none; border-color: var(--accent); }
 
     // Délégation : toutes les actions de la liste passent par ces trois écouteurs.
     liste.addEventListener('click', function (e) {
+      var btnDate = e.target.closest('.rencontre-date-btn, .modifier-date-btn');
+      if (btnDate) {
+        ouvrirCalendrier(btnDate, btnDate.dataset.id, btnDate.dataset.date || null);
+        return;
+      }
       var header = e.target.closest('.rencontre-header');
       if (header) {
         header.nextElementSibling.classList.toggle('open');
@@ -1926,8 +2080,6 @@ select:focus { outline: none; border-color: var(--accent); }
         openAjouterSectionModal(btn.dataset.id);
       } else if (btn.classList.contains('ajouter-point-btn')) {
         openAjouterPointModal(btn.dataset.groupeId, btn.dataset.groupeTitre, btn.closest('.rencontre-card').dataset.id);
-      } else if (btn.classList.contains('modifier-date-btn')) {
-        openModifierDateModal(btn.dataset.id, btn.dataset.date || null);
       } else if (btn.classList.contains('supprimer-point-btn')) {
         var rencontreId = btn.closest('.rencontre-card').dataset.id;
         confirmer('Retirer ce point ?', 'Le point sera retiré de l\'ordre du jour de la rencontre.', 'Retirer', function () {
