@@ -2384,13 +2384,14 @@ select:focus { outline: none; border-color: var(--accent); }
       var du_type = lignes.filter(function (p) { return p.type === t.cle; });
       var corps = du_type.map(function (p) {
         return '<tr><td class="partner-id-code">' + esc(p.partner_id) + '</td>' +
-          '<td>' + esc(p.cible) + '</td></tr>';
+          '<td>' + esc(p.cible) + '</td>' +
+          '<td>' + (p.livre ? esc(p.livre) : '—') + '</td></tr>';
       }).join('');
       return '<div class="panel">' +
         '<h2>' + esc(t.titre) + '</h2>' +
         (du_type.length
           ? '<table class="partner-id-table"><thead><tr>' +
-              '<th>Partner ID</th><th>Livre / Partenaire</th>' +
+              '<th>Partner ID</th><th>Code / Partenaire</th><th>Livre</th>' +
             '</tr></thead><tbody>' + corps + '</tbody></table>'
           : '<p class="empty">Aucun partner ID pour ce type.</p>') +
       '</div>';
