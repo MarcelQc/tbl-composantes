@@ -879,55 +879,67 @@ select:focus { outline: none; border-color: var(--accent); }
 
 .taches-toolbar { margin-bottom: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
 
-.taches-entete-colonnes {
+/* Liste en arbre, comme dans Azure DevOps : une ligne par PBI, une sous-ligne par tâche
+   (demande de Marcel avec l'accord de Martin, 17 octobre 2026). Colonnes : Titre, État, Assigné à, actions. */
+.arbre-taches {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.arbre-ligne {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  padding: 0 4px;
-  margin-bottom: 10px;
-  font-size: 0.78rem;
+  grid-template-columns: minmax(0, 1fr) 128px 92px 112px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border-soft);
+  min-height: 42px;
+}
+
+.arbre-entete {
+  border-top: 0;
+  min-height: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: var(--bg-elevated);
+  font-size: 0.74rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--text-faint);
 }
-.taches-entete-colonnes span:nth-child(1) { color: var(--blue); }
-.taches-entete-colonnes span:nth-child(2) { color: var(--orange); }
-.taches-entete-colonnes span:nth-child(3) { color: var(--green); }
 
-.taches-swimlanes { display: flex; flex-direction: column; gap: 16px; }
+.arbre-pbi { background: var(--bg-elevated); cursor: pointer; user-select: none; }
+.arbre-pbi:hover { background: var(--bg-hover); }
+.arbre-tache { cursor: pointer; }
+.arbre-tache:hover { background: var(--bg-hover); }
+.arbre-groupe.collapsee .arbre-tache,
+.arbre-groupe.collapsee .arbre-vide { display: none; }
 
-.taches-swimlane {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-}
-
-.taches-swimlane-header {
+.arbre-titre {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-  cursor: pointer;
-  user-select: none;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.9rem;
 }
+.arbre-pbi .arbre-titre { font-weight: 600; font-size: 0.95rem; }
+.arbre-tache .arbre-titre { padding-left: 34px; }
 
-.taches-swimlane-titre { font-weight: 600; font-size: 0.95rem; }
-
-.taches-swimlane-chevron {
-  display: inline-block;
+.arbre-chevron {
+  flex-shrink: 0;
+  width: 14px;
+  line-height: 1.35;
   color: var(--text-dim);
   font-size: 0.75rem;
-  margin-right: 6px;
 }
-
-.taches-swimlane.collapsee .taches-swimlane-header { margin-bottom: 0; }
-.taches-swimlane.collapsee .taches-swimlane-colonnes { display: none; }
+.arbre-icone { flex-shrink: 0; font-size: 0.95rem; }
+.arbre-texte { min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
 
 .taches-count {
+  flex-shrink: 0;
   display: inline-block;
   min-width: 20px;
   text-align: center;
@@ -937,57 +949,66 @@ select:focus { outline: none; border-color: var(--accent); }
   background: var(--accent-soft);
   border-radius: 99px;
   padding: 1px 8px;
-  margin-left: 4px;
 }
 
-.taches-swimlane-colonnes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
+.arbre-qui { font-size: 0.86rem; color: var(--text-dim); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arbre-qui-mobile { display: none; }
 
-.taches-dropzone {
-  background: var(--bg-elevated);
-  border: 1px dashed var(--border-soft);
+/* État d'une tâche : point de couleur et liste déroulante (changer la colonne sans glisser-déposer). */
+.arbre-etat { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.etat-point { flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); }
+.etat-point.nouveau { background: var(--blue); }
+.etat-point.en_cours { background: var(--orange); }
+.etat-point.termine { background: var(--green); }
+.etat-select {
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-btn);
-  padding: 8px;
-  min-height: 56px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.taches-dropzone.drag-over { border-color: var(--accent); background: var(--bg-hover); }
-
-.tache-carte {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 8px 10px;
-  cursor: grab;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.tache-carte:hover { border-color: var(--accent); }
-.tache-carte.dragging { opacity: 0.4; }
-
-.tache-carte-titre {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  min-width: 0;
+  padding: 4px 6px;
+  color: var(--text);
+  font: inherit;
   font-size: 0.86rem;
-  line-height: 1.35;
+  cursor: pointer;
 }
+.etat-select:hover, .etat-select:focus { border-color: var(--border); outline: none; }
+.etat-select option { background: var(--bg-panel); color: var(--text); }
+.arbre-pbi .pbi-statut { margin-left: 0; }
 
-.tache-carte-titre-texte {
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Actions d'un PBI : « + Tâche » et le menu ⋯ (Modifier, Archiver, Supprimer). */
+.arbre-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+.menu-pbi { position: relative; }
+.menu-pbi > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  color: var(--text-dim);
+  font-weight: 700;
+  line-height: 1.4;
 }
+.menu-pbi > summary::-webkit-details-marker { display: none; }
+.menu-pbi > summary:hover { border-color: var(--accent); color: var(--text); }
+.menu-pbi-liste {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  box-shadow: var(--shadow);
+}
+.menu-pbi-liste .btn { width: 100%; text-align: left; }
+
+.arbre-vide { padding: 8px 14px 10px 62px; border-top: 1px solid var(--border-soft); font-size: 0.84rem; color: var(--text-faint); }
 
 .item-numero {
   flex-shrink: 0;
@@ -1011,8 +1032,6 @@ select:focus { outline: none; border-color: var(--accent); }
 /* .pbi-statut : couleurs avec .rencontre-status (section Rencontres) */
 .pbi-statut { font-size: 0.72rem; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
 
-.taches-swimlane-titre .tache-assigne-pill { margin-left: 8px; vertical-align: middle; }
-
 .tache-pieces-jointes {
   display: flex;
   flex-direction: column;
@@ -1028,7 +1047,15 @@ select:focus { outline: none; border-color: var(--accent); }
 }
 
 @media (max-width: 720px) {
-  .taches-entete-colonnes, .taches-swimlane-colonnes { grid-template-columns: 1fr; }
+  .arbre-ligne { grid-template-columns: minmax(0, 1fr) 118px; gap: 8px; padding: 8px 10px; }
+  .arbre-entete .arbre-qui, .arbre-entete .arbre-actions-titre { display: none; }
+  .arbre-ligne > .arbre-qui { display: none; }
+  .arbre-qui-mobile { display: inline; font-size: 0.74rem; color: var(--text-faint); white-space: nowrap; }
+  .arbre-titre { flex-wrap: wrap; row-gap: 4px; }
+  .arbre-titre .arbre-texte { order: 10; flex-basis: 100%; }
+  .arbre-tache .arbre-titre { padding-left: 18px; }
+  .arbre-pbi .arbre-etat { display: none; }
+  .arbre-vide { padding-left: 40px; }
 }
 
 /* ---------- Footer ---------- */
@@ -1135,22 +1162,8 @@ select:focus { outline: none; border-color: var(--accent); }
   .rencontre-comment-box { min-width: 0; flex-basis: 100%; }
   .archive-ligne { flex-wrap: wrap; }
 
-  /* Tâches : une seule colonne, chaque zone porte le nom de sa colonne */
-  .taches-entete-colonnes { display: none; }
-  .taches-swimlane { padding: 12px; }
-  .taches-swimlane-colonnes { gap: 10px; }
-  .taches-dropzone { min-height: 0; }
-  .taches-dropzone::before {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .taches-dropzone[data-colonne="nouveau"]::before { content: "Nouveaux"; color: var(--blue); }
-  .taches-dropzone[data-colonne="en_cours"]::before { content: "En cours"; color: var(--orange); }
-  .taches-dropzone[data-colonne="termine"]::before { content: "Terminés"; color: var(--green); }
-  .tache-carte { cursor: pointer; }
-  .tache-carte-titre-texte { white-space: normal; }
+  /* Tâches : l'arbre garde Titre et État ; l'assigné passe sous le titre (voir .arbre-qui-mobile) */
+  .arbre-texte { white-space: normal; }
 
   /* Tableaux : défilement horizontal au besoin plutôt que de déborder de l'écran */
   .partner-id-table { font-size: 0.85rem; }
@@ -1983,51 +1996,60 @@ select:focus { outline: none; border-color: var(--accent); }
     } catch (_) { /* navigation privée, stockage bloqué : on ignore */ }
   }
 
-  function tacheCarteHtml(t) {
-    var pill = t.assigne ? '<span class="tache-assigne-pill">' + esc(t.assigne) + '</span>' : '';
+  var ETATS_TACHE = [['nouveau', 'Nouveau'], ['en_cours', 'En cours'], ['termine', 'Terminé']];
+
+  // Sous-ligne d'une tâche : titre, état (liste déroulante pour changer de colonne), assigné.
+  function tacheLigneHtml(t) {
     var numero = t.numero != null ? '<span class="item-numero">#' + esc(t.numero) + '</span>' : '';
-    return '<div class="tache-carte" draggable="true" data-id="' + esc(t.id) + '">' +
-      '<div class="tache-carte-titre" title="' + esc(t.titre) + '">' + numero +
-        '<span class="tache-carte-titre-texte">' + esc(t.titre) + '</span></div>' +
-      pill +
+    var options = ETATS_TACHE.map(function (e) {
+      return '<option value="' + e[0] + '"' + (e[0] === t.colonne ? ' selected' : '') + '>' + e[1] + '</option>';
+    }).join('');
+    return '<div class="arbre-ligne arbre-tache" data-id="' + esc(t.id) + '">' +
+      '<span class="arbre-titre" title="' + esc(t.titre) + '">' +
+        '<span class="arbre-icone" aria-hidden="true">📋</span>' + numero +
+        '<span class="arbre-texte">' + esc(t.titre) + '</span>' +
+        (t.assigne ? '<span class="arbre-qui-mobile">' + esc(t.assigne) + '</span>' : '') +
+      '</span>' +
+      '<span class="arbre-etat"><span class="etat-point ' + esc(t.colonne || 'nouveau') + '"></span>' +
+        '<select class="etat-select" data-id="' + esc(t.id) + '" data-colonne="' + esc(t.colonne || 'nouveau') + '" aria-label="État de la tâche">' + options + '</select></span>' +
+      '<span class="arbre-qui">' + esc(t.assigne || '') + '</span>' +
+      '<span></span>' +
     '</div>';
   }
 
+  // Un groupe = la ligne du PBI (ou « To-Do ») puis une sous-ligne par tâche, dans l'ordre des numéros.
   function tachesSwimlaneHtml(pbi, taches) {
     var pbiId = pbi ? pbi.id : '';
     var titre = pbi ? pbi.titre : 'To-Do';
     var collapsee = tachesCollapsees.has(pbiId);
     var numeroPill = pbi && pbi.numero != null ? '<span class="item-numero">#' + esc(pbi.numero) + '</span>' : '';
     var statutPill = pbi ? '<span class="pbi-statut ' + esc(pbi.statut || 'nouveau') + '">' + statutPbiLabel(pbi.statut) + '</span>' : '';
-    var responsablePill = pbi && pbi.responsable ? '<span class="tache-assigne-pill">' + esc(pbi.responsable) + '</span>' : '';
-    var actionsPbi = pbi
-      ? '<button class="btn btn-sm modifier-pbi-btn" data-id="' + esc(pbi.id) + '"' +
-          ' data-titre="' + esc(pbi.titre) + '" data-responsable="' + esc(pbi.responsable || '') + '"' +
-          ' data-statut="' + esc(pbi.statut || 'nouveau') + '" data-numero="' + esc(pbi.numero != null ? pbi.numero : '') + '">Modifier</button>' +
-        '<button class="btn btn-sm archiver-pbi-btn" data-id="' + esc(pbi.id) + '">Archiver</button>' +
-        '<button class="btn btn-sm supprimer-pbi-btn" data-id="' + esc(pbi.id) + '" data-nb="' + taches.length + '">Supprimer</button>'
+    var menuPbi = pbi
+      ? '<details class="menu-pbi"><summary aria-label="Autres actions du PBI">⋯</summary><div class="menu-pbi-liste">' +
+          '<button class="btn btn-sm modifier-pbi-btn" data-id="' + esc(pbi.id) + '"' +
+            ' data-titre="' + esc(pbi.titre) + '" data-responsable="' + esc(pbi.responsable || '') + '"' +
+            ' data-statut="' + esc(pbi.statut || 'nouveau') + '" data-numero="' + esc(pbi.numero != null ? pbi.numero : '') + '">Modifier</button>' +
+          '<button class="btn btn-sm archiver-pbi-btn" data-id="' + esc(pbi.id) + '">Archiver</button>' +
+          '<button class="btn btn-sm supprimer-pbi-btn" data-id="' + esc(pbi.id) + '" data-nb="' + taches.length + '">Supprimer</button>' +
+        '</div></details>'
       : '';
 
-    var parColonne = { nouveau: [], en_cours: [], termine: [] };
-    taches.forEach(function (t) { if (parColonne[t.colonne]) parColonne[t.colonne].push(t); });
-    function colonne(cle) {
-      return '<div class="taches-dropzone" data-pbi-id="' + esc(pbiId) + '" data-colonne="' + cle + '">' +
-        parColonne[cle].map(tacheCarteHtml).join('') + '</div>';
-    }
-
-    return '<div class="taches-swimlane ' + (collapsee ? 'collapsee' : '') + '" data-pbi-id="' + esc(pbiId) + '">' +
-      '<div class="taches-swimlane-header toggle-swimlane">' +
-        '<span class="taches-swimlane-titre">' +
-          '<span class="taches-swimlane-chevron">' + (collapsee ? '▸' : '▾') + '</span>' +
-          numeroPill + ' ' + esc(titre) + ' <span class="taches-count">' + taches.length + '</span>' +
-          statutPill + responsablePill +
+    return '<div class="arbre-groupe' + (collapsee ? ' collapsee' : '') + '" data-pbi-id="' + esc(pbiId) + '">' +
+      '<div class="arbre-ligne arbre-pbi toggle-swimlane">' +
+        '<span class="arbre-titre">' +
+          '<span class="arbre-chevron">' + (collapsee ? '▸' : '▾') + '</span>' +
+          '<span class="arbre-icone" aria-hidden="true">' + (pbi ? '📘' : '🗒️') + '</span>' + numeroPill +
+          '<span class="arbre-texte" title="' + esc(titre) + '">' + esc(titre) + '</span>' +
+          '<span class="taches-count">' + taches.length + '</span>' +
+          (pbi && pbi.responsable ? '<span class="arbre-qui-mobile">' + esc(pbi.responsable) + '</span>' : '') +
         '</span>' +
-        '<div class="doc-actions" style="margin:0;">' +
-          '<button class="btn btn-sm nouvelle-tache-btn" data-pbi-id="' + esc(pbiId) + '">+ Tâche</button>' +
-          actionsPbi +
-        '</div>' +
+        '<span class="arbre-etat">' + statutPill + '</span>' +
+        '<span class="arbre-qui">' + esc(pbi && pbi.responsable ? pbi.responsable : '') + '</span>' +
+        '<span class="arbre-actions">' +
+          '<button class="btn btn-sm nouvelle-tache-btn" data-pbi-id="' + esc(pbiId) + '">+ Tâche</button>' + menuPbi +
+        '</span>' +
       '</div>' +
-      '<div class="taches-swimlane-colonnes">' + colonne('nouveau') + colonne('en_cours') + colonne('termine') + '</div>' +
+      (taches.length ? taches.map(tacheLigneHtml).join('') : '<div class="arbre-vide">Aucune tâche.</div>') +
     '</div>';
   }
 
@@ -2151,8 +2173,7 @@ select:focus { outline: none; border-color: var(--accent); }
         '<label style="flex:1;">PBI<select id="tache-pbi">' + optionsPbi + '</select></label>' +
         '<label style="flex:1;">Assigné à<select id="tache-assigne">' + optionsAssigne + '</select></label>' +
       '</div>' +
-      // Sur téléphone, le glisser-déposer ne fonctionne pas : la colonne se choisit ici.
-      '<div class="field-row mobile-seulement" style="margin-top:10px;">' +
+      '<div class="field-row" style="margin-top:10px;">' +
         '<label style="flex:1;">Colonne<select id="tache-colonne">' + optionsColonne + '</select></label>' +
       '</div>' +
       '<p class="empty" id="tache-erreur" hidden></p>' +
@@ -2243,19 +2264,34 @@ select:focus { outline: none; border-color: var(--accent); }
       return tachesSwimlaneHtml(pbi, parPbi[pbi.id] || []);
     });
     blocs.push(tachesSwimlaneHtml(null, parPbi[''] || []));
-    swimlanes.innerHTML = blocs.join('');
+    swimlanes.innerHTML =
+      '<div class="arbre-taches">' +
+        '<div class="arbre-ligne arbre-entete"><span>Titre</span><span>État</span><span class="arbre-qui">Assigné à</span><span class="arbre-actions-titre"></span></div>' +
+        blocs.join('') +
+      '</div>';
 
     swimlanes.querySelectorAll('.toggle-swimlane').forEach(function (header) {
-      header.addEventListener('click', function () {
-        var swimlane = header.closest('.taches-swimlane');
-        var pbiId = swimlane.dataset.pbiId;
+      header.addEventListener('click', function (e) {
+        // Les boutons et le menu ⋯ de la ligne ne replient pas le PBI.
+        if (e.target.closest('.arbre-actions')) return;
+        var groupe = header.closest('.arbre-groupe');
+        var pbiId = groupe.dataset.pbiId;
         var collapsee = tachesCollapsees.has(pbiId);
         if (collapsee) tachesCollapsees.delete(pbiId);
         else tachesCollapsees.add(pbiId);
         sauvegarderCollapsees();
-        swimlane.classList.toggle('collapsee', !collapsee);
-        header.querySelector('.taches-swimlane-chevron').textContent = collapsee ? '▾' : '▸';
+        groupe.classList.toggle('collapsee', !collapsee);
+        header.querySelector('.arbre-chevron').textContent = collapsee ? '▾' : '▸';
       });
+    });
+
+    // Un seul menu ⋯ ouvert à la fois ; il se ferme après un choix.
+    swimlanes.querySelectorAll('.menu-pbi').forEach(function (menu) {
+      menu.addEventListener('toggle', function () {
+        if (!menu.open) return;
+        swimlanes.querySelectorAll('.menu-pbi[open]').forEach(function (autre) { if (autre !== menu) autre.open = false; });
+      });
+      menu.querySelectorAll('.btn').forEach(function (b) { b.addEventListener('click', function () { menu.open = false; }); });
     });
 
     swimlanes.querySelectorAll('.nouvelle-tache-btn').forEach(function (btn) {
@@ -2290,28 +2326,22 @@ select:focus { outline: none; border-color: var(--accent); }
       });
     });
 
-    swimlanes.querySelectorAll('.tache-carte').forEach(function (carte) {
-      carte.addEventListener('click', function () { openTacheDetailModal(carte.dataset.id, donnees); });
-      carte.addEventListener('dragstart', function (e) {
-        e.dataTransfer.setData('text/plain', carte.dataset.id);
-        carte.classList.add('dragging');
+    // Clic sur une tâche : sa fenêtre de détail (sauf sur la liste de l'état).
+    swimlanes.querySelectorAll('.arbre-tache').forEach(function (ligne) {
+      ligne.addEventListener('click', function (e) {
+        if (e.target.closest('.etat-select')) return;
+        openTacheDetailModal(ligne.dataset.id, donnees);
       });
-      carte.addEventListener('dragend', function () { carte.classList.remove('dragging'); });
     });
 
-    swimlanes.querySelectorAll('.taches-dropzone').forEach(function (zone) {
-      zone.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        zone.classList.add('drag-over');
-      });
-      zone.addEventListener('dragleave', function () { zone.classList.remove('drag-over'); });
-      zone.addEventListener('drop', function (e) {
-        e.preventDefault();
-        zone.classList.remove('drag-over');
-        var id = e.dataTransfer.getData('text/plain');
-        if (!id) return;
-        // Le backend assigne automatiquement l'administrateur connecté, comme le tableau local.
-        appeler('deplacerTache', id, zone.dataset.colonne).catch(function (err) {
+    // Changer l'état d'une tâche = la changer de colonne. Le backend assigne l'administrateur connecté en
+    // passant à En cours ou Terminé, et retire l'assignation en revenant à Nouveau.
+    swimlanes.querySelectorAll('.etat-select').forEach(function (select) {
+      select.addEventListener('click', function (e) { e.stopPropagation(); });
+      select.addEventListener('change', function () {
+        if (select.value === select.dataset.colonne) return;
+        select.disabled = true;
+        appeler('deplacerTache', select.dataset.id, select.value).catch(function (err) {
           alert(err.message);
         }).finally(refreshTachesListe);
       });
@@ -2322,10 +2352,8 @@ select:focus { outline: none; border-color: var(--accent); }
     var content = document.getElementById('content');
     content.innerHTML =
       '<h1>Tâches</h1>' +
-      '<p class="lede"><span class="desktop-seulement">Glissez une carte d\'une colonne à l\'autre.</span>' +
-        '<span class="mobile-seulement">Touchez une carte pour changer sa colonne.</span> Passer en « En cours » vous assigne la tâche ; revenir à « Nouveaux » retire l\'assignation.</p>' +
+      '<p class="lede">Une ligne par PBI, une sous-ligne par tâche. Touchez un PBI pour replier ou déplier ses tâches ; changez l\'état d\'une tâche dans sa colonne État. Passer en « En cours » vous assigne la tâche ; revenir à « Nouveau » retire l\'assignation.</p>' +
       '<div class="taches-toolbar"><button class="btn btn-primary" id="nouveau-pbi-btn">+ Nouveau PBI</button></div>' +
-      '<div class="taches-entete-colonnes"><span>Nouveaux</span><span>En cours</span><span>Terminés</span></div>' +
       '<div id="taches-swimlanes" class="taches-swimlanes"></div>' +
       '<div id="taches-archives"></div>';
     document.getElementById('nouveau-pbi-btn').addEventListener('click', openNouveauPbiModal);
