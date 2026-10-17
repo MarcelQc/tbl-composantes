@@ -1198,6 +1198,60 @@ select:focus { outline: none; border-color: var(--accent); }
 }
 .content.content-taches { max-width: none; }
 
+/* Manuscrits : tableau des livres et visionneuse d'analyse */
+.table-defilante { overflow-x: auto; }
+.manuscrits-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.9rem; }
+.manuscrits-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border-soft);
+}
+.manuscrits-table td { padding: 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.manuscrits-table tr:last-child td { border-bottom: none; }
+.manuscrit-titre { font-weight: 700; }
+.manuscrit-auteur { font-weight: 600; }
+.manuscrit-coordonnees { display: flex; flex-direction: column; margin-top: 3px; font-size: 0.8rem; color: var(--text-dim); white-space: pre-line; }
+.manuscrit-actions { text-align: right; white-space: nowrap; }
+
+.analyse-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+}
+.analyse-boite {
+  display: flex;
+  flex-direction: column;
+  width: min(1000px, 100%);
+  height: min(92vh, 100%);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.analyse-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.analyse-livre { display: block; font-size: 0.8rem; color: var(--text-dim); }
+.analyse-boutons { display: flex; gap: 8px; flex-shrink: 0; }
+.analyse-corps { flex: 1; min-height: 0; background: #fff; }
+.analyse-corps > .empty { padding: 16px; background: var(--bg-panel); margin: 0; height: 100%; }
+.analyse-cadre { width: 100%; height: 100%; border: 0; display: block; }
+
 @media (max-width: 720px) {
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
@@ -1281,6 +1335,7 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="forum">Forum</button>
     <button class="tab-btn" data-tab="rencontres">Rencontres</button>
     <button class="tab-btn" data-tab="taches">Tâches</button>
+    <button class="tab-btn" data-tab="manuscrits">Manuscrits</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
 </nav>
@@ -1486,7 +1541,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
   /* ===================== Navigation ===================== */
 
-  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'partner-id', 'publicite'];
+  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'partner-id', 'publicite'];
 
   function currentTab() {
     var t = location.hash.slice(1);
@@ -1518,6 +1573,7 @@ select:focus { outline: none; border-color: var(--accent); }
       if (tab === 'accueil') await initAccueil();
       else if (tab === 'forum') await initForum();
       else if (tab === 'rencontres') await initRencontres();
+      else if (tab === 'manuscrits') await initManuscrits();
       else if (tab === 'partner-id') await initPartnerId();
       else if (tab === 'publicite') await initPublicite();
       else await initTaches();
@@ -2539,6 +2595,162 @@ select:focus { outline: none; border-color: var(--accent); }
       signaler(appeler('setPbiArchive', btn.dataset.id, false), refreshTachesListe);
     });
     await refreshTachesListe();
+  }
+
+  /* ===================== Manuscrits ===================== */
+
+  // Un livre par dossier du dossier Livres (skill dashboard-export-manuscrits). Le titre, l'auteur
+  // et les coordonnées se modifient ici ; le skill ne les écrase jamais.
+  var manuscrits = [];
+
+  function celluleAnalyse(m, type) {
+    var fichier = m['analyse_' + type];
+    if (!fichier) return '<span class="empty">Aucune</span>';
+    var version = (fichier.match(/_V(\d+)/i) || [])[1];
+    return '<button type="button" class="btn btn-sm ouvrir-analyse-btn" data-id="' + esc(m.id) + '" data-type="' + type + '"' +
+      ' title="' + esc(fichier) + '">Ouvrir' + (version ? ' (V' + esc(version) + ')' : '') + '</button>';
+  }
+
+  function coordonneesHtml(m) {
+    var lignes = [m.courriel, m.telephone, m.adresse].filter(function (v) { return v; });
+    return lignes.length
+      ? '<div class="manuscrit-coordonnees">' + lignes.map(function (v) { return '<span>' + esc(v) + '</span>'; }).join('') + '</div>'
+      : '<div class="manuscrit-coordonnees"><span class="empty">Aucune coordonnée</span></div>';
+  }
+
+  function tableManuscritsHtml(liste) {
+    return '<div class="table-defilante"><table class="manuscrits-table"><thead><tr>' +
+        '<th>Livre</th><th>Auteur</th><th>Analyse éditoriale</th><th>Analyse de conformité</th><th></th>' +
+      '</tr></thead><tbody>' +
+      liste.map(function (m) {
+        return '<tr>' +
+          '<td class="manuscrit-titre">' + esc(m.titre) + '</td>' +
+          '<td><div class="manuscrit-auteur">' + esc(m.auteur) + '</div>' + coordonneesHtml(m) + '</td>' +
+          '<td>' + celluleAnalyse(m, 'editoriale') + '</td>' +
+          '<td>' + celluleAnalyse(m, 'conformite') + '</td>' +
+          '<td class="manuscrit-actions"><button type="button" class="btn btn-sm modifier-manuscrit-btn" data-id="' + esc(m.id) + '">Modifier</button></td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  async function refreshManuscrits() {
+    var zone = document.getElementById('manuscrits-zone');
+    if (!zone) return;
+    manuscrits = await appeler('getManuscrits');
+    var actifs = manuscrits.filter(function (m) { return !m.archive; });
+    var archives = manuscrits.filter(function (m) { return m.archive; });
+    zone.innerHTML =
+      '<div class="panel">' +
+        (actifs.length ? tableManuscritsHtml(actifs) : '<p class="empty">Aucun manuscrit. Lancez le skill dashboard-export-manuscrits.</p>') +
+      '</div>' +
+      (archives.length
+        ? '<div class="panel"><h2>Livres archivés</h2>' + tableManuscritsHtml(archives) + '</div>'
+        : '');
+  }
+
+  function openModifierManuscritModal(id) {
+    var m = manuscrits.find(function (x) { return x.id === id; });
+    if (!m) return;
+    function champ(idChamp, libelle, valeur, attributs) {
+      return '<div class="field-row"><label>' + libelle +
+        '<input type="text" id="' + idChamp + '" value="' + esc(valeur || '') + '" ' + (attributs || '') + '></label></div>';
+    }
+    openModal('Modifier le manuscrit',
+      '<p class="empty" style="margin-top:0;">Dossier : ' + esc(m.dossier) + '</p>' +
+      champ('manuscrit-titre', 'Titre du livre', m.titre, 'maxlength="200"') +
+      champ('manuscrit-auteur', 'Nom de l\'auteur', m.auteur, 'maxlength="200"') +
+      champ('manuscrit-courriel', 'Courriel', m.courriel, 'maxlength="200" inputmode="email" autocomplete="off"') +
+      champ('manuscrit-telephone', 'Téléphone', m.telephone, 'maxlength="50" inputmode="tel" autocomplete="off"') +
+      '<div class="field-row"><label>Adresse' +
+        '<textarea id="manuscrit-adresse" rows="3" maxlength="500">' + esc(m.adresse || '') + '</textarea></label></div>' +
+      '<p class="empty" id="manuscrit-erreur" hidden></p>' +
+      '<div class="doc-actions" style="margin-top:16px;"><button class="btn btn-primary" id="manuscrit-confirmer-btn">Enregistrer</button></div>');
+    var erreurEl = document.getElementById('manuscrit-erreur');
+    document.getElementById('manuscrit-confirmer-btn').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      erreurEl.hidden = true;
+      btn.disabled = true;
+      appeler('modifierManuscrit', id, {
+        titre: document.getElementById('manuscrit-titre').value,
+        auteur: document.getElementById('manuscrit-auteur').value,
+        courriel: document.getElementById('manuscrit-courriel').value,
+        telephone: document.getElementById('manuscrit-telephone').value,
+        adresse: document.getElementById('manuscrit-adresse').value,
+      }).then(function () {
+        closeModal();
+        refreshManuscrits();
+      }).catch(function (err) {
+        erreurEl.textContent = err.message;
+        erreurEl.hidden = false;
+      }).finally(function () { btn.disabled = false; });
+    });
+  }
+
+  // Visionneuse d'analyse : grande fenêtre avec le rapport HTML dans un cadre isolé (sans script).
+  var analyseEl = null;
+  function fermerAnalyse() {
+    if (analyseEl) analyseEl.remove();
+    analyseEl = null;
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerAnalyse(); });
+
+  async function ouvrirAnalyse(id, type) {
+    var m = manuscrits.find(function (x) { return x.id === id; }) || {};
+    fermerAnalyse();
+    analyseEl = document.createElement('div');
+    analyseEl.className = 'analyse-overlay';
+    analyseEl.innerHTML =
+      '<div class="analyse-boite" role="dialog" aria-modal="true">' +
+        '<div class="analyse-entete">' +
+          '<div><strong>' + (type === 'editoriale' ? 'Analyse éditoriale' : 'Analyse de conformité') + '</strong>' +
+            '<span class="analyse-livre">' + esc(m.titre || '') + (m.auteur ? ', ' + esc(m.auteur) : '') + '</span></div>' +
+          '<div class="analyse-boutons">' +
+            '<button type="button" class="btn btn-sm" id="analyse-imprimer" disabled>Imprimer</button>' +
+            '<button type="button" class="btn btn-sm" id="analyse-fermer">Fermer</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="analyse-corps"><p class="empty">Chargement de l\'analyse…</p></div>' +
+      '</div>';
+    document.body.appendChild(analyseEl);
+    var boite = analyseEl;
+    boite.addEventListener('click', function (e) { if (e.target === boite) fermerAnalyse(); });
+    boite.querySelector('#analyse-fermer').addEventListener('click', fermerAnalyse);
+    try {
+      var r = await appeler('getAnalyseManuscrit', id, type);
+      if (analyseEl !== boite) return; // fenêtre fermée pendant le chargement
+      var cadre = document.createElement('iframe');
+      cadre.className = 'analyse-cadre';
+      cadre.title = r.fichier;
+      cadre.setAttribute('sandbox', 'allow-same-origin allow-modals');
+      cadre.srcdoc = r.html;
+      var corps = boite.querySelector('.analyse-corps');
+      corps.innerHTML = '';
+      corps.appendChild(cadre);
+      var imprimer = boite.querySelector('#analyse-imprimer');
+      imprimer.disabled = false;
+      imprimer.addEventListener('click', function () { cadre.contentWindow.print(); });
+    } catch (err) {
+      if (analyseEl === boite) {
+        boite.querySelector('.analyse-corps').innerHTML = '<p class="empty">Impossible d\'ouvrir l\'analyse : ' + esc(err.message) + '</p>';
+      }
+    }
+  }
+
+  async function initManuscrits() {
+    var content = document.getElementById('content');
+    content.innerHTML =
+      '<h1>Manuscrits</h1>' +
+      '<p class="lede">Livres du dossier Livres, mis à jour par le skill dashboard-export-manuscrits. ' +
+        'Le titre, l\'auteur et les coordonnées se modifient ici.</p>' +
+      '<div id="manuscrits-zone"></div>';
+    content.querySelector('#manuscrits-zone').addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.classList.contains('ouvrir-analyse-btn')) ouvrirAnalyse(btn.dataset.id, btn.dataset.type);
+      else if (btn.classList.contains('modifier-manuscrit-btn')) openModifierManuscritModal(btn.dataset.id);
+    });
+    await refreshManuscrits();
   }
 
   /* ===================== PartnerID ===================== */
