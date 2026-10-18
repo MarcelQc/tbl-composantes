@@ -22,9 +22,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--or);outline-offset:2px}
 
 main.wrap{padding-top:8px}
-/* Libellé au-dessus des onglets (demande de Marcel du 18 octobre 2026) : simple libellé, pas un titre, en retrait
-   à gauche pour s'aligner sur le texte du premier onglet. */
-.libelle-espace{margin:6px 0 10px;padding-left:18px;font-size:1rem;font-weight:bold;color:var(--txt)}
+/* En-tête comme celui de la Mise en vedette (calendrier-vedettes.html, demande de Marcel du 18 octobre 2026) :
+   ligne 1 les boutons, ligne 2 le titre, ligne 3 un petit texte d'introduction. */
+.entete{margin-bottom:16px}
+.barre-haut{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.actions-haut{display:flex;flex-wrap:wrap;gap:8px}
+.actions-haut .btn{padding:8px 14px;font-size:.9rem}
+.titre-espace{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:6px 0 8px}
+.entete .sub{margin:0}
 
 /* Cartes */
 .card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:26px}
@@ -61,10 +66,6 @@ h3{margin:0 0 12px;font-size:1.15rem}
 .onglet[aria-selected="true"]{background:var(--card);color:var(--txt);font-weight:bold;box-shadow:inset 0 2px 0 var(--red)}
 .pastille-nb{background:var(--redsoft);color:var(--rouge-texte);border-radius:99px;padding:0 8px;font-family:var(--tbl-font-body);font-size:.78rem;font-weight:600;min-width:22px;text-align:center}
 .panneau{background:var(--card);border:1px solid var(--line);border-radius:0 var(--tbl-radius) var(--tbl-radius) var(--tbl-radius);padding:20px}
-/* Actualiser et Configuration : boutons secondaires (Templates\action-buttons.html), à droite de la barre. */
-.onglet.actualiser,.onglet.config{align-self:center;margin-bottom:6px;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:transparent;color:var(--txt);font-family:var(--tbl-font-body);font-size:.9rem;font-weight:normal;padding:8px 14px}
-.onglet.actualiser{margin-left:auto}
-.onglet.actualiser:hover,.onglet.config:hover{border-color:var(--red);color:var(--txt)}
 /* Fenêtre Configuration (administrateur) : un réglage par ligne, case à cocher et description. */
 .reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
 .reglage:first-child{border-top:0}
@@ -235,7 +236,6 @@ textarea{min-height:96px;resize:vertical}
   .zone-docs .c-action{width:104px}
   .zone-docs .c-action .action{flex-direction:column;align-items:stretch;gap:4px}
   .btn.mini{padding:4px 8px;font-size:.8rem}
-
   .onglets{gap:6px}
   .onglet{padding:10px 11px;font-size:.9rem;gap:5px}
   .pastille-nb{padding:0 6px;min-width:18px;font-size:.75rem}
@@ -245,7 +245,6 @@ textarea{min-height:96px;resize:vertical}
 <body>
 
 <main class="wrap">
-
   <section id="etat-chargement" class="card centre" role="status" aria-live="polite">
     <div class="spin" aria-hidden="true"></div>
     <p class="sub" id="texte-chargement">Chargement de votre espace…</p>
@@ -270,15 +269,22 @@ textarea{min-height:96px;resize:vertical}
   </section>
 
   <section id="espace" hidden>
-    <p class="libelle-espace">Espace Auteur</p>
+    <div class="entete">
+      <div class="barre-haut">
+        <span class="actions-haut">
+          <button class="btn sec" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
+          <button class="btn sec" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
+        </span>
+      </div>
+      <h1 class="titre-espace">Espace Auteur</h1>
+      <p class="sub" id="accueil">Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.</p>
+    </div>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Auteurs">
       <button class="onglet" role="tab" id="onglet-ventes" aria-controls="panneau-ventes" aria-selected="true" tabindex="0">Ventes</button>
       <button class="onglet" role="tab" id="onglet-auteur" aria-controls="panneau-auteur" aria-selected="false" tabindex="-1">Auteur</button>
       <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres <span class="pastille-nb" id="nb-livres">0</span></button>
       <button class="onglet" role="tab" id="onglet-services" aria-controls="panneau-services" aria-selected="false" tabindex="-1">Services</button>
       <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
-      <button class="onglet actualiser" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
-      <button class="onglet config" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
     </div>
 
     <!-- VENTES -->
@@ -560,7 +566,7 @@ function recevoir(msg) {
 function montrer(nom) {
   ['chargement', 'erreur', 'refuse', 'inactif'].forEach(function (n) { $('etat-' + n).hidden = (n !== nom); });
   $('espace').hidden = (nom !== 'espace');
-  // L'en-tête (et donc #accueil) n'existe pas dans la version Web : tout accès est protégé.
+  // #accueil est dans l'en-tête de l'espace (ligne 3, texte d'introduction) ; l'accès reste protégé par prudence.
   var accueil = $('accueil');
   if (accueil) {
     accueil.hidden = (nom === 'refuse' || nom === 'inactif'); // sans accès : ni accueil ni description de l'espace
