@@ -1412,11 +1412,23 @@ select:focus { outline: none; border-color: var(--accent); }
   }
 
   // Appelle une fonction du backend Velo et renvoie une promesse de son résultat.
+  // Sans réponse après DELAI_REPONSE_MS (page Wix pas encore publiée avec cette fonction, serveur
+  // en panne), la promesse échoue avec un message clair au lieu d'attendre indéfiniment.
+  var DELAI_REPONSE_MS = 30000;
   function appeler(action) {
     var args = Array.prototype.slice.call(arguments, 1);
     return new Promise(function (resoudre, rejeter) {
       var reqId = ++compteur;
-      attentes[reqId] = { resoudre: resoudre, rejeter: rejeter };
+      var minuterie = setTimeout(function () {
+        if (!attentes[reqId]) return;
+        delete attentes[reqId];
+        rejeter(new Error('le serveur ne répond pas (« ' + action + ' »). Si cette fonction est nouvelle, ' +
+          'le site Wix doit être publié pour l\'activer.'));
+      }, DELAI_REPONSE_MS);
+      attentes[reqId] = {
+        resoudre: function (v) { clearTimeout(minuterie); resoudre(v); },
+        rejeter: function (e) { clearTimeout(minuterie); rejeter(e); },
+      };
       envoyerAuParent({ action: action, reqId: reqId, args: args });
     });
   }
@@ -1618,7 +1630,10 @@ select:focus { outline: none; border-color: var(--accent); }
       else if (tab === 'publicite') await initPublicite();
       else await initTaches();
     } catch (e) {
-      content.insertAdjacentHTML('beforeend', '<p class="empty">Erreur de chargement : ' + esc(e.message) + '</p>');
+      var message = '<p class="empty">Erreur de chargement : ' + esc(e.message) + '</p>';
+      // Si l'onglet n'a rien affiché d'autre que « Chargement… », le message le remplace.
+      if (content.children.length === 1 && content.firstElementChild.textContent === 'Chargement…') content.innerHTML = message;
+      else content.insertAdjacentHTML('beforeend', message);
     }
   }
 
