@@ -1311,6 +1311,10 @@ select:focus { outline: none; border-color: var(--accent); }
 .num-table tr.num-zero td { color: var(--text-faint); }
 .num-table tr.num-total td { font-weight: 700; border-top: 2px solid var(--text-dim); background: var(--bg-elevated); }
 
+/* Forum : l'auteur modifie son message en place (zone d'édition sous le texte, comme la réponse) */
+.forum-msg-actions { display: flex; gap: 8px; }
+.forum-edit-actions { display: flex; gap: 8px; }
+
 @media (max-width: 720px) {
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
@@ -1347,6 +1351,7 @@ select:focus { outline: none; border-color: var(--accent); }
   .btn-sm { padding: 8px 12px; }
 
   /* Forum */
+  .forum-edit-actions { flex-wrap: wrap; }
   .forum-msg { padding: 12px; }
   .forum-msg-header { flex-wrap: wrap; gap: 2px 10px; }
   .forum-reponses { padding-left: 10px; }
@@ -1753,23 +1758,55 @@ select:focus { outline: none; border-color: var(--accent); }
 
   /* ===================== Forum ===================== */
 
+  // Seul l'auteur d'un message (ou d'une réponse) peut le modifier ; le backend le vérifie aussi.
+  function estAuteur(auteur) {
+    return !!(etat.admin && etat.admin.nom === auteur);
+  }
+
+  function forumDateHtml(item) {
+    return '<span class="forum-msg-date">' + esc(formatDateFr(item.date)) +
+      (item.modifie ? ' · modifié' : '') + '</span>';
+  }
+
+  // Texte affiché, suivi de la zone d'édition cachée (ouverte par le bouton Modifier).
+  function forumTexteHtml(item) {
+    var html = '<div class="forum-msg-texte" id="texte-' + esc(item.id) + '">' + esc(item.texte) + '</div>';
+    if (!estAuteur(item.auteur)) return html;
+    return html +
+      '<div class="forum-reply-box forum-edit-box" id="edit-box-' + esc(item.id) + '">' +
+        '<textarea class="edit-texte" rows="3">' + esc(item.texte) + '</textarea>' +
+        '<div class="forum-edit-actions">' +
+          '<button class="btn btn-primary btn-sm edit-submit-btn" data-id="' + esc(item.id) + '">Enregistrer</button>' +
+          '<button class="btn btn-sm edit-cancel-btn" data-id="' + esc(item.id) + '">Annuler</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function boutonModifierHtml(item) {
+    return estAuteur(item.auteur)
+      ? '<button class="btn btn-sm edit-toggle-btn" data-id="' + esc(item.id) + '">Modifier</button>'
+      : '';
+  }
+
   function forumMessageHtml(m) {
     var reponses = (m.reponses || []).map(function (r) {
       return '<div class="forum-msg" style="background:var(--bg-elevated);">' +
         '<div class="forum-msg-header"><span class="forum-msg-auteur">' + esc(r.auteur) + '</span>' +
-        '<span class="forum-msg-date">' + esc(formatDateFr(r.date)) + '</span></div>' +
-        '<div class="forum-msg-texte">' + esc(r.texte) + '</div>' +
-        '<div class="forum-msg-actions"><button class="btn btn-sm delete-reponse-btn" data-reponse-id="' + esc(r.id) + '">Supprimer</button></div>' +
+        forumDateHtml(r) + '</div>' +
+        forumTexteHtml(r) +
+        '<div class="forum-msg-actions">' + boutonModifierHtml(r) +
+          '<button class="btn btn-sm delete-reponse-btn" data-reponse-id="' + esc(r.id) + '">Supprimer</button></div>' +
       '</div>';
     }).join('');
 
     return '<div class="forum-msg" data-id="' + esc(m.id) + '">' +
       '<div class="forum-msg-header"><span class="forum-msg-auteur">' + esc(m.auteur) + '</span>' +
-      '<span class="forum-msg-date">' + esc(formatDateFr(m.date)) + '</span></div>' +
-      '<div class="forum-msg-texte">' + esc(m.texte) + '</div>' +
+      forumDateHtml(m) + '</div>' +
+      forumTexteHtml(m) +
       (reponses ? '<div class="forum-reponses">' + reponses + '</div>' : '') +
       '<div class="forum-reponse-toggle">' +
         '<button class="btn btn-sm reply-toggle-btn" data-id="' + esc(m.id) + '">Répondre</button>' +
+        boutonModifierHtml(m) +
         '<button class="btn btn-sm archiver-message-btn" data-id="' + esc(m.id) + '">Archiver</button>' +
         '<button class="btn btn-sm delete-message-btn" data-id="' + esc(m.id) + '">Supprimer</button>' +
       '</div>' +
@@ -1794,9 +1831,9 @@ select:focus { outline: none; border-color: var(--accent); }
     var brut = await appeler('getForum');
     var messages = brut.map(function (m) {
       return {
-        id: m.id, auteur: m.auteur, texte: m.texte, date: m.created_at, archivee: m.archivee,
+        id: m.id, auteur: m.auteur, texte: m.texte, date: m.created_at, archivee: m.archivee, modifie: !!m.modifie_le,
         reponses: (m.forum_reponses || []).map(function (r) {
-          return { id: r.id, auteur: r.auteur, texte: r.texte, date: r.created_at };
+          return { id: r.id, auteur: r.auteur, texte: r.texte, date: r.created_at, modifie: !!r.modifie_le };
         }),
       };
     }).sort(function (a, b) {
@@ -1856,6 +1893,20 @@ select:focus { outline: none; border-color: var(--accent); }
         var texte = box.querySelector('.reply-texte').value.trim();
         if (!texte) return;
         signaler(appeler('postReponse', btn.dataset.id, texte), refreshForumListe);
+      } else if (btn.classList.contains('edit-toggle-btn') || btn.classList.contains('edit-cancel-btn')) {
+        var ouvrir = btn.classList.contains('edit-toggle-btn');
+        var boite = document.getElementById('edit-box-' + btn.dataset.id);
+        var champ = boite.querySelector('.edit-texte');
+        champ.value = champ.defaultValue; // Annuler (ou rouvrir) repart du texte enregistré
+        boite.classList.toggle('open', ouvrir);
+        document.getElementById('texte-' + btn.dataset.id).hidden = ouvrir;
+        if (ouvrir) champ.focus();
+      } else if (btn.classList.contains('edit-submit-btn')) {
+        var nouveau = document.getElementById('edit-box-' + btn.dataset.id).querySelector('.edit-texte').value.trim();
+        if (!nouveau) return;
+        btn.disabled = true;
+        signaler(appeler('modifierMessage', btn.dataset.id, nouveau), refreshForumListe)
+          .finally(function () { btn.disabled = false; });
       } else if (btn.classList.contains('delete-message-btn')) {
         confirmer('Supprimer ce message ?', 'Le message et toutes ses réponses seront supprimés.', 'Supprimer', function () {
           signaler(appeler('supprimerMessage', btn.dataset.id), refreshForumListe);
