@@ -1252,12 +1252,13 @@ select:focus { outline: none; border-color: var(--accent); }
 .analyse-corps > .empty { padding: 16px; background: var(--bg-panel); margin: 0; height: 100%; }
 .analyse-cadre { width: 100%; height: 100%; border: 0; display: block; }
 
-/* Bouton Actualiser à droite de la barre d'onglets, comme dans l'Espace Auteurs
+/* Bouton Actualiser dans l'en-tête, à droite de « Éditions TBL / Tableau de bord » : toujours visible,
+   même quand la barre d'onglets déborde et défile
    (bouton secondaire, Templates\action-buttons.html). */
 .tabs-actualiser {
   flex-shrink: 0;
   align-self: center;
-  margin: 0 0 6px auto;
+  margin: 0;
   padding: 8px 14px;
   background: transparent;
   color: var(--text);
@@ -1269,6 +1270,7 @@ select:focus { outline: none; border-color: var(--accent); }
   cursor: pointer;
 }
 .tabs-actualiser:hover { border-color: var(--accent); }
+.app-header { justify-content: flex-start; gap: 12px 28px; }
 
 /* Vente <année> : tableaux du classeur de suivi des ventes (en-tête rouge foncé, grille, ligne TOTAL) */
 .ventes-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.88rem; }
@@ -1385,6 +1387,7 @@ select:focus { outline: none; border-color: var(--accent); }
       <span class="brand-subtitle">Tableau de bord</span>
     </div>
   </div>
+  <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
 </header>
 
 <nav class="tabs" id="tabs" aria-label="Sections du tableau de bord">
@@ -1397,7 +1400,6 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="ventes-numeriques">Ventes numériques</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
-    <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
 </nav>
 
 <main id="content" class="content">
