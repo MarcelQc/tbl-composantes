@@ -1270,6 +1270,25 @@ select:focus { outline: none; border-color: var(--accent); }
 }
 .tabs-actualiser:hover { border-color: var(--accent); }
 
+/* Vente <année> : tableaux du classeur de suivi des ventes (en-tête rouge foncé, grille, ligne TOTAL) */
+.ventes-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.88rem; }
+.ventes-table.ventes-globales { min-width: 0; max-width: 520px; }
+.ventes-table th {
+  padding: 8px 10px;
+  background: var(--tbl-accent-soft);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.ventes-table td { padding: 6px 10px; text-align: center; border: 1px solid var(--border-soft); }
+.ventes-table td:first-child, .ventes-table th:first-child { text-align: left; }
+.ventes-table .ventes-total-col { font-weight: 700; }
+.ventes-table tr.ventes-total td { font-weight: 700; border-top: 2px solid var(--text-dim); background: var(--bg-elevated); }
+.ventes-note { margin: 12px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+.ventes-choix { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.ventes-titre-livre { margin: 0 0 10px; font-size: 1rem; letter-spacing: 0.3px; }
+
 @media (max-width: 720px) {
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
@@ -1354,6 +1373,7 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="rencontres">Rencontres</button>
     <button class="tab-btn" data-tab="taches">Tâches</button>
     <button class="tab-btn" data-tab="manuscrits">Manuscrits</button>
+    <button class="tab-btn" data-tab="ventes">Vente 2026</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
     <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
@@ -1560,7 +1580,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
   /* ===================== Navigation ===================== */
 
-  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'partner-id', 'publicite'];
+  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'ventes', 'partner-id', 'publicite'];
 
   function currentTab() {
     var t = location.hash.slice(1);
@@ -1593,6 +1613,7 @@ select:focus { outline: none; border-color: var(--accent); }
       else if (tab === 'forum') await initForum();
       else if (tab === 'rencontres') await initRencontres();
       else if (tab === 'manuscrits') await initManuscrits();
+      else if (tab === 'ventes') await initVentes();
       else if (tab === 'partner-id') await initPartnerId();
       else if (tab === 'publicite') await initPublicite();
       else await initTaches();
@@ -2776,6 +2797,122 @@ select:focus { outline: none; border-color: var(--accent); }
       else if (btn.classList.contains('modifier-manuscrit-btn')) openModifierManuscritModal(btn.dataset.id);
     });
     await refreshManuscrits();
+  }
+
+  /* ===================== Vente <année> ===================== */
+
+  // Copie du classeur <année>_Suivi_des_ventes_TBL.xlsx (skill dashboard-export-vente), en exemplaires :
+  // le tableau « Statistiques globales » de son Dashboard, la somme de tous les livres par mois et
+  // par format, puis le tableau de chaque livre tel qu'il est dans son onglet.
+  var ventesLivres = [];
+  var ventesLivreChoisi = null;
+
+  function nbVentes(v) {
+    return v === null || v === undefined ? '' : esc(Number(v).toLocaleString('fr-CA'));
+  }
+
+  // Tableau d'un onglet de livre (ou de la somme) : Mois, formats, Total, puis TOTAL ANNUEL.
+  function tableauVentesHtml(d) {
+    var entete = '<tr><th>Mois</th>' + d.formats.map(function (f) { return '<th>' + esc(f) + '</th>'; }).join('') +
+      '<th>Total</th></tr>';
+    var corps = d.mois.map(function (m) {
+      return '<tr><td class="ventes-mois">' + esc(m.mois) + '</td>' +
+        m.valeurs.map(function (v) { return '<td>' + nbVentes(v) + '</td>'; }).join('') +
+        '<td class="ventes-total-col">' + nbVentes(m.total) + '</td></tr>';
+    }).join('');
+    var pied = '<tr class="ventes-total"><td>TOTAL ANNUEL</td>' +
+      d.totaux.map(function (v) { return '<td>' + nbVentes(v) + '</td>'; }).join('') +
+      '<td>' + nbVentes(d.total) + '</td></tr>';
+    return '<div class="table-defilante"><table class="ventes-table"><thead>' + entete + '</thead><tbody>' +
+      corps + pied + '</tbody></table></div>';
+  }
+
+  // Somme de tous les livres, mois par mois et format par format (même ordre de colonnes partout).
+  function ventesGlobales(livres) {
+    var formats = livres[0].d.formats.slice();
+    livres.forEach(function (l) {
+      l.d.formats.forEach(function (f, j) { if (f.length < (formats[j] || '').length) formats[j] = f; });
+    });
+    var mois = livres[0].d.mois.map(function (m, i) {
+      var valeurs = formats.map(function (f, j) {
+        var saisies = livres.map(function (l) { return l.d.mois[i].valeurs[j]; })
+          .filter(function (v) { return v !== null && v !== undefined; });
+        return saisies.length ? saisies.reduce(function (a, b) { return a + b; }, 0) : null;
+      });
+      var saisi = valeurs.some(function (v) { return v !== null; });
+      return { mois: m.mois, valeurs: valeurs,
+        total: saisi ? valeurs.reduce(function (a, b) { return a + (b || 0); }, 0) : null };
+    });
+    var totaux = formats.map(function (f, j) {
+      return livres.reduce(function (a, l) { return a + (l.d.totaux[j] || 0); }, 0);
+    });
+    return { formats: formats, mois: mois, totaux: totaux,
+      total: totaux.reduce(function (a, b) { return a + b; }, 0) };
+  }
+
+  function dessinerLivreVentes(annee) {
+    var zone = document.getElementById('ventes-livre');
+    var l = ventesLivres.find(function (x) { return x.id === ventesLivreChoisi; }) || ventesLivres[0];
+    if (!zone || !l) return;
+    document.querySelectorAll('.ventes-choix-livre').forEach(function (b) {
+      b.classList.toggle('btn-primary', b.dataset.id === l.id);
+    });
+    zone.innerHTML = '<h3 class="ventes-titre-livre">' + esc(l.livre.toUpperCase()) + ' — SUIVI DES VENTES ' + esc(annee) + '</h3>' +
+      tableauVentesHtml(l.d);
+  }
+
+  async function initVentes() {
+    var content = document.getElementById('content');
+    var lignes = await appeler('getSuiviVentes');
+    var info = lignes.find(function (l) { return l.type === 'info'; });
+    ventesLivres = lignes.filter(function (l) { return l.type === 'livre'; })
+      .sort(function (a, b) { return a.ordre - b.ordre; })
+      .map(function (l) { return { id: l.id, livre: l.livre, d: JSON.parse(l.donnees) }; });
+    if (!ventesLivres.length) {
+      content.innerHTML = '<h1>Vente</h1><p class="empty">Aucune donnée. Lancez le skill dashboard-export-vente.</p>';
+      return;
+    }
+    var annee = info ? info.annee : '';
+    var i = info ? JSON.parse(info.donnees) : {};
+    var total = ventesLivres.reduce(function (a, l) { return a + l.d.total; }, 0);
+    if (!ventesLivreChoisi || !ventesLivres.some(function (l) { return l.id === ventesLivreChoisi; })) {
+      ventesLivreChoisi = ventesLivres[0].id;
+    }
+
+    content.innerHTML =
+      '<h1>Vente ' + esc(annee) + '</h1>' +
+      '<p class="lede">Exemplaires vendus, tirés du classeur ' + esc(i.fichier || '') +
+        (i.fichier_modifie ? ' (modifié le ' + esc(i.fichier_modifie) + ')' : '') +
+        ' et mis à jour par le skill dashboard-export-vente.</p>' +
+      '<div class="panel">' +
+        '<h2>Statistiques globales ' + esc(annee) + '</h2>' +
+        '<div class="table-defilante"><table class="ventes-table ventes-globales"><thead><tr><th>Livre</th><th>Exemplaires vendus</th></tr></thead><tbody>' +
+          ventesLivres.map(function (l) {
+            return '<tr><td>' + esc(l.livre) + '</td><td>' + nbVentes(l.d.total) + '</td></tr>';
+          }).join('') +
+          '<tr class="ventes-total"><td>TOTAL</td><td>' + nbVentes(total) + '</td></tr>' +
+        '</tbody></table></div>' +
+        (i.note ? '<p class="ventes-note">' + esc(i.note) + '</p>' : '') +
+      '</div>' +
+      '<div class="panel">' +
+        '<h2>Ventes globales par mois</h2>' +
+        tableauVentesHtml(ventesGlobales(ventesLivres)) +
+      '</div>' +
+      '<div class="panel">' +
+        '<h2>Ventes par livre</h2>' +
+        '<div class="ventes-choix">' + ventesLivres.map(function (l) {
+          return '<button type="button" class="btn btn-sm ventes-choix-livre" data-id="' + esc(l.id) + '">' + esc(l.livre) + '</button>';
+        }).join('') + '</div>' +
+        '<div id="ventes-livre"></div>' +
+      '</div>';
+
+    content.querySelector('.ventes-choix').addEventListener('click', function (e) {
+      var btn = e.target.closest('.ventes-choix-livre');
+      if (!btn) return;
+      ventesLivreChoisi = btn.dataset.id;
+      dessinerLivreVentes(annee);
+    });
+    dessinerLivreVentes(annee);
   }
 
   /* ===================== PartnerID ===================== */
