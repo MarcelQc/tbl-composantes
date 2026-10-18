@@ -2965,7 +2965,8 @@ select:focus { outline: none; border-color: var(--accent); }
   /* ===================== Ventes numériques ===================== */
 
   // Les produits visibles de la boutique et les unités vendues pendant la période choisie
-  // (commandes approuvées et payées, dates en heure de Montréal). Les produits masqués sont ignorés.
+  // (commandes approuvées et payées, dates en heure de Montréal). Les produits masqués et les ventes
+  // à 0 $ sont ignorés.
   var periodeNum = null;
 
   function isoDecale(iso, jours) {
@@ -3042,7 +3043,7 @@ select:focus { outline: none; border-color: var(--accent); }
     content.innerHTML =
       '<h1>Ventes numériques</h1>' +
       '<p class="lede">Les produits visibles de la boutique et les unités vendues pendant la période choisie ' +
-        '(commandes approuvées et payées, heure de Montréal).</p>' +
+        '(commandes approuvées et payées, heure de Montréal ; les ventes à 0 $ ne sont pas comptées).</p>' +
       '<div class="panel">' +
         '<div class="num-periode">' +
           '<div class="num-rapides">' + periodesRapides().map(function (p) {
