@@ -22,8 +22,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--or);outline-offset:2px}
 
 main.wrap{padding-top:8px}
-/* Titre au-dessus des onglets (demande de Marcel du 18 octobre 2026), même style que la Mise en vedette. */
-.titre-espace{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:10px 0 16px}
+/* Libellé au-dessus des onglets (demande de Marcel du 18 octobre 2026) : simple libellé, pas un titre, en retrait
+   à gauche pour s'aligner sur le texte du premier onglet. */
+.libelle-espace{margin:6px 0 10px;padding-left:18px;font-size:1rem;font-weight:bold;color:var(--txt)}
 
 /* Cartes */
 .card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:26px}
@@ -269,7 +270,7 @@ textarea{min-height:96px;resize:vertical}
   </section>
 
   <section id="espace" hidden>
-    <h1 class="titre-espace">Espace Auteur</h1>
+    <p class="libelle-espace">Espace Auteur</p>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Auteurs">
       <button class="onglet" role="tab" id="onglet-ventes" aria-controls="panneau-ventes" aria-selected="true" tabindex="0">Ventes</button>
       <button class="onglet" role="tab" id="onglet-auteur" aria-controls="panneau-auteur" aria-selected="false" tabindex="-1">Auteur</button>
