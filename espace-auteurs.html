@@ -150,11 +150,11 @@ textarea{min-height:96px;resize:vertical}
    la même hauteur. Le titre et la couverture mènent à la page du livre (ou à la fiche d'un coffret). Les textes
    secondaires sont coupés au besoin (texte complet au survol) et les boutons restent en bas de la carte.
    La composante HTML Wix a une hauteur FIXE (Velo ne peut pas la changer) : chaque liste a une hauteur
-   maximale et défile à l'intérieur. La rangée coupée à moitié montre qu'il y a d'autres livres plus bas. */
+   maximale et défile à l'intérieur : au plus 2 rangées de cartes, pour les livres comme pour les coffrets
+   (demande de Marcel du 18 octobre 2026), puis la barre de défilement. */
 :root{--h-carte-livre:178px;--gap-livres:12px}
 .livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap-livres);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
-#liste-livres{max-height:calc(2.5 * var(--h-carte-livre) + 2 * var(--gap-livres))}
-#liste-coffrets{max-height:calc(1.5 * var(--h-carte-livre) + var(--gap-livres))}
+#liste-livres,#liste-coffrets{max-height:calc(2 * var(--h-carte-livre) + var(--gap-livres))}
 .livre{padding:12px;display:flex;gap:12px;height:var(--h-carte-livre);overflow:hidden}
 .livre{transition:box-shadow .4s,border-color .4s}
 .livre.retour{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,37,48,.35)}
