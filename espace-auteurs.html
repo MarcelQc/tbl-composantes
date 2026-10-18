@@ -153,7 +153,7 @@ textarea{min-height:96px;resize:vertical}
    maximale et défile à l'intérieur : au plus 2 rangées de cartes pour les livres et 1 rangée pour les coffrets
    (demandes de Marcel du 18 octobre 2026), puis la barre de défilement. */
 :root{--h-carte-livre:178px;--gap-livres:12px}
-.livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap-livres);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
+.livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:var(--gap-livres);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
 #liste-livres{max-height:calc(2 * var(--h-carte-livre) + var(--gap-livres))}
 #liste-coffrets{max-height:var(--h-carte-livre)}
 .livre{padding:12px;display:flex;gap:12px;height:var(--h-carte-livre);overflow:hidden}
@@ -196,13 +196,15 @@ textarea{min-height:96px;resize:vertical}
 .coffret .contenu-coffret{color:var(--muted);font-size:.76rem}
 
 /* Services */
-.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.service{display:flex;flex-direction:column;gap:10px;padding:20px}
-.service h3{margin:0}
+/* min(300px,100%) : sur un écran étroit, une carte n'est jamais plus large que la zone (sinon elle déborde à droite). */
+.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:12px}
+/* Boîtes compactes (demande de Marcel du 18 octobre 2026) : marges, espacements et textes réduits. */
+.service{display:flex;flex-direction:column;gap:6px;padding:14px 18px}
+.service h3{margin:0;font-size:1.02rem}
 .service .prix{color:var(--ok);font-weight:bold}
-.service .desc{color:var(--muted);font-size:.92rem;margin:0}
-.service .choix-livres{display:flex;flex-direction:column;gap:8px;margin-top:auto}
-.service .choix-livres select{width:100%;min-width:0}
+.service .desc{color:var(--muted);font-size:.86rem;line-height:1.4;margin:0}
+.service .choix-livres{display:flex;flex-direction:column;gap:8px;margin-top:auto;padding-top:4px}
+.service .choix-livres select{width:100%;min-width:0;padding:6px 10px;font-size:.88rem}
 .service .etiquette-admin{align-self:flex-start;border:1px solid #c792ff;color:#c792ff;border-radius:99px;padding:1px 10px;font-size:.78rem}
 
 /* Fenêtres (bientôt disponible, nouveau livre) */
@@ -240,6 +242,9 @@ textarea{min-height:96px;resize:vertical}
   .onglets{gap:6px}
   .onglet{padding:10px 11px;font-size:.9rem;gap:5px}
   .pastille-nb{padding:0 6px;min-width:18px;font-size:.75rem}
+  /* Téléphone : plus de largeur pour les cartes de livres, de coffrets et de services. */
+  .panneau{padding:12px}
+  .livre{padding:10px;gap:10px}
 }
 </style>
 </head>
@@ -1222,10 +1227,10 @@ var BIENTOT = {
   edd: ['Modifier le coffret', 'Vous pourrez modifier la description, les images et le prix de votre coffret, et l\'afficher ou le masquer sur les pages de vos livres. Les changements passent par la validation de l\'équipe TBL, comme pour la page d\'un livre.'],
   amazon: ['Publication sur Amazon', 'L\'équipe TBL convertira votre livre au format Amazon, créera sa fiche sur Amazon.ca avec votre synopsis, l\'aperçu du livre et une image du verso, puis ajoutera le bouton Amazon sur la page de votre livre (75 $). Le service s\'activera dans l\'éditeur de la page du livre.'],
   fbpub: ['Publication Facebook', 'Vous choisirez le nombre de publications (25 $ chacune), préparerez le texte et l\'image de chacune, puis l\'équipe TBL les publiera sur la page Facebook des Éditions TBL après validation. Vos cinq dernières images seront gardées pour les réutiliser.'],
-  fbimage: ['Conception d\'une image Facebook', 'L\'équipe TBL concevra une image publicitaire au format Facebook pour votre livre. Des exemples seront présentés dans la page du service. Le prix sera annoncé bientôt.'],
+  fbimage: ['Image Facebook', 'L\'équipe TBL concevra une image publicitaire au format Facebook pour votre livre. Des exemples seront présentés dans la page du service. Le prix sera annoncé bientôt.'],
   vedette: ['Mise en vedette', 'Vous réserverez une des quatre places de la vitrine, sur la page d\'accueil et dans le carrousel, pour la semaine de votre choix (25 $ par semaine), dans un calendrier qui montre les places libres.'],
   courriel: ['Courriel promotionnel', 'Un seul courriel promotionnel par semaine pour tout le site : l\'image de votre livre accompagnée d\'un texte, envoyé par les Éditions TBL (25 $). Vous réserverez votre semaine dans un calendrier.'],
-  couverture: ['Conception de couverture ou du verso', 'L\'équipe TBL concevra la couverture ou l\'image du verso (4e de couverture) de votre livre. Le contenu du service et son prix seront précisés bientôt.']
+  couverture: ['Image recto/verso', 'L\'équipe TBL concevra la couverture ou l\'image du verso (4e de couverture) de votre livre. Le contenu du service et son prix seront précisés bientôt.']
 };
 var dernierFocus = null;
 function ouvrirFenetre(id, focusId) {
@@ -1305,9 +1310,9 @@ var SERVICES = [
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
   { cle: 'coffret', nom: 'Forfait Coffret', prix: '50 $', desc: 'Un coffret de plusieurs de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 2 },
   { cle: 'fbpub', nom: 'Publication Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
-  { cle: 'fbimage', nom: 'Conception d\'une image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
+  { cle: 'fbimage', nom: 'Image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
-  { cle: 'couverture', nom: 'Conception de couverture ou du verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
+  { cle: 'couverture', nom: 'Image recto/verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
 ];
 // Livres proposés dans les services : ceux de l'auteur, ou tous pour un admin. Le coffret n'accepte que
 // les livres publiés de l'auteur connecté (même pour un admin).
