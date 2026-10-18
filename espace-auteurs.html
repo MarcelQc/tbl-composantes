@@ -31,6 +31,9 @@ main.wrap{padding-top:8px}
 .titre-espace{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:6px 0 8px}
 .entete .sub{margin:0}
 
+/* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
+.version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
+.barre-haut .version-tbl{margin:0 auto 0 0;align-self:center;text-align:left}
 /* Cartes */
 .card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:26px}
 /* Dans le panneau d'un onglet (déjà sur fond « papier »), les cartes sont un ton plus foncé. */
@@ -277,6 +280,7 @@ textarea{min-height:96px;resize:vertical}
   <section id="espace" hidden>
     <div class="entete">
       <div class="barre-haut">
+        <p class="version-tbl" id="version-tbl" hidden></p>
         <span class="actions-haut">
           <button class="btn sec" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
           <button class="btn sec" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
@@ -630,6 +634,24 @@ function surEspace(msg) {
   }
 }
 
+// ===== Version publiée =====
+// a386dd8 · 2026-10-18 08:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
+// en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
+var VERSION_TBL = 'a386dd8 · 2026-10-18 08:22';
+function texteVersion() {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
+}
+console.log('[espace-auteurs] ' + texteVersion());
+function afficherVersion(admin) {
+  var p = document.getElementById('version-tbl');
+  // Élément placé en haut de la page s'il existe (composante à hauteur fixe), sinon ajouté en bas.
+  if (!p) { p = document.createElement('p'); p.id = 'version-tbl'; p.className = 'version-tbl'; document.body.appendChild(p); }
+  p.textContent = texteVersion();
+  p.hidden = !admin;
+}
+
 /* ---------- Onglets ---------- */
 var ONGLETS = ['ventes', 'auteur', 'livres', 'services', 'documents'];
 function choisirOnglet(nom, focus) {
@@ -663,6 +685,7 @@ function rendreEspace() {
     accueil.textContent = 'Bienvenue, ' + (d.auteur.nom || 'cher auteur') + '. Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.';
   }
   document.title = (d.auteur.admin ? 'Espace Auteurs (Admin)' : 'Espace Auteurs') + ' | Éditions TBL';
+  afficherVersion(!!d.auteur.admin);
   etat.totaux = {};
   etat.ventesRecues = false;
   rendreProfil(d.auteur);

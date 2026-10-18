@@ -38,6 +38,9 @@ select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding
 .etat-page{margin-bottom:16px;font-size:1rem}
 /* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
 body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{display:none}
+/* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
+.version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
+.barre-haut .version-tbl{margin:0;align-self:center}
 .actions-haut{display:flex;gap:8px}
 /* Fenêtre Configuration (administrateur) : un réglage par ligne, comme dans l'Espace Auteurs. */
 .reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
@@ -161,6 +164,7 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
   <header class="entete">
     <div class="barre-haut">
       <button type="button" class="btn sec" id="b-retour">← Espace Auteurs</button>
+      <p class="version-tbl" id="version-tbl" hidden></p>
       <span class="actions-haut">
         <button type="button" class="btn sec" id="b-config" title="Réglages de la mise en vedette (administrateur)" hidden>⚙ Configuration</button>
         <button type="button" class="btn sec" id="b-defauts" hidden>Livres par défaut</button>
@@ -276,6 +280,24 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 </div>
 
 <script>
+// ===== Version publiée =====
+// a386dd8 · 2026-10-18 08:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
+// en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
+var VERSION_TBL = 'a386dd8 · 2026-10-18 08:22';
+function texteVersion() {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
+}
+console.log('[calendrier-vedettes] ' + texteVersion());
+function afficherVersion(admin) {
+  var p = document.getElementById('version-tbl');
+  // Élément placé en haut de la page s'il existe (composante à hauteur fixe), sinon ajouté en bas.
+  if (!p) { p = document.createElement('p'); p.id = 'version-tbl'; p.className = 'version-tbl'; document.body.appendChild(p); }
+  p.textContent = texteVersion();
+  p.hidden = !admin;
+}
+
 // ===== Calcul de la facture (mêmes règles que calculerFacture, livres-textes.js) =====
 var PRIX_SEMAINE = 2500; // cents
 var TAUX_FRAIS = 0.05, TAUX_TPS = 0.05, TAUX_TVQ = 0.09975;
@@ -593,6 +615,7 @@ function defautsAffiches() { return etat.brouillonDefauts || etat.defauts; }
 function rendreDefauts() {
   document.getElementById('b-defauts').hidden = !etat.admin;
   document.getElementById('b-config').hidden = !etat.admin;
+  afficherVersion(etat.admin);
   if (!etat.admin) { fermerDefauts(); fermerConfig(); return; }
   var defauts = defautsAffiches();
   var z = document.getElementById('defauts');

@@ -22,6 +22,8 @@ body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-heigh
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--edit);outline-offset:2px}
 
+/* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
+.version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
 /* Boutons de l'interface (pas ceux de la page du livre) */
 .btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--accent);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
 .btn:hover:not(:disabled){filter:brightness(1.12)}
@@ -510,6 +512,23 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <script>
+// ===== Version publiée =====
+// a386dd8 · 2026-10-18 08:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
+// en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
+var VERSION_TBL = 'a386dd8 · 2026-10-18 08:22';
+function texteVersion() {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
+}
+console.log('[modifier-livre] ' + texteVersion());
+function afficherVersion(admin) {
+  var p = document.getElementById('version-tbl');
+  if (!p) { p = document.createElement('p'); p.id = 'version-tbl'; p.className = 'version-tbl'; document.body.appendChild(p); }
+  p.textContent = texteVersion();
+  p.hidden = !admin;
+}
+
 /*MODULE-DEBUT*/
 // Textes riches des pages de livres (Ricos de Wix) : conversion vers un modèle de « blocs » simple, validation,
 // détection d'adresses web et taux de modification. Fonctions PURES : aucun accès à Wix, aucune donnée sensible.
@@ -1385,6 +1404,7 @@ function montrerEdition(d) {
   etat.nouveau = !!d.premiere || d.etat === 'nouveau';
   // En attente de validation : l'auteur est verrouillé, l'administrateur (Auteurs.admin) garde l'édition pour corriger, approuver ou refuser
   etat.admin = !!d.admin;
+  afficherVersion(etat.admin);
   etat.appr = d.etat === 'attente';
   etat.revue = etat.appr && etat.admin;
   etat.verrou = etat.appr && !etat.admin;
