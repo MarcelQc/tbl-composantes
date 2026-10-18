@@ -1373,7 +1373,7 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="rencontres">Rencontres</button>
     <button class="tab-btn" data-tab="taches">Tâches</button>
     <button class="tab-btn" data-tab="manuscrits">Manuscrits</button>
-    <button class="tab-btn" data-tab="ventes">Vente 2026</button>
+    <button class="tab-btn" data-tab="ventes">Ventes 2026</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
     <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
@@ -2799,7 +2799,7 @@ select:focus { outline: none; border-color: var(--accent); }
     await refreshManuscrits();
   }
 
-  /* ===================== Vente <année> ===================== */
+  /* ===================== Ventes <année> ===================== */
 
   // Copie du classeur <année>_Suivi_des_ventes_TBL.xlsx (skill dashboard-export-vente), en exemplaires :
   // le tableau « Statistiques globales » de son Dashboard, la somme de tous les livres par mois et
@@ -2869,7 +2869,7 @@ select:focus { outline: none; border-color: var(--accent); }
       .sort(function (a, b) { return a.ordre - b.ordre; })
       .map(function (l) { return { id: l.id, livre: l.livre, d: JSON.parse(l.donnees) }; });
     if (!ventesLivres.length) {
-      content.innerHTML = '<h1>Vente</h1><p class="empty">Aucune donnée. Lancez le skill dashboard-export-vente.</p>';
+      content.innerHTML = '<h1>Ventes</h1><p class="empty">Aucune donnée. Lancez le skill dashboard-export-vente.</p>';
       return;
     }
     var annee = info ? info.annee : '';
@@ -2880,7 +2880,7 @@ select:focus { outline: none; border-color: var(--accent); }
     }
 
     content.innerHTML =
-      '<h1>Vente ' + esc(annee) + '</h1>' +
+      '<h1>Ventes ' + esc(annee) + '</h1>' +
       '<p class="lede">Exemplaires vendus, tirés du classeur ' + esc(i.fichier || '') +
         (i.fichier_modifie ? ' (modifié le ' + esc(i.fichier_modifie) + ')' : '') +
         ' et mis à jour par le skill dashboard-export-vente.</p>' +
