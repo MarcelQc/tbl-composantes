@@ -1289,6 +1289,26 @@ select:focus { outline: none; border-color: var(--accent); }
 .ventes-choix { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .ventes-titre-livre { margin: 0 0 10px; font-size: 1rem; letter-spacing: 0.3px; }
 
+/* Ventes numériques : choix de la période et tableau des produits */
+.num-periode { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.num-rapides { display: flex; flex-wrap: wrap; gap: 8px; }
+.num-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-dim); font-size: 0.88rem; }
+.num-dates .btn { display: inline-flex; align-items: center; gap: 6px; }
+.num-indicateurs { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; margin-bottom: 16px; }
+.num-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.num-table th {
+  padding: 8px 10px;
+  background: var(--tbl-accent-soft);
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+.num-table th:last-child, .num-table td:last-child { text-align: right; width: 150px; }
+.num-table td { padding: 7px 10px; border: 1px solid var(--border-soft); }
+.num-table tr.num-zero td { color: var(--text-faint); }
+.num-table tr.num-total td { font-weight: 700; border-top: 2px solid var(--text-dim); background: var(--bg-elevated); }
+
 @media (max-width: 720px) {
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
@@ -1374,6 +1394,7 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="taches">Tâches</button>
     <button class="tab-btn" data-tab="manuscrits">Manuscrits</button>
     <button class="tab-btn" data-tab="ventes">Ventes 2026</button>
+    <button class="tab-btn" data-tab="ventes-numeriques">Ventes numériques</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
     <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
@@ -1592,7 +1613,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
   /* ===================== Navigation ===================== */
 
-  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'ventes', 'partner-id', 'publicite'];
+  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'ventes', 'ventes-numeriques', 'partner-id', 'publicite'];
 
   function currentTab() {
     var t = location.hash.slice(1);
@@ -1626,6 +1647,7 @@ select:focus { outline: none; border-color: var(--accent); }
       else if (tab === 'rencontres') await initRencontres();
       else if (tab === 'manuscrits') await initManuscrits();
       else if (tab === 'ventes') await initVentes();
+      else if (tab === 'ventes-numeriques') await initVentesNumeriques();
       else if (tab === 'partner-id') await initPartnerId();
       else if (tab === 'publicite') await initPublicite();
       else await initTaches();
@@ -2013,17 +2035,21 @@ select:focus { outline: none; border-color: var(--accent); }
     return annee + '-' + String(mois + 1).padStart(2, '0') + '-' + String(jour).padStart(2, '0');
   }
 
-  function ouvrirCalendrier(ancre, id, dateActuelle) {
-    var memeRencontre = calendrierEl && calendrierEl.dataset.id === id;
+  // ancre : bouton sous lequel la boîte s'ouvre ; cle : identifie la boîte (un 2e clic la referme) ;
+  // choisir(date) : enregistre la date choisie (null = « Date à déterminer ») et renvoie une promesse ;
+  // options.indeterminee : affiche le lien « Date à déterminer ».
+  function ouvrirCalendrier(ancre, cle, dateActuelle, choisir, options) {
+    options = options || {};
+    var memeBoite = calendrierEl && calendrierEl.dataset.id === cle;
     fermerCalendrier();
-    if (memeRencontre) return; // un deuxième clic sur l'icône referme la boîte
+    if (memeBoite) return; // un deuxième clic sur le même bouton referme la boîte
 
     var depart = (dateActuelle || todayIso()).split('-').map(Number);
     var annee = depart[0];
     var mois = depart[1] - 1;
     var el = document.createElement('div');
     el.className = 'calendrier-pop';
-    el.dataset.id = id;
+    el.dataset.id = cle;
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', 'Choisir la date de la rencontre');
     document.getElementById('content').appendChild(el);
@@ -2049,9 +2075,11 @@ select:focus { outline: none; border-color: var(--accent); }
         '</div>' +
         '<div class="calendrier-grille">' + cases + '</div>' +
         (message ? '<p class="calendrier-erreur">' + esc(message) + '</p>' : '') +
-        '<div class="calendrier-pied">' +
-          '<button type="button" class="calendrier-lien" data-action="indeterminee">Date à déterminer</button>' +
-        '</div>';
+        (options.indeterminee
+          ? '<div class="calendrier-pied">' +
+              '<button type="button" class="calendrier-lien" data-action="indeterminee">Date à déterminer</button>' +
+            '</div>'
+          : '');
     }
 
     function placer() {
@@ -2068,9 +2096,8 @@ select:focus { outline: none; border-color: var(--accent); }
     function enregistrer(date) {
       if (date === (dateActuelle || null)) { fermerCalendrier(); return; }
       el.classList.add('occupe');
-      appeler('setDateRencontre', id, date).then(function () {
+      Promise.resolve(choisir(date)).then(function () {
         fermerCalendrier();
-        refreshRencontresListe(id);
       }).catch(function (err) {
         el.classList.remove('occupe');
         dessiner(err.message);
@@ -2102,7 +2129,7 @@ select:focus { outline: none; border-color: var(--accent); }
   // Fermeture : clic ailleurs ou touche Échap. Au défilement ou au changement de taille, la boîte suit sa date.
   document.addEventListener('mousedown', function (e) {
     if (calendrierEl && !calendrierEl.contains(e.target) &&
-        !e.target.closest('.rencontre-date-btn, .modifier-date-btn')) fermerCalendrier();
+        !e.target.closest('.rencontre-date-btn, .modifier-date-btn, .calendrier-declencheur')) fermerCalendrier();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerCalendrier(); });
   function replacerCalendrier() { if (calendrierEl) calendrierEl.placer(); }
@@ -2207,7 +2234,12 @@ select:focus { outline: none; border-color: var(--accent); }
     liste.addEventListener('click', function (e) {
       var btnDate = e.target.closest('.rencontre-date-btn, .modifier-date-btn');
       if (btnDate) {
-        ouvrirCalendrier(btnDate, btnDate.dataset.id, btnDate.dataset.date || null);
+        var idRencontre = btnDate.dataset.id;
+        ouvrirCalendrier(btnDate, idRencontre, btnDate.dataset.date || null, function (date) {
+          return appeler('setDateRencontre', idRencontre, date).then(function () {
+            refreshRencontresListe(idRencontre);
+          });
+        }, { indeterminee: true });
         return;
       }
       var header = e.target.closest('.rencontre-header');
@@ -2928,6 +2960,121 @@ select:focus { outline: none; border-color: var(--accent); }
       dessinerLivreVentes(annee);
     });
     dessinerLivreVentes(annee);
+  }
+
+  /* ===================== Ventes numériques ===================== */
+
+  // Les produits visibles de la boutique et les unités vendues pendant la période choisie
+  // (commandes approuvées et payées, dates en heure de Montréal). Les produits masqués sont ignorés.
+  var periodeNum = null;
+
+  function isoDecale(iso, jours) {
+    var p = iso.split('-').map(Number);
+    var d = new Date(Date.UTC(p[0], p[1] - 1, p[2] + jours));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function periodesRapides() {
+    var auj = todayIso();
+    var p = auj.split('-').map(Number);
+    var debutMois = auj.slice(0, 8) + '01';
+    var moisPrecedentFin = isoDecale(debutMois, -1);
+    return [
+      { cle: 'aujourdhui', libelle: 'Aujourd\'hui', debut: auj, fin: auj },
+      { cle: 'hier', libelle: 'Hier', debut: isoDecale(auj, -1), fin: isoDecale(auj, -1) },
+      { cle: '7j', libelle: '7 derniers jours', debut: isoDecale(auj, -6), fin: auj },
+      { cle: 'mois', libelle: 'Ce mois-ci', debut: debutMois, fin: auj },
+      { cle: 'mois-precedent', libelle: 'Mois dernier', debut: moisPrecedentFin.slice(0, 8) + '01', fin: moisPrecedentFin },
+      { cle: 'annee', libelle: 'Cette année', debut: p[0] + '-01-01', fin: auj },
+    ];
+  }
+
+  function libelleDate(iso) {
+    return iso ? formatDateLongue(iso) : '…';
+  }
+
+  async function chargerVentesNumeriques() {
+    var zone = document.getElementById('num-resultats');
+    if (!zone) return;
+    document.querySelectorAll('.num-rapide').forEach(function (b) {
+      b.classList.toggle('btn-primary', b.dataset.debut === periodeNum.debut && b.dataset.fin === periodeNum.fin);
+    });
+    document.getElementById('num-debut').textContent = libelleDate(periodeNum.debut);
+    document.getElementById('num-fin').textContent = libelleDate(periodeNum.fin);
+    zone.innerHTML = '<p class="empty">Chargement des ventes…</p>';
+    var r;
+    try {
+      r = await appeler('getVentesNumeriques', periodeNum.debut, periodeNum.fin);
+    } catch (err) {
+      zone.innerHTML = '<p class="empty">Impossible de lire les ventes : ' + esc(err.message) + '</p>';
+      return;
+    }
+    if (document.getElementById('num-resultats') !== zone) return; // onglet quitté entre-temps
+    var produits = r.produits;
+    var total = produits.reduce(function (a, p) { return a + p.quantite; }, 0);
+    var avecVentes = produits.filter(function (p) { return p.quantite > 0; }).length;
+    zone.innerHTML =
+      '<div class="ventes-indicateurs num-indicateurs">' +
+        '<div class="indicateur-carte"><div class="indicateur-valeur">' + esc(total.toLocaleString('fr-CA')) + '</div>' +
+          '<div class="indicateur-label">Unités vendues</div></div>' +
+        '<div class="indicateur-carte"><div class="indicateur-valeur">' + esc(avecVentes) + ' / ' + esc(produits.length) + '</div>' +
+          '<div class="indicateur-label">Produits vendus pendant la période</div></div>' +
+      '</div>' +
+      '<div class="table-defilante"><table class="num-table"><thead><tr><th>Produit</th><th>Unités vendues</th></tr></thead><tbody>' +
+        produits.map(function (p) {
+          return '<tr' + (p.quantite ? '' : ' class="num-zero"') + '><td>' + esc(p.nom) + '</td>' +
+            '<td>' + esc(p.quantite.toLocaleString('fr-CA')) + '</td></tr>';
+        }).join('') +
+        '<tr class="num-total"><td>TOTAL</td><td>' + esc(total.toLocaleString('fr-CA')) + '</td></tr>' +
+      '</tbody></table></div>' +
+      (r.sansProduit
+        ? '<p class="ventes-note">' + esc(r.sansProduit) + ' unité(s) vendue(s) pendant la période ne sont rattachées à aucun produit ' +
+            '(article personnalisé) et ne sont pas comptées ci-dessus.</p>'
+        : '');
+  }
+
+  async function initVentesNumeriques() {
+    var content = document.getElementById('content');
+    if (!periodeNum) {
+      var mois = periodesRapides().find(function (p) { return p.cle === 'mois'; });
+      periodeNum = { debut: mois.debut, fin: mois.fin };
+    }
+    content.innerHTML =
+      '<h1>Ventes numériques</h1>' +
+      '<p class="lede">Les produits visibles de la boutique et les unités vendues pendant la période choisie ' +
+        '(commandes approuvées et payées, heure de Montréal).</p>' +
+      '<div class="panel">' +
+        '<div class="num-periode">' +
+          '<div class="num-rapides">' + periodesRapides().map(function (p) {
+            return '<button type="button" class="btn btn-sm num-rapide" data-debut="' + p.debut + '" data-fin="' + p.fin + '">' + esc(p.libelle) + '</button>';
+          }).join('') + '</div>' +
+          '<div class="num-dates">' +
+            '<span>Du</span><button type="button" class="btn btn-sm calendrier-declencheur" id="num-btn-debut">' + ICONE_CALENDRIER + ' <span id="num-debut"></span></button>' +
+            '<span>au</span><button type="button" class="btn btn-sm calendrier-declencheur" id="num-btn-fin">' + ICONE_CALENDRIER + ' <span id="num-fin"></span></button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="num-resultats"></div>' +
+      '</div>';
+
+    content.querySelector('.num-rapides').addEventListener('click', function (e) {
+      var b = e.target.closest('.num-rapide');
+      if (!b) return;
+      periodeNum = { debut: b.dataset.debut, fin: b.dataset.fin };
+      chargerVentesNumeriques();
+    });
+    function choisirBorne(btn, borne) {
+      ouvrirCalendrier(btn, 'num-' + borne, periodeNum[borne], function (date) {
+        periodeNum[borne] = date;
+        // Une période inversée est remise dans l'ordre.
+        if (periodeNum.debut > periodeNum.fin) {
+          var t = periodeNum.debut; periodeNum.debut = periodeNum.fin; periodeNum.fin = t;
+        }
+        chargerVentesNumeriques();
+      });
+    }
+    document.getElementById('num-btn-debut').addEventListener('click', function (e) { choisirBorne(e.currentTarget, 'debut'); });
+    document.getElementById('num-btn-fin').addEventListener('click', function (e) { choisirBorne(e.currentTarget, 'fin'); });
+    await chargerVentesNumeriques();
   }
 
   /* ===================== PartnerID ===================== */
