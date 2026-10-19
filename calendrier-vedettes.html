@@ -34,14 +34,16 @@ p{margin:0}
 select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%}
 
 .entete{margin-bottom:16px}
-.barre-haut{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+/* En-tête : ligne 1 la version seule (administrateurs), ligne 2 les boutons, libellés toujours sur une ligne */
+.barre-haut{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-bottom:8px}
+.barre-haut .btn{white-space:nowrap}
+.entete>.version-tbl{margin:0 0 8px;text-align:left}
 .etat-page{margin-bottom:16px;font-size:1rem}
 /* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
 body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{display:none}
 /* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
 .version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
-.barre-haut .version-tbl{margin:0;align-self:center}
-.actions-haut{display:flex;gap:8px}
+.actions-haut{display:flex;flex-wrap:wrap;gap:8px}
 /* Fenêtre Configuration (administrateur) : un réglage par ligne, comme dans l'Espace Auteurs. */
 .reglage{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
 .reglage:first-child{border-top:0}
@@ -164,9 +166,9 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 
   <div class="bloc">
   <header class="entete">
+    <p class="version-tbl" id="version-tbl" hidden></p>
     <div class="barre-haut">
       <button type="button" class="btn sec" id="b-retour">← Espace Auteurs</button>
-      <p class="version-tbl" id="version-tbl" hidden></p>
       <span class="actions-haut">
         <button type="button" class="btn sec" id="b-config" title="Réglages de la mise en vedette (administrateur)" hidden>⚙ Configuration</button>
         <button type="button" class="btn sec" id="b-defauts" hidden>Livres par défaut</button>
@@ -303,10 +305,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 
 <script>
 // ===== Version publiée =====
-// 590cf32 · 2026-10-19 10:24 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 7e638ef · 2026-10-19 10:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '590cf32 · 2026-10-19 10:24';
+var VERSION_TBL = '7e638ef · 2026-10-19 10:40';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
