@@ -52,6 +52,8 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 .reglage label{font-weight:bold;cursor:pointer}
 .reglage .aide{color:var(--muted);font-size:.85rem;margin-top:4px}
 /* Fenêtre surgissante, placée en haut : la composante est haute, le centre de l'iframe serait hors de vue. */
+.saisie-commentaire{width:100%;min-height:140px;margin-top:6px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:inherit;color:inherit;resize:vertical}
+.saisie-commentaire:focus{outline:none;border-color:var(--red)}
 .fond-fenetre{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:flex;justify-content:center;align-items:flex-start;padding:70px 14px 14px;overflow:auto}
 .fenetre{width:min(760px,100%)}
 .fenetre.petite{width:min(460px,100%)}
@@ -168,6 +170,7 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
       <span class="actions-haut">
         <button type="button" class="btn sec" id="b-config" title="Réglages de la mise en vedette (administrateur)" hidden>⚙ Configuration</button>
         <button type="button" class="btn sec" id="b-defauts" hidden>Livres par défaut</button>
+        <button type="button" class="btn sec" id="b-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
         <button type="button" class="btn sec" id="b-actualiser">↻ Actualiser</button>
       </span>
     </div>
@@ -267,6 +270,25 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
   </section>
   </div>
 
+  <!-- Commentaire de l'auteur à l'équipe TBL (collection Commentaires, backend/commentaires.web.js) -->
+  <div class="fond-fenetre" id="fenetre-commentaire" hidden>
+  <section class="card fenetre petite" role="dialog" aria-modal="true" aria-labelledby="titre-commentaire">
+    <div class="tete-fenetre">
+      <h2 id="titre-commentaire">Envoyer un commentaire</h2>
+      <button type="button" class="fermer" id="b-fermer-commentaire" aria-label="Annuler">×</button>
+    </div>
+    <p class="note">Une question, une suggestion ou un problème ? Écrivez-nous ici : votre commentaire est transmis à l'équipe des Éditions TBL.</p>
+    <label for="champ-commentaire" class="note" style="display:block;margin-top:12px">Votre commentaire</label>
+    <textarea id="champ-commentaire" class="saisie-commentaire" maxlength="2000"></textarea>
+    <p class="note" id="compteur-commentaire" style="text-align:right;margin-top:4px">0 / 2000</p>
+    <p class="message" id="statut-commentaire" role="status" aria-live="polite" hidden></p>
+    <div class="boutons-fenetre">
+      <button type="button" class="btn sec" id="b-annuler-commentaire">Annuler</button>
+      <button type="button" class="btn" id="b-envoyer-commentaire">Envoyer</button>
+    </div>
+  </section>
+  </div>
+
   <!-- Avis (ex. limite de semaines par demande) : une fenêtre avec le bouton Fermer. -->
   <div class="fond-fenetre" id="fenetre-avis" hidden>
   <section class="card fenetre petite" role="alertdialog" aria-modal="true" aria-labelledby="titre-avis" aria-describedby="texte-avis">
@@ -281,10 +303,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 
 <script>
 // ===== Version publiée =====
-// 3ae1afb · 2026-10-19 09:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 590cf32 · 2026-10-19 10:24 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '3ae1afb · 2026-10-19 09:37';
+var VERSION_TBL = '590cf32 · 2026-10-19 10:24';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1013,8 +1035,69 @@ window.addEventListener('message', function (e) {
     surConfig(m, false);
   } else if (m.type === 'tbl-vedette:configEnregistree') {
     surConfig(m, true);
+  } else if (m.type === 'tbl-vedette:commentaireEnvoye') {
+    surCommentaire(m);
   }
 });
+
+// ===== Commentaire (bouton de l'en-tête) =====
+// L'auteur écrit un commentaire à l'équipe TBL ; le serveur l'enregistre dans la collection Commentaires, avec le
+// livre choisi dans la liste s'il y en a un.
+var focusAvantCommentaire = null, minuterieCommentaire = null;
+function statutCommentaire(texte, classe) {
+  var p = document.getElementById('statut-commentaire');
+  p.hidden = !texte; p.textContent = texte || ''; p.className = 'message' + (classe ? ' ' + classe : '');
+}
+function majCompteurCommentaire() {
+  document.getElementById('compteur-commentaire').textContent = document.getElementById('champ-commentaire').value.length + ' / 2000';
+}
+function ouvrirCommentaire() {
+  focusAvantCommentaire = document.activeElement;
+  document.getElementById('champ-commentaire').value = '';
+  majCompteurCommentaire();
+  statutCommentaire('', '');
+  document.getElementById('b-envoyer-commentaire').disabled = false;
+  document.getElementById('fenetre-commentaire').hidden = false;
+  document.getElementById('champ-commentaire').focus();
+}
+function fermerCommentaire() {
+  var f = document.getElementById('fenetre-commentaire');
+  if (f.hidden) { return; }
+  f.hidden = true;
+  clearTimeout(minuterieCommentaire);
+  if (focusAvantCommentaire && focusAvantCommentaire.focus) { focusAvantCommentaire.focus(); }
+}
+function envoyerCommentaire() {
+  var texte = document.getElementById('champ-commentaire').value.trim();
+  if (!texte) { statutCommentaire('Écrivez votre commentaire avant de l’envoyer.', 'mal'); document.getElementById('champ-commentaire').focus(); return; }
+  document.getElementById('b-envoyer-commentaire').disabled = true;
+  statutCommentaire('Envoi…', '');
+  envoyer('tbl-vedette:commentaire', { commentaire: texte, livreId: etat.livreChoisi || null });
+  clearTimeout(minuterieCommentaire);
+  minuterieCommentaire = setTimeout(function () {
+    surCommentaire({ ok: false, message: 'Pas de réponse du serveur. Vérifiez votre connexion et réessayez.' });
+  }, 10000);
+}
+function surCommentaire(m) {
+  clearTimeout(minuterieCommentaire);
+  if (document.getElementById('fenetre-commentaire').hidden) { return; }
+  if (m.ok) {
+    document.getElementById('champ-commentaire').value = '';
+    majCompteurCommentaire();
+    statutCommentaire(m.message || 'Merci ! Votre commentaire a été envoyé.', 'ok');
+    setTimeout(fermerCommentaire, 2500);
+    return;
+  }
+  document.getElementById('b-envoyer-commentaire').disabled = false;
+  statutCommentaire(m.message || 'Votre commentaire n’a pas pu être envoyé. Réessayez dans un instant.', 'mal');
+}
+document.getElementById('b-commentaire').addEventListener('click', ouvrirCommentaire);
+document.getElementById('champ-commentaire').addEventListener('input', majCompteurCommentaire);
+document.getElementById('b-annuler-commentaire').addEventListener('click', fermerCommentaire);
+document.getElementById('b-fermer-commentaire').addEventListener('click', fermerCommentaire);
+document.getElementById('b-envoyer-commentaire').addEventListener('click', envoyerCommentaire);
+document.getElementById('fenetre-commentaire').addEventListener('click', function (e) { if (e.target === this) { fermerCommentaire(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerCommentaire(); } });
 
 // Message en haut de la page tant que le calendrier n'est pas affiché (chargement, accès refusé, erreur).
 var ETATS_PAGE = {

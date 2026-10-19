@@ -283,6 +283,7 @@ textarea{min-height:96px;resize:vertical}
         <p class="version-tbl" id="version-tbl" hidden></p>
         <span class="actions-haut">
           <button class="btn sec" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
+          <button class="btn sec" type="button" id="btn-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
           <button class="btn sec" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
         </span>
       </div>
@@ -483,6 +484,24 @@ textarea{min-height:96px;resize:vertical}
     </div>
   </div>
 
+  <!-- Commentaire de l'auteur à l'équipe TBL (collection Commentaires, backend/commentaires.web.js) -->
+  <div class="fond-fenetre" id="fenetre-commentaire" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-commentaire">
+      <h2 id="titre-commentaire">Envoyer un commentaire</h2>
+      <p class="sub">Une question, une suggestion ou un problème ? Écrivez-nous ici : votre commentaire est transmis à l'équipe des Éditions TBL.</p>
+      <div class="champ">
+        <label for="champ-commentaire">Votre commentaire</label>
+        <textarea id="champ-commentaire" maxlength="2000"></textarea>
+        <div class="aide" id="compteur-commentaire">0 / 2000</div>
+      </div>
+      <p class="statut" id="statut-commentaire" role="status" aria-live="polite"></p>
+      <div class="boutons">
+        <button class="btn sec" type="button" id="btn-annuler-commentaire">Annuler</button>
+        <button class="btn" type="button" id="btn-envoyer-commentaire">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Configuration du site (administrateur) : drapeaux de la collection Config. -->
   <div class="fond-fenetre" id="fenetre-config" hidden>
     <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-config">
@@ -570,6 +589,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatChoixNouveauLivre') { surChoixNouveauLivre(msg); }
   else if (msg.type === 'resultatNouveauLivre') { surResultatNouveauLivre(msg); }
   else if (msg.type === 'resultatConfig' || msg.type === 'resultatEnregistrerConfig') { surConfig(msg); }
+  else if (msg.type === 'resultatCommentaire') { surCommentaire(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -635,10 +655,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 3ae1afb · 2026-10-19 09:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 590cf32 · 2026-10-19 10:24 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '3ae1afb · 2026-10-19 09:37';
+var VERSION_TBL = '590cf32 · 2026-10-19 10:24';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1318,8 +1338,9 @@ document.addEventListener('keydown', function (e) {
   else if (!$('fenetre-bientot').hidden) { fermerFenetre('fenetre-bientot'); }
   else if (!$('fenetre-nouveau').hidden) { fermerFenetre('fenetre-nouveau'); }
   else if (!$('fenetre-config').hidden) { fermerFenetre('fenetre-config'); }
+  else if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); }
 });
-['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau', 'fenetre-config'].forEach(function (id) {
+['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau', 'fenetre-config', 'fenetre-commentaire'].forEach(function (id) {
   $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
 });
 
@@ -1515,6 +1536,58 @@ function enregistrerConfig() {
   $('statut-config').textContent = 'Enregistrement…';
   envoyer({ type: 'enregistrerConfig', reglages: reglages });
 }
+/* ---------- Commentaire (bouton de l'en-tête) ---------- */
+// L'auteur écrit un commentaire à l'équipe TBL ; le serveur l'enregistre dans la collection Commentaires.
+var minuterieCommentaire = null;
+function majCompteurCommentaire() {
+  $('compteur-commentaire').textContent = $('champ-commentaire').value.length + ' / 2000';
+}
+function ouvrirCommentaire() {
+  $('champ-commentaire').value = '';
+  majCompteurCommentaire();
+  $('statut-commentaire').className = 'statut';
+  $('statut-commentaire').textContent = '';
+  $('btn-envoyer-commentaire').disabled = false;
+  ouvrirFenetre('fenetre-commentaire', 'champ-commentaire');
+}
+function envoyerCommentaire() {
+  var texte = $('champ-commentaire').value.trim();
+  if (!texte) {
+    $('statut-commentaire').className = 'statut err';
+    $('statut-commentaire').textContent = 'Écrivez votre commentaire avant de l’envoyer.';
+    $('champ-commentaire').focus();
+    return;
+  }
+  $('btn-envoyer-commentaire').disabled = true;
+  $('statut-commentaire').className = 'statut';
+  $('statut-commentaire').textContent = 'Envoi…';
+  envoyer({ type: 'commentaire', commentaire: texte });
+  clearTimeout(minuterieCommentaire);
+  minuterieCommentaire = setTimeout(function () {
+    surCommentaire({ ok: false, message: 'Pas de réponse du serveur. Vérifiez votre connexion et réessayez.' });
+  }, DELAI_REPONSE_MS);
+}
+function surCommentaire(msg) {
+  clearTimeout(minuterieCommentaire);
+  if ($('fenetre-commentaire').hidden) { return; }
+  $('btn-envoyer-commentaire').disabled = false;
+  if (msg.ok) {
+    $('champ-commentaire').value = '';
+    majCompteurCommentaire();
+    $('btn-envoyer-commentaire').disabled = true;
+    $('statut-commentaire').className = 'statut ok';
+    $('statut-commentaire').textContent = msg.message || 'Merci ! Votre commentaire a été envoyé.';
+    setTimeout(function () { if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); } }, 2500);
+    return;
+  }
+  $('statut-commentaire').className = 'statut err';
+  $('statut-commentaire').textContent = msg.message || 'Votre commentaire n’a pas pu être envoyé. Réessayez dans un instant.';
+}
+$('btn-commentaire').addEventListener('click', ouvrirCommentaire);
+$('champ-commentaire').addEventListener('input', majCompteurCommentaire);
+$('btn-annuler-commentaire').addEventListener('click', function () { fermerFenetre('fenetre-commentaire'); });
+$('btn-envoyer-commentaire').addEventListener('click', envoyerCommentaire);
+
 $('btn-config').addEventListener('click', ouvrirConfig);
 $('btn-annuler-config').addEventListener('click', function () { fermerFenetre('fenetre-config'); });
 $('btn-enregistrer-config').addEventListener('click', enregistrerConfig);

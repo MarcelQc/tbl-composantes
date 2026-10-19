@@ -392,6 +392,7 @@ body.v-rapport{background:#fff;color:#111}
         <button type="button" class="btn sec" id="t-ap-ord" title="Voir la page telle qu’elle paraîtra sur un ordinateur">Aperçu ordinateur</button>
         <button type="button" class="btn sec" id="t-ap-mob" title="Voir la page telle qu’elle paraîtra sur un téléphone">Aperçu mobile</button>
         <button type="button" class="btn sec" id="t-rapport" title="Comparer la page publiée et vos modifications, texte par texte">Rapport Avant / Après</button>
+        <button type="button" class="btn sec" id="b-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
         <button type="button" class="btn sec" id="b-actualiser" title="Recharger la page du livre depuis le serveur">↻ Actualiser</button>
       </span>
     </div>
@@ -552,10 +553,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 3ae1afb · 2026-10-19 09:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 590cf32 · 2026-10-19 10:24 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '3ae1afb · 2026-10-19 09:37';
+var VERSION_TBL = '590cf32 · 2026-10-19 10:24';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -2342,6 +2343,39 @@ async function valider() {
   await demarrer();
 }
 // Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
+// Bouton « Commentaire » (en-tête) : l'auteur écrit un commentaire à l'équipe TBL, enregistré dans la collection
+// Commentaires avec le livre ouvert (backend/commentaires.web.js).
+var COMMENTAIRE_MAX = 2000;
+async function ecrireCommentaire() {
+  var corps = document.createElement('div');
+  var intro = document.createElement('p');
+  intro.textContent = 'Une question, une suggestion ou un problème ? Écrivez-nous ici : votre commentaire est transmis à l’équipe des Éditions TBL avec le titre de ce livre.';
+  corps.appendChild(intro);
+  var zone = document.createElement('textarea');
+  zone.className = 'motif-saisie';
+  zone.maxLength = COMMENTAIRE_MAX;
+  zone.setAttribute('aria-label', 'Votre commentaire');
+  zone.placeholder = 'Votre commentaire';
+  corps.appendChild(zone);
+  var cpt = document.createElement('div');
+  cpt.className = 'motif-compteur';
+  function majCompteur() { cpt.textContent = zone.value.length + ' / ' + COMMENTAIRE_MAX; }
+  zone.addEventListener('input', majCompteur);
+  majCompteur();
+  corps.appendChild(cpt);
+  var res = null;
+  var attente = modale({
+    titre: 'Envoyer un commentaire', corps: corps,
+    boutons: [{ id: 'ok', libelle: 'Envoyer', principal: true, action: async function () {
+      var texte = zone.value.trim();
+      if (texte === '') { zone.focus(); throw new Error('Écrivez votre commentaire avant de l’envoyer.'); }
+      res = await appeler('commentaire', { livreId: LIVRE_ID, commentaire: texte });
+      if (!res || !res.ok) { throw new Error((res && res.message) || 'Votre commentaire n’a pas pu être envoyé.'); }
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  zone.focus();
+  if ((await attente) === 'ok') { toast(res.message || 'Merci ! Votre commentaire a été envoyé.', 'ok'); }
+}
 async function refuser() {
   if (!etat.revue) { return; }
   if (etat.dirty) { toast('Enregistrez vos modifications avant de refuser.', 'mal'); return; }
@@ -2511,6 +2545,7 @@ function brancherEdition() {
   }
   $('b-actualiser').addEventListener('click', actualiserTout);
   $('b-detail').addEventListener('click', voirDetail);
+  $('b-commentaire').addEventListener('click', ecrireCommentaire);
   $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
   $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
