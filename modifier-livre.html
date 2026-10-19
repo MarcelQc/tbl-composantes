@@ -59,6 +59,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 #haut{padding:18px 0 4px}
 .entete{margin-bottom:12px}
 .barre-haut{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+/* Version publiée en haut, à côté du bouton de retour, comme dans l'Espace Auteurs */
+.barre-haut .version-tbl{margin:0 auto 0 0;align-self:center;text-align:left}
 .actions-haut{display:flex;flex-wrap:wrap;gap:8px}
 .barre-haut .btn,#outils .btn{padding:8px 14px;font-size:.9rem}
 .sur-titre{margin:6px 0 0;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -380,6 +382,7 @@ body.v-rapport{background:#fff;color:#111}
   <header id="haut"><div class="wrap"><div class="bloc entete">
     <div class="barre-haut">
       <button type="button" class="btn sec" id="b-retour" title="Revenir à l’onglet Livres de l’Espace Auteurs, sur ce livre">← Espace Auteurs</button>
+      <p class="version-tbl" id="version-tbl" hidden></p>
       <span class="actions-haut">
         <button type="button" class="btn sec" id="t-ap-ord" title="Voir la page telle qu’elle paraîtra sur un ordinateur">Aperçu ordinateur</button>
         <button type="button" class="btn sec" id="t-ap-mob" title="Voir la page telle qu’elle paraîtra sur un téléphone">Aperçu mobile</button>
@@ -543,10 +546,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// e1117ec · 2026-10-19 08:20 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 256dc62 · 2026-10-19 08:29 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'e1117ec · 2026-10-19 08:20';
+var VERSION_TBL = '256dc62 · 2026-10-19 08:29';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
