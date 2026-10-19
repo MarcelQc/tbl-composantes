@@ -635,10 +635,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// b38ab6f · 2026-10-19 07:41 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 65fbf92 · 2026-10-19 08:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'b38ab6f · 2026-10-19 07:41';
+var VERSION_TBL = '65fbf92 · 2026-10-19 08:03';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;

@@ -80,16 +80,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .taux-global{display:flex;align-items:center;gap:10px}
 .taux-global .lib{font-size:.82rem;color:var(--muted)}
 .taux-global strong{font-size:1.3rem;min-width:4.4ch;line-height:1}
-.barre{width:120px;height:9px;border-radius:99px;background:#20232a;overflow:hidden}
-.barre i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}
-.pills{display:flex;flex-wrap:wrap;gap:6px}
-.pill{border:1px solid var(--line);background:var(--card2);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted);cursor:pointer}
-.pill:hover{border-color:var(--accent);color:var(--txt)}
-.pill b{color:var(--txt)}
-.pill.chg{border-color:var(--gold)}
-/* Récapitulatif des services à prix fixe (livre au statut Nouveau) */
+/* Récapitulatif des montants : composantes payantes (cliquables), frais de service, taxes et total */
 .recap{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.recap .lig{border:1px solid var(--line);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted)}
+.recap .lig{border:1px solid var(--line);background:var(--card2);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted)}
+.recap button.lig{font-family:inherit;cursor:pointer;border-color:var(--gold)}
+.recap button.lig:hover{border-color:var(--accent);color:var(--txt)}
 .recap .lig b{color:var(--txt);font-weight:600;margin-left:4px}
 .recap .lig.total{border-color:var(--gold);color:var(--txt)}
 .recap .lig.total b{color:var(--gold)}
@@ -116,7 +111,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .legende .aj{color:var(--gold);font-weight:bold}
 .legende .re{color:var(--red);text-decoration:line-through;font-weight:bold}
 @media (max-width:720px){
-  .barre{width:80px}
   .rang-outils{gap:6px 10px}
   .rang-outils .ecart{display:none}
   .rang-outils .actions{width:100%}
@@ -138,12 +132,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fond-hero{background:#000 center bottom/cover no-repeat}
 .grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:start;padding:30px 0 34px}
 .couv img{width:100%;max-width:330px;display:block;margin:0 auto}
-.hero-carte{border:1px solid #fff;border-radius:30px;padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:rgba(0,0,0,.88)}
+/* Boîtes de la page : fond gris des cartes des gabarits, sans contour (demande de Marcel du 19 octobre 2026) */
+.hero-carte{border:0;border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:var(--card)}
 .hero-titre{font:500 30px/1.2 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:0 0 14px;letter-spacing:.02em}
 .prix{margin-top:auto;padding-top:18px;text-align:center;font:700 24px Georgia,'Times New Roman',serif;color:#F28901}
-.pill-cmd{margin-top:22px;border:1px solid #fff;border-radius:22px;background:#480000;color:#fff;text-align:center;padding:10px 14px;letter-spacing:.22em;font-size:14px;display:flex;justify-content:center;align-items:center;gap:14px}
-.pill-cmd i{width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88}
-.carte-epub{border:1px solid #fff;border-radius:30px;margin:26px auto 4px;padding:14px 20px 18px;display:flex;justify-content:center;gap:70px;text-align:center;font-size:12px;line-height:1.4;width:92%}
+/* Boutons de la page (Commande numérique, Contacter l'auteur, Demande d'extrait) : bouton principal des gabarits (.btn) */
+.btn-page{display:block;width:max-content;max-width:100%;margin:22px auto 0}
+/* L'icône ePUB du site a un fond noir : « lighten » le fond dans le gris de la carte */
+.carte-epub img.ico{mix-blend-mode:lighten}
+.carte-epub{border:0;background:var(--card);border-radius:var(--tbl-radius);margin:26px auto 4px;padding:14px 20px 18px;display:flex;justify-content:center;gap:70px;text-align:center;font-size:12px;line-height:1.4;width:92%}
 .col-epub{width:250px;display:flex;flex-direction:column;align-items:center}
 .col-epub h3{font:700 15px Georgia,'Times New Roman',serif;margin:0 0 6px}
 .col-epub img.ico{height:98px;width:auto;margin:2px 0 6px}
@@ -160,15 +157,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .carte-epub-seul .texte-epub ul{margin:4px 0 0;padding-left:18px;text-align:left}
 .carte-epub-seul .achat{width:212px}
 .titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto}
-.carte{border:1px solid #C7C7C7;border-radius:30px;padding:18px 18px;margin:0 auto 4px}
+.carte{border:0;background:var(--card);border-radius:var(--tbl-radius);padding:18px 18px;margin:0 auto 4px}
 .carte-auteur{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;padding:26px 30px}
 .portrait{width:210px;border:6px solid #C7C7C7;display:block;height:auto}
 .col-photo{width:210px}
 .col-photo .controle-image{max-width:210px;padding:8px}
 .col-photo .controle-image .mini.gros{padding:6px 10px;font-size:12px}
 .col-note{display:flex;flex-direction:column;min-height:260px}
-.bouton-contour{align-self:flex-start;border:1px solid #fff;background:transparent;color:#fff;padding:9px 12px;margin-top:auto;font-size:15px;font-family:Arial,sans-serif}
-.controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:rgba(17,19,23,.92);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:10px 12px;text-align:center;font:12px var(--tbl-font-body);color:var(--muted)}
+.controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:var(--card);border:0;border-radius:var(--tbl-radius);padding:10px 12px;text-align:center;font:12px var(--tbl-font-body);color:var(--muted)}
 .controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .controle-image .etat-img{color:var(--gold);font-weight:bold}
 .controle-image .err-img{color:var(--rouge-texte);font-weight:bold}
@@ -181,7 +177,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .image-vide strong{font-size:14px}
 .couv .image-vide{width:100%;max-width:330px;aspect-ratio:2/3}
 .col-photo .image-vide{width:210px;max-width:100%;aspect-ratio:400/454}
-.controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:1px solid var(--line);border-radius:var(--tbl-radius);background:var(--card2);font:13px var(--tbl-font-body);color:var(--txt);max-width:640px}
+.controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:0;border-radius:var(--tbl-radius);background:var(--card);font:13px var(--tbl-font-body);color:var(--txt);max-width:640px}
 .controle-auteur .info-l{color:var(--muted);font-size:12px}
 .interrupteur{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:bold}
 .interrupteur input{position:absolute;opacity:0;width:1px;height:1px}
@@ -196,19 +192,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 .v-edition [data-section].masque .titre-img,.v-edition [data-section].masque .carte{display:none}
 .v-apercu [data-section].masque{display:none}
 .v-apercu .controle-auteur,.v-apercu .controle-image,.v-apercu .champ-email,.v-apercu .section-masquee{display:none}
-.ligne-contact{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:auto}
-.ligne-contact .bouton-contour{margin-top:0}
+/* Courriel de contact à côté du bouton Contacter l'auteur : même hauteur, bas alignés */
+.ligne-contact{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:auto;padding-top:16px}
+.ligne-contact .btn-page{margin:0;flex:0 0 auto}
+.ligne-contact .btn-page,.champ-email input{height:46px}
 .champ-email{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0;font:600 12px var(--tbl-font-body);color:var(--muted)}
-.champ-email input{width:100%;background:transparent;border:1px solid #fff;color:#fff;padding:9px 12px;font:15px Arial,sans-serif;border-radius:2px}
+.champ-email input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);padding:0 14px;font:15px var(--tbl-font-body);border-radius:var(--tbl-radius-btn)}
 .champ-email input::placeholder{color:var(--muted)}
-.champ-email input:focus{outline:2px solid var(--edit);outline-offset:2px}
-.champ-email.err input{border-color:var(--red);outline:2px solid var(--red)}
+.champ-email input:focus{outline:none;border-color:var(--accent)}
+.champ-email.err input{border-color:var(--accent);outline:1px solid var(--accent)}
 .champ-email input:disabled{opacity:.55;cursor:not-allowed}
 .msg-email{color:var(--rouge-texte);font:600 13px Arial,sans-serif;margin-top:6px}
 .note-email{color:var(--muted);font:12px Arial,sans-serif;margin-top:4px}
 .v-edition .diff-l .ancien{color:var(--red);text-decoration:line-through}
 .v-edition .diff-l .nouveau{color:var(--gold)}
-.pill-extrait{margin:24px auto 6px;border:1px solid #fff;border-radius:22px;background:#480000;color:#fff;text-align:center;padding:10px 14px;letter-spacing:.22em;font-size:14px;width:min(562px,92%);display:flex;justify-content:center;align-items:center;gap:14px}
 .carte-duo img{width:100%;max-width:770px;display:block;margin:6px auto}
 .duo-grille{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start}
 .duo-etiquette{font:700 12px var(--tbl-font-body);color:var(--muted);text-align:center;margin-bottom:6px;letter-spacing:.04em}
@@ -228,7 +225,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .vedettes figure{margin:0}
 @container page (max-width:760px){
   .grille-hero{grid-template-columns:1fr;gap:14px}
-  .hero-carte{min-height:0;padding:14px 16px 18px;border-radius:24px}
+  .hero-carte{min-height:0;padding:14px 16px 18px}
   .hero-titre{font-size:24px}
   .couv img{max-width:240px}
   .carte-epub{flex-direction:column;align-items:center;gap:22px;width:100%}
@@ -237,8 +234,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   .col-photo{width:210px;max-width:100%}
   .col-note{min-height:0;width:100%}
   .vedettes{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .carte{border-radius:22px;padding:14px 12px}
-  .pill-cmd,.pill-extrait{letter-spacing:.1em;font-size:13px}
+  .carte{padding:14px 12px}
 }
 
 /* Texte riche : meme rendu que le site (Ricos) */
@@ -287,10 +283,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .msg-url{margin-top:12px;color:var(--rouge-texte);font:600 13px Arial,sans-serif}
 .note-champ{margin-top:10px;color:var(--muted);font:12px var(--tbl-font-body)}
 .v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
-button.pill-extrait{font-family:inherit;cursor:pointer}
 /* Section « En vedette » masquée dans l'édition et l'aperçu tant que les vedettes ne sont pas programmées (tâche 138) */
 .section-vedettes-cachee{display:none!important}
-.v-edition button.pill-extrait:hover{background:#6a0000;border-color:#ffd0d0}
+/* Aperçu : les boutons de la page affichent un message qui explique leur action sur le site */
+.v-apercu [data-action]{cursor:pointer}
 .v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
 .v-apercu .rt{outline:none}
 
@@ -321,6 +317,8 @@ button.pill-extrait{font-family:inherit;cursor:pointer}
 #modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
 #modal .corps td:last-child{text-align:right;font-weight:bold;color:var(--txt)}
 #modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+/* Comme confirm-modal.html : Annuler à gauche, l'action principale à droite */
+#modal .btns .btn.sec{order:-1}
 
 /* ---------- Avis (toast) ---------- */
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
@@ -389,16 +387,15 @@ body.v-rapport{background:#fff;color:#111}
     </div>
     <p class="sur-titre">Modifier la page du livre</p>
     <h1 class="titre-page"><span id="h-titre"></span><span id="pastille-etat" class="pastille"></span><span id="chip-admin" class="pastille admin" hidden>Administrateur</span></h1>
-    <p class="sub">Modifiez les textes et les images directement sur la page, puis enregistrez. Les aperçus montrent la page telle qu’elle paraîtra sur le site.</p>
+    <p class="sub" id="intro-edition"></p>
     <div class="resume">
-      <div class="pills" id="taux-blocs"></div>
-      <div class="recap" id="recap-services" role="group" aria-label="Services facturés" hidden></div>
+      <div class="recap" id="recap-services" role="group" aria-label="Montants à payer"></div>
       <div class="aide" id="derniere-modif" style="cursor:help" tabindex="0" hidden></div>
     </div>
   </div></div></header>
   <div id="outils" role="toolbar" aria-label="Actions de l’éditeur"><div class="wrap"><div class="bloc">
     <div class="rang-outils">
-      <div class="taux-global"><span class="lib">Modification globale</span><strong id="taux-val">0 %</strong><div class="barre" role="img" aria-label="Taux de modification"><i id="taux-barre"></i></div></div>
+      <div class="taux-global"><span class="lib">Total à payer</span><strong id="total-val" aria-live="polite"></strong></div>
       <button type="button" class="btn sec" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
       <div class="legende" id="legende" hidden><span class="aj">Jaune : ajouté ou modifié</span><span class="re">Rouge barré : retiré</span></div>
       <span class="ecart"></span>
@@ -492,7 +489,7 @@ body.v-rapport{background:#fff;color:#111}
             <div class="champ" data-champ="desc_plan"><div class="champ-tete"></div><div class="rt rt-hero"></div><div class="msg-url" hidden></div></div>
             <div class="prix fige" data-prix></div>
           </div>
-          <div class="pill-cmd fige">Commande numérique <i>i</i></div>
+          <button type="button" class="btn btn-page fige" data-action="commande" tabindex="-1">Commande numérique</button>
         </div>
       </div>
     </div>
@@ -502,7 +499,7 @@ body.v-rapport{background:#fff;color:#111}
       <div class="carte-epub fige" data-epub="numpapier">
         <div class="col-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png">
           <div>Disponible dès maintenant</div><ul><li>• Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul>
-          <img class="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png"></div>
+          <img class="achat" data-action="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png"></div>
         <div class="col-epub"><h3>PAPIER</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/7e3c5f_486a82ac19384a7fa9580104cd18182b~mv2.png">
           <div>Disponible sur Amazon Canada</div><div>Impression de qualité</div><div>Livraison Prime 2 jours</div><div>Service Amazon</div>
           <div class="bientot">BIENTÔT DISPONIBLE</div></div>
@@ -510,7 +507,7 @@ body.v-rapport{background:#fff;color:#111}
       <div class="carte-epub carte-epub-seul fige cache" data-epub="seul">
         <div class="titre-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png"></div>
         <div class="texte-epub"><div>Disponible dès maintenant</div><ul><li>Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul></div>
-        <img class="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png">
+        <img class="achat" data-action="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png">
       </div>
     <img class="titre-img fige" alt="Synopsis" src="https://static.wixstatic.com/media/26b968_9256b8eb5fa24de8b9eb4456a760783e~mv2.png">
     <div class="carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
@@ -525,7 +522,7 @@ body.v-rapport{background:#fff;color:#111}
       <div class="col-photo"><div><img class="portrait" data-affiche="photoAuteur" alt="Photo de l'auteur"></div><div data-zone-controle="photoAuteur"></div></div>
       <div class="col-note champ" data-champ="bioAuteur"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
         <div class="ligne-contact">
-          <button type="button" class="bouton-contour fige" tabindex="-1">Contacter l’auteur</button>
+          <button type="button" class="btn btn-page fige" data-action="contact" tabindex="-1">Contacter l’auteur</button>
           <div class="champ-email" data-role="boite-email"><label for="in-email">Courriel de contact (reçoit les messages des lecteurs)</label>
             <input type="email" id="in-email" data-role="email" maxlength="254" autocomplete="off" inputmode="email" placeholder="nom@exemple.com" spellcheck="false"></div>
         </div>
@@ -535,7 +532,7 @@ body.v-rapport{background:#fff;color:#111}
     </section>
     <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
     <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
-      <button type="button" class="pill-extrait" data-role="demande-extrait">Demande d'extrait <i style="width:16px;height:16px;border-radius:50%;border:1px solid #d8a0a0;display:inline-block;font:700 11px/14px Georgia,serif;font-style:normal;letter-spacing:0;color:#e88;text-align:center">i</i></button></div>
+      <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
     <!-- Section « En vedette » masquée (tâche 138) : l'affichage des livres vedettes n'est pas encore programmé -->
     <img class="titre-img fige section-vedettes-cachee" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
     <div class="vedettes fige section-vedettes-cachee" data-vedettes></div>
@@ -543,10 +540,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// b38ab6f · 2026-10-19 07:41 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 65fbf92 · 2026-10-19 08:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'b38ab6f · 2026-10-19 07:41';
+var VERSION_TBL = '65fbf92 · 2026-10-19 08:03';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -992,12 +989,6 @@ function signature(blocs) {
   }));
 }
 
-function pct(x) {
-  if (x <= 0) { return '0' + NBSP + '%'; }
-  if (x < 1) { return '< 1' + NBSP + '%'; }
-  return Math.round(x) + NBSP + '%';
-}
-
 function fmtDate(iso) {
   try { return new Date(iso).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) { return ''; }
 }
@@ -1011,9 +1002,6 @@ function fmtDateHeure(iso) {
   } catch (e) { return ''; }
 }
 var LIBELLES_ETAT = { aucune: 'Version publiée', nouveau: 'Nouveau livre', modifier: 'Copie en cours', attente: 'En attente de validation', corriger: 'À corriger' };
-
-// Prix du service selon le taux : réservé pour plus tard (le prix ne fait pas partie de l'analyse pour le moment)
-function prixSelonTaux(taux) { return 'à déterminer'; }
 
 // ---------- DOM vers blocs ----------
 var TAGS_BLOC = { P: 1, DIV: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1, BLOCKQUOTE: 1 };
@@ -1819,18 +1807,52 @@ function demandeExtrait() {
 function argent(cents) {
   return (cents / 100).toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + NBSP + '$';
 }
-function rendreRecap() {
-  var r = $('recap-services'), f = etat.d.facture;
+// Correction d'un livre publié : prix par composante modifiée, selon la grille du service
+// (service-correction-pages-livre.md, section 4). Montants en cents. Seuls les textes et les images sont
+// payants : la section Auteur (afficher ou masquer) et le courriel de contact sont gratuits.
+// Le plafond de 80 $ n'est jamais atteint ici (4 textes et 2 images : 60 $ au plus).
+// Affichage seulement : le paiement des corrections viendra avec le calcul du serveur (tâches 58-59).
+var PRIX_TEXTE_PETIT = 500;   // moins de 20 % des mots modifiés (ou mise en forme seulement)
+var PRIX_TEXTE_GRAND = 1000;  // 20 % ou plus des mots modifiés
+var SEUIL_TEXTE_GRAND = 20;
+var PRIX_IMAGE = 1000;        // image modifiée ou remplacée, retouches incluses
+var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de l’auteur']];
+function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
+// textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }]
+function factureCorrections(textes, images, gratuit) {
+  var lignes = [];
+  textes.forEach(function (t) { var m = prixTexte(t.chg, t.taux); if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle }); } });
+  images.forEach(function (i) { if (i.chg) { lignes.push({ nom: i.nom, montant: PRIX_IMAGE, cle: i.cle }); } });
+  return calculerFacture(lignes, { gratuit: !!gratuit });
+}
+// Facture de la page en cours : prix fixe d'un livre Nouveau (calculé par le serveur) ou prix des corrections.
+// Renvoi après un refus (« À corriger ») : déjà payé, aucune facture.
+function factureCourante() {
+  if (etat.nouveau) { return etat.d.facture || null; }
+  if (etat.d.etat === 'corriger') { return null; }
+  return factureCorrections(
+    CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: !!etat.chg[c.cle], taux: etat.t[c.cle] || 0 }; }),
+    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] }; }),
+    etat.d.gratuit);
+}
+function allerA(cle) {
+  var cible = etat.champs[cle] || (IMAGE_CONF[cle] ? ctl(cle) : zoneLivre(cle));
+  if (cible) { cible.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+function rendreRecap(f) {
+  var r = $('recap-services');
   r.textContent = '';
-  if (!f) { return; }
-  function ligne(nom, cents, cls) {
-    var s = document.createElement('span');
+  function ligne(nom, cents, cls, cle) {
+    var s = document.createElement(cle ? 'button' : 'span');
     s.className = 'lig' + (cls ? ' ' + cls : '');
+    if (cle) { s.type = 'button'; s.title = 'Aller à cette composante'; s.addEventListener('click', function () { allerA(cle); }); }
     s.appendChild(document.createTextNode(nom));
-    var b = document.createElement('b'); b.textContent = argent(cents); s.appendChild(b);
+    if (cents !== null) { var b = document.createElement('b'); b.textContent = argent(cents); s.appendChild(b); }
     r.appendChild(s);
   }
-  f.lignes.forEach(function (l) { ligne(l.nom, l.montant); });
+  if (!f) { ligne('Renvoi après un refus : aucuns nouveaux frais', null); return; }
+  if (!f.lignes.length) { ligne('Aucune modification à payer pour le moment', null); return; }
+  f.lignes.forEach(function (l) { ligne(l.nom, l.montant, '', l.cle); });
   ligne('Frais de service (5' + NBSP + '%)', f.frais);
   // Auteur gratuit ou admin : ligne « Gratuité » négative avant les taxes, total à 0,00 $ (tâche 66)
   if (f.montantGratuite) { ligne('Gratuité (services offerts)', f.montantGratuite); }
@@ -1847,34 +1869,22 @@ function dateEnvoi() {
 }
 function majUI() {
   var prixFixe = !!etat.nouveau;
-  $('taux-val').parentNode.hidden = prixFixe;
-  $('taux-blocs').hidden = prixFixe;
-  $('recap-services').hidden = !prixFixe;
   $('t-diff').hidden = prixFixe;
   $('t-rapport').hidden = prixFixe; // rien à comparer : un livre Nouveau n'a pas de version publiée
-  if (prixFixe) { rendreRecap(); }
-  var fac = etat.d.facture;
+  // Montants au lieu des pourcentages : une ligne par composante payante, puis frais, taxes et total
+  var fac = factureCourante();
+  rendreRecap(fac);
+  $('total-val').textContent = fac ? argent(fac.total) : 'Aucuns frais';
+  var aPayer = fac && fac.total > 0 && paiementRequis();
   $('b-appr').textContent = prixFixe && fac
-    ? (fac.total > 0 && paiementRequis() ? 'Payer ' + argent(fac.total) + ' et envoyer en approbation' : 'Envoyer en approbation')
-    : 'Approuver / Payer';
-  $('taux-val').textContent = pct(etat.global);
-  $('taux-barre').style.width = Math.min(100, etat.global) + '%';
-  var pills = $('taux-blocs');
-  pills.textContent = '';
+    ? (aPayer ? 'Payer ' + argent(fac.total) + ' et envoyer en approbation' : 'Envoyer en approbation')
+    : (aPayer ? 'Approuver / Payer ' + argent(fac.total) : 'Approuver / Payer');
   CHAMPS.forEach(function (c) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'pill' + (etat.chg[c.cle] ? ' chg' : '');
-    b.innerHTML = '';
-    b.appendChild(document.createTextNode(c.court + ' : '));
-    var g = document.createElement('b');
-    g.textContent = etat.fmt[c.cle] ? 'forme' : pct(etat.t[c.cle]);
-    b.appendChild(g);
-    b.addEventListener('click', function () { etat.champs[c.cle].scrollIntoView({ behavior: 'smooth', block: 'center' }); });
-    pills.appendChild(b);
     var boite = etat.champs[c.cle];
     var tx = boite.querySelector('[data-role="tx"]');
-    tx.textContent = etat.chg[c.cle] ? (etat.fmt[c.cle] ? 'Mise en forme seulement' : 'Modifié : ' + pct(etat.t[c.cle])) : 'Non modifié';
+    var prix = prixTexte(!!etat.chg[c.cle], etat.t[c.cle] || 0);
+    tx.textContent = !etat.chg[c.cle] ? 'Non modifié'
+      : (etat.fmt[c.cle] ? 'Mise en forme' : 'Modifié') + (fac ? ' : ' + argent(prix) : '');
     tx.classList.toggle('chg', !!etat.chg[c.cle]);
     tx.hidden = prixFixe;
     boite.querySelector('[data-role="fmt"]').hidden = true;
@@ -1891,15 +1901,6 @@ function majUI() {
     note.textContent = estLecture(c.cle) ? 'Ce texte contient des éléments spéciaux que cet outil ne sait pas modifier sans les perdre. Écrivez-nous pour le faire modifier.'
       : (deborde ? 'Le texte est plus long que la zone de l’en-tête, qui a une hauteur fixe : une barre de défilement apparaîtra sur la page. Un texte plus court se lit mieux.' : '');
   });
-  [['image', 'Image du livre'], ['photoAuteur', 'Photo de l’auteur'], ['afficheauteur', 'Section Auteur'], ['email', 'Courriel']].forEach(function (x) {
-    if (!etat.chgL[x[0]]) { return; }
-    var b = document.createElement('button');
-    b.type = 'button'; b.className = 'pill chg';
-    b.appendChild(document.createTextNode(x[1] + ' : '));
-    var g = document.createElement('b'); g.textContent = 'modifié'; b.appendChild(g);
-    b.addEventListener('click', function () { (IMAGE_CONF[x[0]] ? ctl(x[0]) : zoneLivre(x[0])).scrollIntoView({ behavior: 'smooth', block: 'center' }); });
-    pills.appendChild(b);
-  });
   majLivre();
   // Un administrateur (Auteurs.admin) peut modifier n'importe quel livre, en tout temps :
   // - « revue » : il examine une demande En attente de validation envoyée par un auteur (peut approuver ou refuser).
@@ -1914,6 +1915,11 @@ function majUI() {
   var pe = $('pastille-etat');
   pe.className = 'pastille' + ({ aucune: ' pub', modifier: ' mod', attente: ' appr', corriger: ' corr' }[etat.d.etat] || '');
   pe.textContent = LIBELLES_ETAT[etat.d.etat] || 'Version publiée';
+  // Introduction de l'en-tête, selon ce que la personne peut faire sur la page
+  $('intro-edition').textContent = etat.verrou
+    ? 'Votre page est en lecture seule pendant l’examen par l’équipe TBL. Les aperçus restent disponibles.'
+    : (revue ? 'Examinez la demande de l’auteur, corrigez au besoin, puis approuvez ou refusez avec un commentaire.'
+      : 'Modifiez les textes et les images directement sur la page, puis enregistrez. Les aperçus montrent la page telle qu’elle paraîtra sur le site.');
   $('b-enreg').disabled = !etat.dirty || etat.verrou || etat.occupe;
   $('b-enreg').textContent = etat.occupe ? 'Enregistrement…' : 'Enregistrer';
   var raison = raisonRefusApprobation();
@@ -2159,7 +2165,8 @@ async function valider() {
   if (etat.dirty) { toast('Enregistrez vos modifications avant de publier.', 'mal'); return; }
   var corps = document.createElement('div');
   var t = document.createElement('table');
-  [['Livre', etat.d.livre.titre], ['Auteur', etat.d.livre.auteurNom], ['Modification globale', pct(etat.global)],
+  var facV = factureCourante();
+  [['Livre', etat.d.livre.titre], ['Auteur', etat.d.livre.auteurNom], ['Total des services', facV ? argent(facV.total) : 'aucuns nouveaux frais'],
     ['Autres modifications', autresModifications().join(' · ') || 'aucune']].forEach(function (r) {
     var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
     a.textContent = r[0]; b.textContent = r[1]; tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
@@ -2310,7 +2317,7 @@ var positionEdition = 0;
 function donneesCourantes() {
   var d = etat.d;
   return {
-    livre: d.livre, etat: d.etat, dateCopie: d.dateCopie, enPlace: true, nonEnregistre: etat.dirty,
+    livre: d.livre, etat: d.etat, dateCopie: d.dateCopie, gratuit: d.gratuit, enPlace: true, nonEnregistre: etat.dirty,
     publie: etat.pub, copie: etat.work,
     champsLivre: { publie: etat.L.pub, copie: etat.L.work }
   };
@@ -2393,7 +2400,9 @@ function montrerApercu(d) {
   var cadre = $('cadre-apercu');
   cadre.className = 'cadre ' + APPAREIL;
   var page = fabriquerPage(cadre, d);
-  appliquerLivre(page, d.champsLivre.copie || d.champsLivre.publie);
+  var LA = d.champsLivre.copie || d.champsLivre.publie;
+  appliquerLivre(page, LA);
+  brancherBoutonsApercu(page, LA);
   var boites = boitesChamps(page);
   CHAMPS.forEach(function (c) {
     var rt = boites[c.cle].querySelector('.rt');
@@ -2420,13 +2429,43 @@ function montrerApercu(d) {
   ajusterCadre();
 }
 
+// Dans l'aperçu, rien ne se passe vraiment : chaque bouton de la page affiche un message qui explique ce
+// qu'il fera sur le site.
+function brancherBoutonsApercu(page, L) {
+  var courriel = (L.email || '').trim();
+  var messages = {
+    commande: 'Commande numérique : sur le site, ce bouton lance la commande du livre numérique (ePUB). Rien n’est commandé dans l’aperçu.',
+    achat: 'Acheter le ePUB : sur le site, ce bouton ajoute le livre numérique au panier. Rien n’est acheté dans l’aperçu.',
+    contact: courriel
+      ? 'Contacter l’auteur : sur le site, ce bouton ouvre la messagerie du lecteur pour écrire à ' + courriel + '.'
+      : 'Contacter l’auteur : aucun courriel de contact n’est inscrit, ce bouton sera caché sur le site.',
+    extrait: 'Demande d’extrait : sur le site, ce bouton permet au lecteur de demander un extrait du livre. L’équipe TBL le lui envoie.'
+  };
+  Array.prototype.forEach.call(page.querySelectorAll('[data-action]'), function (b) {
+    var msg = messages[b.getAttribute('data-action')];
+    if (!msg) { return; }
+    b.tabIndex = 0;
+    if (b.tagName === 'IMG') { b.setAttribute('role', 'button'); }
+    b.title = msg;
+    b.addEventListener('click', function (e) { e.preventDefault(); toast(msg); });
+    b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toast(msg); } });
+  });
+}
+
 // ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
 function montrerRapport(d) {
   document.body.className = 'v-rapport';
   document.title = 'Rapport Avant / Après : ' + d.livre.titre;
   var apres = d.copie || d.publie;
   var paires = CHAMPS.map(function (c) { return { avant: norm(d.publie[c.cle]), apres: norm(apres[c.cle]) }; });
-  var glob = tauxGlobal(paires);
+  var taux = paires.map(function (p) { return tauxModification(p.avant, p.apres).taux; });
+  var chgs = paires.map(function (p) { return signature(p.avant) !== signature(p.apres); });
+  var LPr = d.champsLivre.publie, LCr = d.champsLivre.copie || LPr;
+  // Montants de la grille (même calcul que l'éditeur) ; renvoi après un refus : déjà payé
+  var fac = d.etat === 'corriger' ? null : factureCorrections(
+    CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i], taux: taux[i] }; }),
+    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: LPr[x[0]] !== LCr[x[0]] }; }),
+    d.gratuit);
   var racine = $('vue-rapport');
   racine.textContent = '';
   var rap = document.createElement('div');
@@ -2442,16 +2481,19 @@ function montrerRapport(d) {
   var statut = { aucune: 'Aucune copie : page publiée', nouveau: 'Nouveau livre (pas encore publié)', modifier: 'Copie en cours (non envoyée)', attente: 'En attente de validation', corriger: 'À corriger après un refus' }[d.etat] || '';
   [['Livre', d.livre.titre], ['Auteur', d.livre.auteurNom], ['Statut', statut],
     [d.copie ? 'Dernière modification' : 'Date du rapport', fmtDate(d.copie ? d.dateCopie : new Date().toISOString())],
-    ['Modification globale', pct(glob)], ['Prix du service', prixSelonTaux(glob)]].forEach(function (r) {
+  ].concat(!fac ? [['Total à payer', 'Aucuns nouveaux frais (renvoi après un refus)']]
+    : [['Services', argent(fac.sousTotal)], ['Frais de service (5' + NBSP + '%)', argent(fac.frais)]]
+      .concat(fac.montantGratuite ? [['Gratuité (services offerts)', argent(fac.montantGratuite)]] : [])
+      .concat([['TPS', argent(fac.tps)], ['TVQ', argent(fac.tvq)], ['Total à payer', argent(fac.total)]])).forEach(function (r) {
     var tr = el('tr'); tr.appendChild(el('td', '', r[0])); tr.appendChild(el('td', '', r[1])); meta.appendChild(tr);
   });
   rap.appendChild(meta);
   CHAMPS.forEach(function (c, i) {
-    var p = paires[i], t = tauxModification(p.avant, p.apres), al = alignerMots(p.avant, p.apres);
-    var chg = signature(p.avant) !== signature(p.apres);
+    var p = paires[i], al = alignerMots(p.avant, p.apres);
+    var chg = chgs[i];
     var sec = el('section');
     var h = el('h2'); h.appendChild(el('span', '', c.nom));
-    h.appendChild(el('span', '', chg ? (t.taux === 0 ? 'Mise en forme seulement' : 'Modifié : ' + pct(t.taux)) : 'Aucune modification'));
+    h.appendChild(el('span', '', chg ? (taux[i] === 0 ? 'Mise en forme' : 'Modifié') + (fac ? ' : ' + argent(prixTexte(true, taux[i])) : '') : 'Aucune modification'));
     sec.appendChild(h);
     var deux = el('div', 'deux');
     [['Avant (version publiée)', p.avant, al && al.avantCommun, 'retrait'], ['Après (copie de l’auteur)', p.apres, al && al.apresCommun, 'ajout']].forEach(function (col) {
