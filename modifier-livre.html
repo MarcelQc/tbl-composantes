@@ -289,6 +289,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .section-vedettes-cachee{display:none!important}
 /* Aperçu : les boutons de la page affichent un message qui explique leur action sur le site */
 .v-apercu [data-action]{cursor:pointer}
+.bulle-apercu{position:absolute;z-index:130;max-width:min(340px,calc(100% - 16px));background:var(--card);border:1px solid var(--tbl-blue);color:var(--txt);border-radius:var(--tbl-radius-btn);padding:10px 14px;font:14px/1.45 var(--tbl-font-body);box-shadow:0 8px 30px rgba(0,0,0,.6)}
 .v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
 .v-apercu .rt{outline:none}
 
@@ -427,7 +428,7 @@ body.v-rapport{background:#fff;color:#111}
 <div id="vue-apercu" hidden>
   <header id="haut-apercu"><div class="wrap"><div class="bloc entete" style="padding-top:18px">
     <div class="barre-haut">
-      <button type="button" class="btn sec" id="ap-fermer">← Retour à l’éditeur</button>
+      <button type="button" class="btn sec" id="ap-fermer" title="Quitter l’aperçu et revenir à la page d’édition, là où vous étiez">← Retour à l’éditeur</button>
     </div>
     <p class="sur-titre">Aperçu de la page du livre</p>
     <h1 class="titre-page" id="ap-titre"></h1>
@@ -436,8 +437,8 @@ body.v-rapport{background:#fff;color:#111}
   <div id="zone-apercu"><div class="wrap">
     <div class="bloc"><div id="avis-apercu" role="status" hidden></div></div>
     <div class="onglets" role="tablist" aria-label="Appareil de l’aperçu">
-      <button type="button" class="onglet" role="tab" id="ap-ord" aria-controls="panneau-apercu">Ordinateur</button>
-      <button type="button" class="onglet" role="tab" id="ap-mob" aria-controls="panneau-apercu">Mobile</button>
+      <button type="button" class="onglet" role="tab" id="ap-ord" aria-controls="panneau-apercu" title="Voir la page telle qu’elle paraîtra sur un écran d’ordinateur">Ordinateur</button>
+      <button type="button" class="onglet" role="tab" id="ap-mob" aria-controls="panneau-apercu" title="Voir la page telle qu’elle paraîtra sur un téléphone">Mobile</button>
     </div>
     <div class="panneau-apercu" role="tabpanel" id="panneau-apercu"><div id="cadre-apercu" class="cadre ordinateur"></div></div>
   </div></div>
@@ -508,7 +509,7 @@ body.v-rapport{background:#fff;color:#111}
           <img class="achat" data-action="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png"></div>
         <div class="col-epub"><h3>PAPIER</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/7e3c5f_486a82ac19384a7fa9580104cd18182b~mv2.png">
           <div>Disponible sur Amazon Canada</div><div>Impression de qualité</div><div>Livraison Prime 2 jours</div><div>Service Amazon</div>
-          <div class="bientot">BIENTÔT DISPONIBLE</div></div>
+          <div class="bientot" data-action="bientot">BIENTÔT DISPONIBLE</div></div>
       </div>
       <div class="carte-epub carte-epub-seul fige cache" data-epub="seul">
         <div class="titre-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png"></div>
@@ -546,10 +547,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 256dc62 · 2026-10-19 08:29 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// a612e12 · 2026-10-19 08:51 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '256dc62 · 2026-10-19 08:29';
+var VERSION_TBL = 'a612e12 · 2026-10-19 08:51';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -914,13 +915,18 @@ function communs(a, b) {
   return precedente[b.length];
 }
 
-// Taux de modification d'UN champ : (1 - 2 x mots communs / (mots avant + mots après)) x 100, entre 0 et 100.
+// Taux de modification d'UN champ, selon la grille de prix (service-correction-pages-livre.md, section 4) :
+// mots ajoutés, retirés ou changés ÷ nombre de mots du texte d'origine, entre 0 et 100.
+// Mots touchés = le plus grand de (mots retirés, mots ajoutés) : un mot remplacé compte une seule fois.
+// Ex. sur 60 mots : 12 remplacés, 12 ajoutés ou 12 retirés donnent tous 20 %.
+// (L'ancienne formule, 1 - 2 x communs / (avant + après), sous-estimait les ajouts et les retraits.)
 function tauxModification(blocsAvant, blocsApres) {
   const a = mots(blocsAvant);
   const b = mots(blocsApres);
   const c = communs(a, b);
-  const somme = a.length + b.length;
-  return { taux: somme === 0 ? 0 : (1 - (2 * c) / somme) * 100, communs: c, avant: a.length, apres: b.length };
+  const touches = Math.max(a.length - c, b.length - c);
+  const taux = a.length === 0 ? (b.length === 0 ? 0 : 100) : Math.min(100, (touches * 100) / a.length);
+  return { taux, communs: c, avant: a.length, apres: b.length };
 }
 
 // Taux global sur plusieurs champs : mêmes formules, sur la somme des mots.
@@ -1730,8 +1736,10 @@ function majLivre() {
   zoneLivre('boite-email').classList.toggle('err', !!pe);
   var ie = zoneLivre('info-email');
   remplirInfo(ie, C.email, P.email || '(aucun)', courrielNorm(W.email) || '(aucun)');
+  // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché
+  $('hote-edition').querySelector('[data-action="contact"]').hidden = courrielNorm(W.email) === '';
   if (!pe && courrielNorm(W.email) === '' && W.afficheauteur) {
-    var avert = 'Sans courriel, le bouton « Contacter l’auteur » ne pourra pas envoyer de message.';
+    var avert = 'Sans courriel, le bouton « Contacter l’auteur » sera caché sur la page.';
     ie.appendChild(document.createTextNode((ie.textContent ? ' · ' : '') + avert));
     ie.hidden = false;
   }
@@ -2471,24 +2479,49 @@ function montrerApercu(d) {
 // qu'il fera sur le site.
 function brancherBoutonsApercu(page, L) {
   var courriel = (L.email || '').trim();
+  // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché
+  page.querySelector('[data-action="contact"]').hidden = !courriel;
   var messages = {
     commande: 'Commande numérique : sur le site, ce bouton lance la commande du livre numérique (ePUB). Rien n’est commandé dans l’aperçu.',
     achat: 'Acheter le ePUB : sur le site, ce bouton ajoute le livre numérique au panier. Rien n’est acheté dans l’aperçu.',
-    contact: courriel
-      ? 'Contacter l’auteur : sur le site, ce bouton ouvre la messagerie du lecteur pour écrire à ' + courriel + '.'
-      : 'Contacter l’auteur : aucun courriel de contact n’est inscrit, ce bouton sera caché sur le site.',
-    extrait: 'Demande d’extrait : sur le site, ce bouton permet au lecteur de demander un extrait du livre. L’équipe TBL le lui envoie.'
+    contact: 'Contacter l’auteur : sur le site, ce bouton ouvre la messagerie du lecteur pour écrire à ' + courriel + '.',
+    extrait: 'Demande d’extrait : sur le site, ce bouton permet au lecteur de demander un extrait du livre. L’équipe TBL le lui envoie.',
+    bientot: 'Bientôt disponible : le livre papier n’est pas encore offert sur Amazon. Le bouton Amazon remplacera cette mention quand il le sera.'
   };
   Array.prototype.forEach.call(page.querySelectorAll('[data-action]'), function (b) {
     var msg = messages[b.getAttribute('data-action')];
     if (!msg) { return; }
     b.tabIndex = 0;
-    if (b.tagName === 'IMG') { b.setAttribute('role', 'button'); }
+    if (b.tagName !== 'BUTTON') { b.setAttribute('role', 'button'); }
     b.title = msg;
-    b.addEventListener('click', function (e) { e.preventDefault(); toast(msg); });
-    b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toast(msg); } });
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); bulle(b, msg); });
+    b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bulle(b, msg); } });
   });
 }
+// Bulle d'explication placée juste sous le bouton cliqué. Pas d'avis fixé en bas de l'écran : dans Wix, la
+// composante est très haute et le bas de l'iframe est souvent hors de vue. Se ferme au clic ailleurs, avec
+// Échap ou après 8 secondes.
+var bulleOuverte = null, minuteurBulle = null;
+function fermerBulle() {
+  clearTimeout(minuteurBulle);
+  if (bulleOuverte) { bulleOuverte.remove(); bulleOuverte = null; }
+}
+function bulle(cible, msg) {
+  fermerBulle();
+  var d = document.createElement('div');
+  d.className = 'bulle-apercu';
+  d.setAttribute('role', 'status');
+  d.textContent = msg;
+  document.body.appendChild(d);
+  var r = cible.getBoundingClientRect(), w = d.offsetWidth, largeur = document.documentElement.clientWidth;
+  var gauche = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, largeur - w - 8));
+  d.style.left = (gauche + window.scrollX) + 'px';
+  d.style.top = (r.bottom + window.scrollY + 10) + 'px';
+  bulleOuverte = d;
+  minuteurBulle = setTimeout(fermerBulle, 8000);
+}
+document.addEventListener('click', function () { if (bulleOuverte) { fermerBulle(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerBulle(); } });
 
 // ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
 function montrerRapport(d) {
