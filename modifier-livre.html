@@ -170,6 +170,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .controle-image .etat-img{color:var(--gold);font-weight:bold}
 .controle-image .err-img{color:var(--rouge-texte);font-weight:bold}
+/* Extrait en PDF, sous le texte de l'extrait (même boîte que les contrôles d'image) */
+.controle-pdf{max-width:520px;margin:18px auto 0}
+.controle-pdf .nom-pdf{color:var(--txt);word-break:break-all}
+.controle-pdf a.mini{text-decoration:none;display:inline-block}
 .controle-image .info-l{color:var(--muted)}
 .controle-image input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .controle-image .mini.gros{padding:7px 14px;font-size:13px}
@@ -539,6 +543,7 @@ body.v-rapport{background:#fff;color:#111}
     </section>
     <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
     <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
+      <div data-zone-controle="extraitPdf"></div>
       <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
     <!-- Section « En vedette » masquée (tâche 138) : l'affichage des livres vedettes n'est pas encore programmé -->
     <img class="titre-img fige section-vedettes-cachee" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
@@ -547,10 +552,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// a612e12 · 2026-10-19 08:51 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 3ae1afb · 2026-10-19 09:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'a612e12 · 2026-10-19 08:51';
+var VERSION_TBL = '3ae1afb · 2026-10-19 09:37';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1603,8 +1608,15 @@ function imageSure(u) {
 // (recadrage centré, puis redimensionnement), puis envoyée au serveur à l'enregistrement : elle va dans un champ
 // tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
 var CLES_IMAGES = ['image', 'photoAuteur'];
-var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email'];
-function valL(v, k) { return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || '')); }
+var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf'];
+function valL(v, k) {
+  if (k === 'extraitPdf') { return clePdf(v); }
+  return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || ''));
+}
+// Extrait en PDF : { url, nom } (fichier enregistré, venu du serveur), { data, nom } (fichier choisi, pas encore
+// enregistré) ou null. Sa clé de comparaison sert à repérer un changement.
+function clePdf(v) { return !v ? '' : (v.data ? 'nouveau:' + v.nom + ':' + v.data.length : (v.url || '')); }
+var TAILLE_MAX_PDF = 3 * 1024 * 1024;
 var IMAGE_CONF = {
   image: { nom: 'Image du livre', bouton: 'Téléverser l’image du livre', changer: 'Changer l’image du livre', retablir: '↺ Annuler les modifications', gabarit: [600, 900],
     vide: 'Aucune image du livre', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajustée automatiquement à 600 × 900 px (2:3). Idéal : couverture 3D sur fond transparent.' },
@@ -1628,6 +1640,71 @@ function creerControles() {
     c.querySelector('[data-role="retablir-img"]').textContent = conf.retablir;
     c.querySelector('[data-role="aide-img"]').textContent = conf.aide;
   });
+}
+// Extrait en PDF, sous le texte de l'extrait : téléverser, remplacer, voir le fichier enregistré, annuler.
+// Le fichier est gardé dans un champ tampon du livre jusqu'à la publication ; il est alors envoyé aux lecteurs
+// qui le demandent avec le formulaire « Extrait » du site.
+function creerControlePdf() {
+  var zone = $('hote-edition').querySelector('[data-zone-controle="extraitPdf"]');
+  zone.innerHTML = '<div class="controle-image controle-pdf" data-controle-pdf><div class="rang">' +
+    '<label class="mini gros" data-role="choisir-pdf" tabindex="0" role="button"><span data-role="lib-pdf"></span></label>' +
+    '<a class="mini gros" data-role="voir-pdf" target="_blank" rel="noopener" hidden>Voir le PDF</a>' +
+    '<button type="button" class="mini gros" data-role="retablir-pdf">↺ Annuler les modifications</button></div>' +
+    '<div class="nom-pdf" data-role="nom-pdf"></div>' +
+    '<div class="etat-img" data-role="etat-pdf" hidden></div><div class="err-img" data-role="err-pdf" role="alert" hidden></div>' +
+    '<div class="info-l">Extrait en PDF, 3 Mo au plus. Une fois la page publiée, il est envoyé par courriel aux lecteurs qui le demandent.</div></div>';
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'application/pdf,.pdf'; inp.setAttribute('data-role', 'fichier-pdf');
+  inp.setAttribute('aria-label', 'Extrait en PDF');
+  zone.querySelector('[data-role="choisir-pdf"]').appendChild(inp);
+}
+function ctlPdf() { return $('hote-edition').querySelector('[data-controle-pdf]'); }
+function referencePdf() { return etat.nouveau ? etat.L.saved.extraitPdf : etat.L.pub.extraitPdf; }
+function rendrePdf(bloque) {
+  var c = ctlPdf(), W = etat.L.work.extraitPdf;
+  c.hidden = bloque;
+  c.querySelector('[data-role="lib-pdf"]').textContent = W ? 'Remplacer le PDF' : 'Téléverser l’extrait (PDF)';
+  c.querySelector('[data-role="nom-pdf"]').textContent = W ? 'Fichier : ' + W.nom + (W.data ? ' (à enregistrer)' : '') : 'Aucun extrait en PDF pour le moment.';
+  var voir = c.querySelector('[data-role="voir-pdf"]');
+  voir.hidden = !(W && W.url);
+  if (W && W.url) { voir.href = W.url; }
+}
+function lireFichier(fichier) {
+  return new Promise(function (resolve, reject) {
+    var lecteur = new FileReader();
+    lecteur.onload = function () { resolve(String(lecteur.result || '')); };
+    lecteur.onerror = function () { reject(new Error('Ce fichier ne peut pas être lu.')); };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+async function choisirPdf(fichier) {
+  var err = ctlPdf().querySelector('[data-role="err-pdf"]');
+  err.hidden = true;
+  try {
+    if (fichier.size > TAILLE_MAX_PDF) { throw new Error('Le fichier est trop lourd (3 Mo au plus).'); }
+    var data = await lireFichier(fichier);
+    // Un vrai PDF commence par « %PDF- » (JVBERi0 en base64), quel que soit le type annoncé par le navigateur
+    if (data.split(',')[1].indexOf('JVBERi0') !== 0) { throw new Error('Ce fichier n’est pas un PDF.'); }
+    etat.L.work.extraitPdf = { data: data, nom: fichier.name || 'extrait.pdf' };
+    rendreLivre(); recalculer();
+    toast('Extrait PDF prêt. Enregistrez pour le conserver.');
+  } catch (e) {
+    err.textContent = e && e.message ? e.message : 'Ce fichier ne peut pas être utilisé.';
+    err.hidden = false;
+  }
+}
+async function retablirPdf() {
+  if (etat.verrou) { return; }
+  var r = await modale({
+    titre: 'Annuler les modifications ?',
+    corps: etat.nouveau ? 'L’extrait PDF choisi sera remplacé par le dernier extrait enregistré.' : 'L’extrait PDF choisi sera remplacé par l’extrait actuellement publié.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mon PDF' }]
+  });
+  if (r !== 'ok') { return; }
+  etat.L.work.extraitPdf = referencePdf() || null;
+  ctlPdf().querySelector('[data-role="err-pdf"]').hidden = true;
+  rendreLivre(); recalculer();
+  toast(etat.nouveau ? 'Dernier extrait enregistré remis.' : 'Extrait publié remis. Enregistrez pour conserver ce changement.');
 }
 // Affiche l'image, ou la boîte vide (avec un bouton de téléversement en mode édition) quand il n'y en a pas.
 function remplirImage(img, url, cle) {
@@ -1689,6 +1766,11 @@ function monterLivre() {
     c.querySelector('[data-role="actualiser-img"]').addEventListener('click', function () { actualiserImage(cle); });
   });
   zoneLivre('demande-extrait').addEventListener('click', demandeExtrait);
+  creerControlePdf();
+  var cp = ctlPdf(), fichierPdf = cp.querySelector('[data-role="fichier-pdf"]');
+  fichierPdf.addEventListener('change', function () { var fic = fichierPdf.files && fichierPdf.files[0]; fichierPdf.value = ''; if (fic) { choisirPdf(fic); } });
+  cp.querySelector('[data-role="choisir-pdf"]').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fichierPdf.click(); } });
+  cp.querySelector('[data-role="retablir-pdf"]').addEventListener('click', retablirPdf);
   var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
   em.addEventListener('input', function () { etat.L.work.email = em.value; recalculer(); });
@@ -1707,6 +1789,7 @@ function rendreLivre() {
     // « Téléverser » quand l'emplacement est vide, « Changer » quand il y a déjà une image
     ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
   });
+  rendrePdf(bloque);
 }
 function remplirInfo(el, chg, ancien, nouveau) {
   el.textContent = '';
@@ -1730,6 +1813,10 @@ function majLivre() {
     // dernière image enregistrée pour un livre Nouveau).
     c.querySelector('[data-role="retablir-img"]').hidden = etat.verrou || W[cle] === referenceImage(cle);
   });
+  var cp = ctlPdf();
+  cp.querySelector('[data-role="etat-pdf"]').hidden = !C.extraitPdf;
+  cp.querySelector('[data-role="etat-pdf"]').textContent = C.extraitPdf ? 'Extrait PDF modifié (compris dans le prix de l’Extrait)' : '';
+  cp.querySelector('[data-role="retablir-pdf"]').hidden = etat.verrou || clePdf(W.extraitPdf) === clePdf(referencePdf());
   remplirInfo(zoneLivre('info-auteur'), C.afficheauteur, P.afficheauteur ? 'affichée' : 'masquée', W.afficheauteur ? 'affichée' : 'masquée');
   var pe = etat.probL.email;
   zoneLivre('msg-email').hidden = !pe; zoneLivre('msg-email').textContent = pe;
@@ -1804,14 +1891,13 @@ async function lancerApprobation() {
   }
   if (APPROBATION_ACTIVE) { approuver(); } else { bientot('appr'); }
 }
-// « Demande d'extrait » : l'auteur envoie son extrait en PDF par courriel, TBL s'occupe de la distribution.
-var COURRIEL_EXTRAITS = 'clients@editionstbl.ca';
+// « Demande d'extrait » : explique à l'auteur comment son extrait PDF est distribué.
 function demandeExtrait() {
   var corps = document.createElement('div');
   var p1 = document.createElement('p');
-  p1.textContent = 'Les lecteurs peuvent demander un extrait de votre livre depuis sa page. Pour nous le fournir, écrivez-nous à ' + COURRIEL_EXTRAITS + ' en joignant le fichier PDF de votre extrait.';
+  p1.textContent = 'Les lecteurs peuvent demander un extrait de votre livre depuis sa page. Téléversez votre extrait en PDF juste au-dessus de ce bouton, puis enregistrez.';
   var p2 = document.createElement('p');
-  p2.textContent = 'L’équipe des Éditions TBL s’occupera de distribuer votre extrait.';
+  p2.textContent = 'Une fois la page publiée, votre livre est ajouté au formulaire de demande d’extrait du site et chaque lecteur qui le demande reçoit par courriel le lien de votre PDF. Sans PDF, le bouton n’apparaît pas sur la page.';
   corps.appendChild(p1); corps.appendChild(p2);
   modale({ titre: 'Demande d’extrait', corps: corps, boutons: [{ id: 'ok', libelle: 'J’ai compris', principal: true }] });
 }
@@ -1845,10 +1931,13 @@ function factureCourante() {
   if (etat.nouveau) { return etat.d.facture || null; }
   if (etat.d.etat === 'corriger') { return null; }
   return factureCorrections(
-    CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: !!etat.chg[c.cle], taux: etat.t[c.cle] || 0 }; }),
+    CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: champModifie(c.cle), taux: etat.t[c.cle] || 0 }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] }; }),
     etat.d.gratuit);
 }
+// Un texte compte comme modifié si son contenu a changé. L'extrait PDF fait partie de la composante Extrait
+// (décision de Marcel du 19 octobre 2026) : un nouveau PDF seul coûte 5 $, 10 $ si le texte change de 20 % ou plus.
+function champModifie(cle) { return !!etat.chg[cle] || (cle === 'extrait' && !!etat.chgL.extraitPdf); }
 function allerA(cle) {
   var cible = etat.champs[cle] || (IMAGE_CONF[cle] ? ctl(cle) : zoneLivre(cle));
   if (cible) { cible.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -1927,10 +2016,10 @@ function majUI() {
   CHAMPS.forEach(function (c) {
     var boite = etat.champs[c.cle];
     var tx = boite.querySelector('[data-role="tx"]');
-    var prix = prixTexte(!!etat.chg[c.cle], etat.t[c.cle] || 0);
-    tx.textContent = !etat.chg[c.cle] ? 'Non modifié'
-      : (etat.fmt[c.cle] ? 'Mise en forme' : 'Modifié') + (fac ? ' : ' + argent(prix) : '');
-    tx.classList.toggle('chg', !!etat.chg[c.cle]);
+    var modifie = champModifie(c.cle), prix = prixTexte(modifie, etat.t[c.cle] || 0);
+    tx.textContent = !modifie ? 'Non modifié'
+      : (!etat.chg[c.cle] ? 'PDF modifié' : (etat.fmt[c.cle] ? 'Mise en forme' : 'Modifié')) + (fac ? ' : ' + argent(prix) : '');
+    tx.classList.toggle('chg', modifie);
     tx.hidden = prixFixe;
     boite.querySelector('[data-role="fmt"]').hidden = true;
     // « Annuler les modifications » seulement s'il y a des modifications : par rapport au texte publié, ou au
@@ -2172,11 +2261,16 @@ async function enregistrer() {
     // Seules les images changées depuis le dernier enregistrement partent au serveur ; revenir à l'image
     // publiée retire le tampon.
     CLES_IMAGES.forEach(function (k) { if (W[k] !== S[k]) { livre.images[k] = W[k] === P[k] ? { retablir: true } : { data: W[k] }; } });
+    // Extrait PDF : un nouveau fichier part au serveur ; revenir à l'extrait publié (ou à aucun) vide le tampon.
+    if (clePdf(W.extraitPdf) !== clePdf(S.extraitPdf)) {
+      livre.extraitPdf = W.extraitPdf && W.extraitPdf.data ? { data: W.extraitPdf.data, nom: W.extraitPdf.nom } : { retablir: true };
+    }
     var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
     if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
     CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
     // Le serveur renvoie l'adresse définitive des images téléversées (Gestionnaire de médias)
     Object.keys(r.images || {}).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(livre.images, k)) { etat.L.work[k] = r.images[k]; } });
+    if (livre.extraitPdf) { etat.L.work.extraitPdf = r.extraitPdf || null; }
     etat.L.work.email = livre.email;
     etat.L.saved = clone(etat.L.work);
     etat.copie = true;
@@ -2200,6 +2294,7 @@ function autresModifications() {
   if (C.photoAuteur) { o.push('Photo de l’auteur'); }
   if (C.afficheauteur) { o.push('Section Auteur ' + (W.afficheauteur ? 'affichée' : 'masquée')); }
   if (C.email) { o.push('Courriel de contact'); }
+  if (C.extraitPdf) { o.push('Extrait PDF'); }
   return o;
 }
 // Approuver et envoyer (une demande En approbation) et Publier (édition directe par un administrateur, sans
@@ -2237,7 +2332,13 @@ async function valider() {
   }
   // imageCatalogue : null (pas de nouvelle image), { ok: true } ou { ok: false } (image de la boutique à refaire)
   var boutique = !res.imageCatalogue ? '' : (res.imageCatalogue.ok ? ' Image du produit mise à jour dans la boutique.' : ' Attention : l’image du produit dans la boutique n’a pas été mise à jour.');
-  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.') + boutique, res.imageCatalogue && !res.imageCatalogue.ok ? 'mal' : 'ok');
+  // extrait : null (pas de nouveau PDF), sinon { copie, formulaire: { ok, ajoute } | { ok: false }, raison }
+  var ex = res.extrait, extraitOk = !ex || (ex.copie && !ex.raison && ex.formulaire && ex.formulaire.ok);
+  var texteExtrait = !ex ? '' : (extraitOk
+    ? ' Extrait PDF copié dans le dossier Extrait' + (ex.formulaire.ajoute ? ' et livre ajouté au formulaire.' : ' (livre déjà dans le formulaire).')
+    : ' Attention : ' + (ex.raison || '') + (ex.formulaire && !ex.formulaire.ok ? ' Le livre n’a pas pu être ajouté au formulaire Extrait.' : ''));
+  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.') + boutique + texteExtrait,
+    (res.imageCatalogue && !res.imageCatalogue.ok) || !extraitOk ? 'mal' : 'ok');
   await demarrer();
 }
 // Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
@@ -2479,13 +2580,15 @@ function montrerApercu(d) {
 // qu'il fera sur le site.
 function brancherBoutonsApercu(page, L) {
   var courriel = (L.email || '').trim();
-  // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché
+  // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché, et sans
+  // extrait en PDF, le bouton « Demande d'extrait » aussi.
   page.querySelector('[data-action="contact"]').hidden = !courriel;
+  page.querySelector('[data-action="extrait"]').hidden = !L.extraitPdf;
   var messages = {
     commande: 'Commande numérique : sur le site, ce bouton lance la commande du livre numérique (ePUB). Rien n’est commandé dans l’aperçu.',
     achat: 'Acheter le ePUB : sur le site, ce bouton ajoute le livre numérique au panier. Rien n’est acheté dans l’aperçu.',
     contact: 'Contacter l’auteur : sur le site, ce bouton ouvre la messagerie du lecteur pour écrire à ' + courriel + '.',
-    extrait: 'Demande d’extrait : sur le site, ce bouton permet au lecteur de demander un extrait du livre. L’équipe TBL le lui envoie.',
+    extrait: 'Demande d’extrait : sur le site, le lecteur remplit un court formulaire et reçoit par courriel le lien de votre extrait en PDF.',
     bientot: 'Bientôt disponible : le livre papier n’est pas encore offert sur Amazon. Le bouton Amazon remplacera cette mention quand il le sera.'
   };
   Array.prototype.forEach.call(page.querySelectorAll('[data-action]'), function (b) {
@@ -2532,9 +2635,10 @@ function montrerRapport(d) {
   var taux = paires.map(function (p) { return tauxModification(p.avant, p.apres).taux; });
   var chgs = paires.map(function (p) { return signature(p.avant) !== signature(p.apres); });
   var LPr = d.champsLivre.publie, LCr = d.champsLivre.copie || LPr;
+  var pdfChg = clePdf(LPr.extraitPdf) !== clePdf(LCr.extraitPdf);
   // Montants de la grille (même calcul que l'éditeur) ; renvoi après un refus : déjà payé
   var fac = d.etat === 'corriger' ? null : factureCorrections(
-    CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i], taux: taux[i] }; }),
+    CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i] || (c.cle === 'extrait' && pdfChg), taux: taux[i] }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: LPr[x[0]] !== LCr[x[0]] }; }),
     d.gratuit);
   var racine = $('vue-rapport');
@@ -2561,10 +2665,10 @@ function montrerRapport(d) {
   rap.appendChild(meta);
   CHAMPS.forEach(function (c, i) {
     var p = paires[i], al = alignerMots(p.avant, p.apres);
-    var chg = chgs[i];
+    var chg = chgs[i], pdfSeul = !chg && c.cle === 'extrait' && pdfChg;
     var sec = el('section');
     var h = el('h2'); h.appendChild(el('span', '', c.nom));
-    h.appendChild(el('span', '', chg ? (taux[i] === 0 ? 'Mise en forme' : 'Modifié') + (fac ? ' : ' + argent(prixTexte(true, taux[i])) : '') : 'Aucune modification'));
+    h.appendChild(el('span', '', (chg || pdfSeul) ? (pdfSeul ? 'PDF modifié' : (taux[i] === 0 ? 'Mise en forme' : 'Modifié')) + (fac ? ' : ' + argent(prixTexte(true, taux[i])) : '') : 'Aucune modification'));
     sec.appendChild(h);
     var deux = el('div', 'deux');
     [['Avant (version publiée)', p.avant, al && al.avantCommun, 'retrait'], ['Après (copie de l’auteur)', p.apres, al && al.apresCommun, 'ajout']].forEach(function (col) {
@@ -2600,6 +2704,7 @@ function montrerRapport(d) {
   });
   ligneAutre('Section Auteur', LP.afficheauteur ? 'Affichée' : 'Masquée', LC.afficheauteur ? 'Affichée' : 'Masquée', !!LP.afficheauteur !== !!LC.afficheauteur);
   ligneAutre('Courriel de contact', LP.email || '(aucun)', LC.email || '(aucun)', courrielNorm(LP.email) !== courrielNorm(LC.email));
+  ligneAutre('Extrait PDF (compris dans l’Extrait)', LP.extraitPdf ? LP.extraitPdf.nom : '(aucun)', LC.extraitPdf ? LC.extraitPdf.nom : '(aucun)', pdfChg);
   sec2.appendChild(tb);
   rap.appendChild(sec2);
   racine.appendChild(rap);
