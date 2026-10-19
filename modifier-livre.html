@@ -10,17 +10,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* Jetons des gabarits (Templates\tokens.css, allure de calendrier-vedettes.html). Copiés ici : la composante est un fichier autonome. */
-:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-radius:14px;--tbl-radius-btn:9px}
-/* --accent : boutons et interface (rouge des gabarits). --red et --gold : couleurs de la comparaison (retrait barré #ED1C24, ajout #FFCB05), à ne pas changer. */
-:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:#0f1114;--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--accent:var(--tbl-accent);--red:#ED1C24;--redsoft:var(--tbl-accent-soft);--gold:#FFCB05;--ok:var(--tbl-ok);--edit:#4d9fff}
+:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-space-xs:8px;--tbl-space-sm:16px;--tbl-space-md:24px;--tbl-space-lg:40px;--tbl-radius:14px;--tbl-radius-btn:9px}
+/* --accent : boutons et interface (rouge des gabarits). --red et --gold : couleurs de la comparaison (retrait barré #ED1C24, ajout #FFCB05), à ne pas changer.
+   --edit : contour des zones de saisie de la page du livre (bleu « information » des gabarits). */
+:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:var(--tbl-paper-2);--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--accent:var(--tbl-accent);--rouge-texte:#ffb3b8;--red:#ED1C24;--redsoft:var(--tbl-accent-soft);--gold:#FFCB05;--ok:var(--tbl-ok);--edit:var(--tbl-blue)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{background:var(--bg)}
 html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin}
-body{margin:0;color:var(--txt);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+body{margin:0;color:var(--txt);font-family:var(--tbl-font-body);line-height:1.5}
 .wrap{width:min(1160px,calc(100% - 28px));margin:auto}
+/* Largeur standard des pages (1000 px), comme l'Espace Auteurs et la Mise en vedette */
+.bloc{max-width:1000px;margin:0 auto}
 button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--edit);outline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sub{color:var(--muted);margin:0}
 
 /* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
 .version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
@@ -31,12 +35,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:normal}
 .btn.sec:hover:not(:disabled){border-color:var(--accent);filter:none}
 .btn.petit{padding:8px 14px;font-size:.85rem}
+/* Bouton enfoncé (« Voir les changements » actif) : fond rouge atténué, comme un choix en cours */
+.btn.sec[aria-pressed="true"]{background:var(--redsoft);border-color:var(--accent);color:#fff}
+/* Approuver : vert du bouton « Confirmer » des gabarits (Templates\action-buttons.html) ; Refuser : rouge TBL */
 .btn.valider{background:var(--ok);color:#0b1a12}
-.btn.refuser{background:#9b2b33}
-.motif-saisie{width:100%;min-height:120px;box-sizing:border-box;background:#0f1114;color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px;font:inherit;resize:vertical}
-.motif-saisie:focus{outline:2px solid var(--edit)}
+.btn.refuser{background:var(--accent)}
+.motif-saisie{width:100%;min-height:120px;box-sizing:border-box;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px;font:inherit;resize:vertical}
+.motif-saisie:focus{outline:none;border-color:var(--accent)}
 .motif-compteur{font-size:.8rem;color:var(--muted);text-align:right;margin-top:4px}
-.pastille.admin{background:rgba(199,146,255,.15);color:#c792ff}
 
 /* ---------- Etats plein ecran ---------- */
 .etat{max-width:620px;margin:70px auto;text-align:center;padding:0 16px}
@@ -47,28 +53,38 @@ button,input,select,textarea{font:inherit;color:inherit}
 @keyframes tour{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
 
-/* ---------- En-tete collant (edition) ---------- */
-#entete{position:sticky;top:0;z-index:30}
-#haut{background:#0d0e10;border-bottom:1px solid var(--line);padding:10px 0 8px}
-.ligne1{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
-.titre-app .petit{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.titre-app strong{font-size:1.2rem}
+/* ---------- En-tête (édition) ----------
+   Comme l'Espace Auteurs et la Mise en vedette : ligne 1 les boutons, ligne 2 le titre, ligne 3 une
+   introduction. Ensuite le résumé des modifications, puis la barre d'actions, seule collante en haut. */
+#haut{padding:18px 0 4px}
+.entete{margin-bottom:12px}
+.barre-haut{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.actions-haut{display:flex;flex-wrap:wrap;gap:8px}
+.barre-haut .btn,#outils .btn{padding:8px 14px;font-size:.9rem}
+.sur-titre{margin:6px 0 0;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.titre-page{font-family:var(--tbl-font-heading);font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:2px 0 8px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 /* Pastilles de statut (Templates\status-badge.html) : fond teinté et point de couleur. */
-.pastille{display:inline-block;border:0;border-radius:99px;padding:3px 12px;font-size:.8rem;font-weight:bold;background:#20232a;color:var(--muted);margin-left:10px;vertical-align:middle}
-.pastille::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px}
+.pastille{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:4px 12px;font-family:var(--tbl-font-body);font-size:.8rem;font-weight:600;line-height:1.4;background:#20232a;color:var(--muted);white-space:nowrap}
+.pastille::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pastille.pub{background:rgba(76,195,138,.15);color:var(--ok)}
 .pastille.mod{background:var(--tbl-orange-soft);color:var(--tbl-orange)}
 .pastille.appr{background:var(--tbl-blue-soft);color:var(--tbl-blue)}
+.pastille.corr{background:var(--redsoft);color:var(--rouge-texte)}
+.pastille.admin{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.pastille.admin::before{display:none}
+/* Résumé : taux par texte (ou services d'un livre Nouveau) et date de la dernière modification */
+.resume{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px}
+.resume .aide{width:auto;margin-left:auto}
 .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .aide{font-size:.8rem;color:var(--muted);min-height:1.2em;text-align:right;width:100%}
-.ligne2{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin-top:8px}
 .taux-global{display:flex;align-items:center;gap:10px}
 .taux-global .lib{font-size:.82rem;color:var(--muted)}
-.taux-global strong{font-size:1.6rem;min-width:4.4ch;line-height:1}
-.barre{width:150px;height:9px;border-radius:99px;background:#24272d;overflow:hidden}
+.taux-global strong{font-size:1.3rem;min-width:4.4ch;line-height:1}
+.barre{width:120px;height:9px;border-radius:99px;background:#20232a;overflow:hidden}
 .barre i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}
 .pills{display:flex;flex-wrap:wrap;gap:6px}
-.pill{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted);cursor:pointer}
-.pill:hover{border-color:var(--txt);color:var(--txt)}
+.pill{border:1px solid var(--line);background:var(--card2);border-radius:99px;padding:3px 11px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.pill:hover{border-color:var(--accent);color:var(--txt)}
 .pill b{color:var(--txt)}
 .pill.chg{border-color:var(--gold)}
 /* Récapitulatif des services à prix fixe (livre au statut Nouveau) */
@@ -78,35 +94,41 @@ button,input,select,textarea{font:inherit;color:inherit}
 .recap .lig.total{border-color:var(--gold);color:var(--txt)}
 .recap .lig.total b{color:var(--gold)}
 .recap .lig.controle{border-style:dashed;opacity:.8}
-#outils{background:#111317;border-bottom:1px solid var(--line);padding:7px 0}
-#outils .wrap{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:center}
+/* Barre d'actions collante : comparaison, état de l'enregistrement et boutons Enregistrer / Approuver */
+#outils{position:sticky;top:0;z-index:30;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+.rang-outils{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.rang-outils .ecart{flex:1}
+.rang-outils .aide{width:auto}
+.rang-outils .actions{margin-left:auto}
+#outils #aide-appr:empty{display:none}
 .grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
 .grp:last-child{border-right:0}
-.grp.vues{border-right:0;flex-wrap:wrap}
-.grp.vues .tb{height:30px;font-size:.82rem}
-.tb{min-width:34px;height:34px;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:7px;cursor:pointer;padding:0 8px;font-size:.88rem}
-.tb:hover:not(:disabled){border-color:var(--txt)}
+/* Boutons de la barre de mise en forme : même forme que le bouton secondaire des gabarits, en plus petit */
+.tb{min-width:34px;height:34px;border:1px solid var(--line);background:transparent;color:var(--txt);border-radius:var(--tbl-radius-btn);cursor:pointer;padding:0 8px;font-size:.88rem}
+.tb:hover:not(:disabled){border-color:var(--accent)}
 .tb:disabled{opacity:.38;cursor:not-allowed}
-.tb[aria-pressed="true"]{background:var(--edit);border-color:var(--edit);color:#00142e}
-.tb.lien{text-decoration:none;display:inline-flex;align-items:center}
+.tb[aria-pressed="true"]{background:var(--redsoft);border-color:var(--accent);color:#fff}
 /* Barre de mise en forme propre à chaque texte enrichi, juste au-dessus de la zone de saisie */
-.outils-champ{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:6px 8px;background:#111317;border:1px solid var(--line);border-radius:9px}
+.outils-champ{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:6px 8px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn)}
 .outils-champ .tb{min-width:30px;height:30px;font-size:.82rem}
 .outils-champ .grp{padding-right:6px}
 .legende{font-size:.8rem;color:var(--muted);display:flex;gap:12px;align-items:center}
 .legende .aj{color:var(--gold);font-weight:bold}
 .legende .re{color:var(--red);text-decoration:line-through;font-weight:bold}
 @media (max-width:720px){
-  #entete{display:contents}
-  #haut{position:static}
-  #outils{position:sticky;top:0;z-index:30;overflow-x:auto}
-  #outils .wrap{flex-wrap:nowrap;width:max-content;min-width:calc(100% - 28px)}
-  .barre{width:100px}
+  .barre{width:80px}
+  .rang-outils{gap:6px 10px}
+  .rang-outils .ecart{display:none}
+  .rang-outils .actions{width:100%}
+  .rang-outils .actions .btn{flex:1 1 auto}
+  .legende{display:none}
 }
 
-#bandeau-appr{background:#0e1a2b;border:1px solid #2a4a7a;color:#cfe2ff;border-radius:12px;padding:12px 16px;margin:14px auto;max-width:1000px}
-#bandeau-refus{background:#2a0f12;border:1px solid var(--red);color:#ffd6d8;border-radius:12px;padding:12px 16px;margin:14px auto;max-width:1000px;white-space:pre-wrap}
-#msg-global{background:#2a0f12;border:1px solid var(--red);color:#ffd6d8;border-radius:12px;padding:10px 16px;margin:12px auto;max-width:1000px}
+/* Bandeaux d'information (couleurs d'état des gabarits) */
+#bandeau-appr,#bandeau-refus,#msg-global{border-radius:var(--tbl-radius);padding:12px 16px;margin:14px auto;max-width:1000px}
+#bandeau-appr{background:var(--tbl-blue-soft);border:1px solid var(--tbl-blue);color:var(--txt)}
+#bandeau-refus{background:var(--redsoft);border:1px solid var(--accent);color:var(--txt);white-space:pre-wrap}
+#msg-global{background:var(--redsoft);border:1px solid var(--accent);color:var(--txt)}
 
 /* ---------- Page du livre (replique de /livres/xxx) ---------- */
 #zone-page{padding:14px 0 60px}
@@ -146,10 +168,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .col-photo .controle-image .mini.gros{padding:6px 10px;font-size:12px}
 .col-note{display:flex;flex-direction:column;min-height:260px}
 .bouton-contour{align-self:flex-start;border:1px solid #fff;background:transparent;color:#fff;padding:9px 12px;margin-top:auto;font-size:15px;font-family:Arial,sans-serif}
-.controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:rgba(0,0,0,.78);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:center;font:12px Arial,sans-serif;color:#cfd3da}
+.controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:rgba(17,19,23,.92);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:10px 12px;text-align:center;font:12px var(--tbl-font-body);color:var(--muted)}
 .controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .controle-image .etat-img{color:var(--gold);font-weight:bold}
-.controle-image .err-img{color:#ff8a8f;font-weight:bold}
+.controle-image .err-img{color:var(--rouge-texte);font-weight:bold}
 .controle-image .info-l{color:var(--muted)}
 .controle-image input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .controle-image .mini.gros{padding:7px 14px;font-size:13px}
@@ -159,37 +181,37 @@ button,input,select,textarea{font:inherit;color:inherit}
 .image-vide strong{font-size:14px}
 .couv .image-vide{width:100%;max-width:330px;aspect-ratio:2/3}
 .col-photo .image-vide{width:210px;max-width:100%;aspect-ratio:400/454}
-.controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;background:#0d0e10;font:13px Arial,sans-serif;color:#e6e8ec;max-width:640px}
+.controle-auteur{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;margin:8px auto 10px;padding:8px 14px;border:1px solid var(--line);border-radius:var(--tbl-radius);background:var(--card2);font:13px var(--tbl-font-body);color:var(--txt);max-width:640px}
 .controle-auteur .info-l{color:var(--muted);font-size:12px}
 .interrupteur{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:bold}
 .interrupteur input{position:absolute;opacity:0;width:1px;height:1px}
-.interrupteur .piste{width:44px;height:24px;border-radius:99px;background:#3a3d45;position:relative;transition:background .15s;flex:none}
+.interrupteur .piste{width:44px;height:24px;border-radius:99px;background:var(--line);position:relative;transition:background .15s;flex:none}
 .interrupteur .piste::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
 .interrupteur input:checked+.piste{background:var(--ok)}
 .interrupteur input:checked+.piste::after{left:23px}
-.interrupteur input:focus-visible+.piste{outline:2px solid var(--edit);outline-offset:2px}
+.interrupteur input:focus-visible+.piste{outline:2px solid var(--accent);outline-offset:2px}
 .interrupteur input:disabled+.piste{opacity:.5}
-.section-masquee{display:none;border:1px dashed #5a5e67;border-radius:22px;padding:18px;text-align:center;color:var(--muted);font:14px Arial,sans-serif;margin:8px auto}
+.section-masquee{display:none;border:1px dashed var(--line);border-radius:22px;padding:18px;text-align:center;color:var(--muted);font:14px Arial,sans-serif;margin:8px auto}
 .v-edition [data-section].masque .section-masquee{display:block}
 .v-edition [data-section].masque .titre-img,.v-edition [data-section].masque .carte{display:none}
 .v-apercu [data-section].masque{display:none}
 .v-apercu .controle-auteur,.v-apercu .controle-image,.v-apercu .champ-email,.v-apercu .section-masquee{display:none}
 .ligne-contact{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:auto}
 .ligne-contact .bouton-contour{margin-top:0}
-.champ-email{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0;font:600 12px Arial,sans-serif;color:#cfd3da}
+.champ-email{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0;font:600 12px var(--tbl-font-body);color:var(--muted)}
 .champ-email input{width:100%;background:transparent;border:1px solid #fff;color:#fff;padding:9px 12px;font:15px Arial,sans-serif;border-radius:2px}
-.champ-email input::placeholder{color:#8b8f98}
+.champ-email input::placeholder{color:var(--muted)}
 .champ-email input:focus{outline:2px solid var(--edit);outline-offset:2px}
 .champ-email.err input{border-color:var(--red);outline:2px solid var(--red)}
 .champ-email input:disabled{opacity:.55;cursor:not-allowed}
-.msg-email{color:#ff8a8f;font:600 13px Arial,sans-serif;margin-top:6px}
+.msg-email{color:var(--rouge-texte);font:600 13px Arial,sans-serif;margin-top:6px}
 .note-email{color:var(--muted);font:12px Arial,sans-serif;margin-top:4px}
 .v-edition .diff-l .ancien{color:var(--red);text-decoration:line-through}
 .v-edition .diff-l .nouveau{color:var(--gold)}
 .pill-extrait{margin:24px auto 6px;border:1px solid #fff;border-radius:22px;background:#480000;color:#fff;text-align:center;padding:10px 14px;letter-spacing:.22em;font-size:14px;width:min(562px,92%);display:flex;justify-content:center;align-items:center;gap:14px}
 .carte-duo img{width:100%;max-width:770px;display:block;margin:6px auto}
 .duo-grille{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start}
-.duo-etiquette{font:700 12px Arial,sans-serif;color:#cfd3da;text-align:center;margin-bottom:6px;letter-spacing:.04em}
+.duo-etiquette{font:700 12px var(--tbl-font-body);color:var(--muted);text-align:center;margin-bottom:6px;letter-spacing:.04em}
 .duo-mob img{max-width:340px}
 .duo-col .controle-image{max-width:none;margin-top:10px}
 .v-apercu .duo-etiquette{display:none}
@@ -242,27 +264,28 @@ button,input,select,textarea{font:inherit;color:inherit}
 .rt b,.rt strong{font-weight:700}
 
 /* ---------- Edition en place ---------- */
-.champ-tete{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font:600 12px Arial,sans-serif;color:#cfd3da;letter-spacing:normal}
-.chip{background:#1b1e24;border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
-.chip.crayon{border-color:#5a6577}
+.champ-tete{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;font:600 12px var(--tbl-font-body);color:var(--muted);letter-spacing:normal}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
+.chip.crayon{color:var(--txt)}
 .chip.tx{color:var(--muted)}
 .chip.tx.chg{border-color:var(--gold);color:var(--gold)}
 .chip.fmt{border-color:var(--edit);color:var(--edit)}
 .champ-tete .ecart{flex:1}
-.mini{background:#1b1e24;border:1px solid #5a5e67;color:#fff;border-radius:99px;padding:3px 11px;font:600 12px Arial,sans-serif;cursor:pointer}
-.mini:hover:not(:disabled){border-color:#fff}
+/* Petits boutons secondaires (↻, Annuler les modifications, images) : forme du bouton secondaire des gabarits */
+.mini{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:var(--tbl-radius-btn);padding:4px 11px;font:600 12px var(--tbl-font-body);cursor:pointer}
+.mini:hover:not(:disabled){border-color:var(--accent)}
 .mini:disabled{opacity:.4;cursor:not-allowed}
 .v-edition .rt[contenteditable="true"]{outline:1px dashed rgba(255,255,255,.3);outline-offset:6px;border-radius:4px;cursor:text}
 /* Zones de saisie des textes enrichis : au moins 6 lignes (15 px x 1,6 = 24 px par ligne), même vides.
    La description de l'en-tête (.rt-hero) garde sa hauteur fixe ; l'aperçu n'est pas touché. */
 .v-edition .rt:not(.rt-hero){min-height:144px}
-.v-edition .rt[contenteditable="true"]:hover{outline-color:#8ab4ff}
+.v-edition .rt[contenteditable="true"]:hover{outline-color:var(--edit)}
 .v-edition .rt[contenteditable="true"]:focus{outline:2px solid var(--edit)}
 .v-edition .champ.err .rt{outline:2px solid var(--red)!important}
 .v-edition .rt.lecture{outline:1px dashed rgba(255,255,255,.18);outline-offset:6px;cursor:default}
 .v-edition .rt.diff{outline:1px solid rgba(255,203,5,.5);outline-offset:6px;border-radius:4px}
-.msg-url{margin-top:12px;color:#ff8a8f;font:600 13px Arial,sans-serif}
-.note-champ{margin-top:10px;color:var(--muted);font:12px Arial,sans-serif}
+.msg-url{margin-top:12px;color:var(--rouge-texte);font:600 13px Arial,sans-serif}
+.note-champ{margin-top:10px;color:var(--muted);font:12px var(--tbl-font-body)}
 .v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
 button.pill-extrait{font-family:inherit;cursor:pointer}
 /* Section « En vedette » masquée dans l'édition et l'aperçu tant que les vedettes ne sont pas programmées (tâche 138) */
@@ -271,35 +294,38 @@ button.pill-extrait{font-family:inherit;cursor:pointer}
 .v-apercu .champ-tete,.v-apercu .msg-url,.v-apercu .note-champ{display:none}
 .v-apercu .rt{outline:none}
 
-/* ---------- Apercu (nouvel onglet) ---------- */
-#barre-apercu{position:sticky;top:0;z-index:40;background:#0d0e10;border-bottom:1px solid var(--line);padding:8px 0}
-#barre-apercu .wrap{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
-#barre-apercu .seg{display:flex;gap:4px}
-#barre-apercu .seg a{border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:6px 14px;color:var(--muted);text-decoration:none;font-size:.9rem}
-#barre-apercu .seg a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:bold}
-#barre-apercu small{color:var(--muted)}
-#zone-apercu{background:#0b0b0d;padding:20px 14px 60px;overflow-x:auto}
-.cadre{margin:0 auto;border:1px solid #3a3d45;background:#000}
+/* ---------- Aperçu (dans l'éditeur) ----------
+   Même en-tête que l'édition ; Ordinateur et Mobile sont des onglets « dossier » (Templates\tabs.html),
+   comme ceux de l'Espace Auteurs : l'onglet actif se fond dans le panneau qui contient la page. */
+#zone-apercu{padding:0 0 60px}
+.onglets{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding:2px 2px 0;scrollbar-width:none}
+.onglets::-webkit-scrollbar{display:none}
+.onglet{flex:0 0 auto;border:1px solid var(--line);border-bottom:0;background:var(--card2);border-radius:var(--tbl-radius-btn) var(--tbl-radius-btn) 0 0;padding:10px 18px;font-family:var(--tbl-font-heading);font-size:.98rem;cursor:pointer;color:var(--muted);white-space:nowrap}
+.onglet:hover{color:var(--txt)}
+.onglet[aria-selected="true"]{background:var(--card);color:var(--txt);font-weight:bold;box-shadow:inset 0 2px 0 var(--accent)}
+.panneau-apercu{background:var(--card);border:1px solid var(--line);border-radius:0 var(--tbl-radius) var(--tbl-radius) var(--tbl-radius);padding:20px 14px;overflow-x:auto}
+.cadre{margin:0 auto;border:1px solid var(--line);background:#000}
 .cadre.ordinateur{width:1160px}
-.cadre.mobile{width:390px;border:8px solid #2b2d33;border-radius:34px;overflow:hidden}
-#avis-apercu{max-width:1000px;margin:0 auto 14px;background:#2a230a;border:1px solid #6b5a12;color:#ffe9a0;border-radius:10px;padding:10px 14px;font-size:.9rem}
+.cadre.mobile{width:min(406px,100%);border:8px solid var(--line);border-radius:34px;overflow:hidden}
+@media (max-width:560px){.panneau-apercu{padding:12px 8px}}
+#avis-apercu{margin:0 0 14px;background:var(--tbl-orange-soft);border:1px solid var(--tbl-orange);color:var(--txt);border-radius:var(--tbl-radius);padding:10px 14px;font-size:.9rem}
 
-/* ---------- Fenetre modale ---------- */
-#modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+/* ---------- Fenêtre de confirmation (Templates\confirm-modal.html) ---------- */
+#modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
 #modal .voile{position:absolute;inset:0;background:rgba(0,0,0,.72)}
-#modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:22px 24px;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto}
-#modal h2{margin:0 0 12px;font-size:1.25rem}
-#modal .corps{color:#e6e8ec}
+#modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto}
+#modal h2{font-family:var(--tbl-font-heading);margin:0 0 10px;font-size:1.15rem}
+#modal .corps{color:var(--muted);font-size:.95rem}
 #modal .corps p{margin:0 0 10px}
 #modal .corps table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.95rem}
 #modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
-#modal .corps td:last-child{text-align:right;font-weight:bold}
+#modal .corps td:last-child{text-align:right;font-weight:bold;color:var(--txt)}
 #modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 
 /* ---------- Avis (toast) ---------- */
-#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:#1d2026;border:1px solid #4a4e58;border-radius:10px;padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
 #toast.ok{border-color:var(--ok)}
-#toast.mal{border-color:var(--red)}
+#toast.mal{border-color:var(--accent)}
 
 /* ---------- Rapport Avant / Apres (papier) ---------- */
 .v-rapport,.v-rapport html{background:#fff}
@@ -351,42 +377,41 @@ body.v-rapport{background:#fff;color:#111}
 
 <!-- ===== Vue Edition ===== -->
 <div id="vue-edition" hidden>
-  <header id="entete">
-    <div id="haut"><div class="wrap">
-      <div class="ligne1">
-        <div class="grp vues">
-          <button type="button" class="tb" id="b-retour" title="Revenir à l’onglet Livres de l’Espace Auteurs, sur ce livre">← Espace Auteurs</button>
-          <button type="button" class="tb" id="b-actualiser" title="Recharger la page du livre depuis le serveur" aria-label="Actualiser">↻ Actualiser</button>
-        </div>
-        <div class="titre-app"><span class="petit">Modifier la page du livre</span><strong id="h-titre"></strong><span id="pastille-etat" class="pastille"></span><span id="chip-admin" class="pastille admin" hidden>Administrateur</span></div>
-        <div class="grp vues">
-          <button type="button" class="tb" id="t-ap-ord" title="Ouvre l'aperçu ordinateur dans un nouvel onglet">Aperçu Ordinateur</button>
-          <button type="button" class="tb" id="t-ap-mob" title="Ouvre l'aperçu mobile dans un nouvel onglet">Aperçu Mobile</button>
-          <button type="button" class="tb" id="t-rapport" title="Ouvre le rapport Avant / Après dans un nouvel onglet">Rapport Avant / Après</button>
-        </div>
-        <div class="actions">
-          <button type="button" class="btn sec" id="b-enreg">Enregistrer</button>
-          <button type="button" class="btn" id="b-appr">Approuver / Payer</button>
-          <button type="button" class="btn valider" id="b-valider" hidden>Approuver et envoyer</button>
-          <button type="button" class="btn refuser" id="b-refuser" hidden>Refuser et envoyer</button>
-        </div>
-      </div>
-      <div class="ligne2">
-        <div class="taux-global"><span class="lib">Modification globale</span><strong id="taux-val">0 %</strong><div class="barre" role="img" aria-label="Taux de modification"><i id="taux-barre"></i></div></div>
-        <div class="pills" id="taux-blocs"></div>
-        <div class="recap" id="recap-services" role="group" aria-label="Services facturés" hidden></div>
-        <div class="aide" id="etat-sauv" style="width:auto;margin-left:auto"></div>
-        <div class="aide" id="derniere-modif" style="width:auto;cursor:help" tabindex="0" hidden></div>
-        <div class="aide" id="aide-appr" style="width:auto"></div>
-      </div>
-    </div></div>
-    <div id="outils" role="toolbar" aria-label="Comparaison avec la version publiée"><div class="wrap">
-      <div class="grp">
-        <button type="button" class="tb" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
-      </div>
+  <header id="haut"><div class="wrap"><div class="bloc entete">
+    <div class="barre-haut">
+      <button type="button" class="btn sec" id="b-retour" title="Revenir à l’onglet Livres de l’Espace Auteurs, sur ce livre">← Espace Auteurs</button>
+      <span class="actions-haut">
+        <button type="button" class="btn sec" id="t-ap-ord" title="Voir la page telle qu’elle paraîtra sur un ordinateur">Aperçu ordinateur</button>
+        <button type="button" class="btn sec" id="t-ap-mob" title="Voir la page telle qu’elle paraîtra sur un téléphone">Aperçu mobile</button>
+        <button type="button" class="btn sec" id="t-rapport" title="Comparer la page publiée et vos modifications, texte par texte">Rapport Avant / Après</button>
+        <button type="button" class="btn sec" id="b-actualiser" title="Recharger la page du livre depuis le serveur">↻ Actualiser</button>
+      </span>
+    </div>
+    <p class="sur-titre">Modifier la page du livre</p>
+    <h1 class="titre-page"><span id="h-titre"></span><span id="pastille-etat" class="pastille"></span><span id="chip-admin" class="pastille admin" hidden>Administrateur</span></h1>
+    <p class="sub">Modifiez les textes et les images directement sur la page, puis enregistrez. Les aperçus montrent la page telle qu’elle paraîtra sur le site.</p>
+    <div class="resume">
+      <div class="pills" id="taux-blocs"></div>
+      <div class="recap" id="recap-services" role="group" aria-label="Services facturés" hidden></div>
+      <div class="aide" id="derniere-modif" style="cursor:help" tabindex="0" hidden></div>
+    </div>
+  </div></div></header>
+  <div id="outils" role="toolbar" aria-label="Actions de l’éditeur"><div class="wrap"><div class="bloc">
+    <div class="rang-outils">
+      <div class="taux-global"><span class="lib">Modification globale</span><strong id="taux-val">0 %</strong><div class="barre" role="img" aria-label="Taux de modification"><i id="taux-barre"></i></div></div>
+      <button type="button" class="btn sec" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
       <div class="legende" id="legende" hidden><span class="aj">Jaune : ajouté ou modifié</span><span class="re">Rouge barré : retiré</span></div>
-    </div></div>
-  </header>
+      <span class="ecart"></span>
+      <div class="aide" id="etat-sauv"></div>
+      <div class="actions">
+        <button type="button" class="btn sec" id="b-enreg">Enregistrer</button>
+        <button type="button" class="btn" id="b-appr">Approuver / Payer</button>
+        <button type="button" class="btn valider" id="b-valider" hidden>Approuver et envoyer</button>
+        <button type="button" class="btn refuser" id="b-refuser" hidden>Refuser et envoyer</button>
+      </div>
+    </div>
+    <div class="aide" id="aide-appr"></div>
+  </div></div></div>
   <div class="wrap">
     <div id="bandeau-appr" hidden></div>
     <div id="bandeau-refus" role="status" hidden></div>
@@ -397,17 +422,22 @@ body.v-rapport{background:#fff;color:#111}
 
 <!-- ===== Vue Apercu ===== -->
 <div id="vue-apercu" hidden>
-  <div id="barre-apercu"><div class="wrap">
-    <div><strong id="ap-titre"></strong><br><small id="ap-sous"></small></div>
-    <div class="seg" id="ap-seg">
-      <a id="ap-ord" href="#">Ordinateur</a><a id="ap-mob" href="#">Mobile</a>
+  <header id="haut-apercu"><div class="wrap"><div class="bloc entete" style="padding-top:18px">
+    <div class="barre-haut">
+      <button type="button" class="btn sec" id="ap-fermer">← Retour à l’éditeur</button>
     </div>
-    <button type="button" class="btn sec petit" id="ap-fermer">Fermer l'aperçu</button>
+    <p class="sur-titre">Aperçu de la page du livre</p>
+    <h1 class="titre-page" id="ap-titre"></h1>
+    <p class="sub" id="ap-sous"></p>
+  </div></div></header>
+  <div id="zone-apercu"><div class="wrap">
+    <div class="bloc"><div id="avis-apercu" role="status" hidden></div></div>
+    <div class="onglets" role="tablist" aria-label="Appareil de l’aperçu">
+      <button type="button" class="onglet" role="tab" id="ap-ord" aria-controls="panneau-apercu">Ordinateur</button>
+      <button type="button" class="onglet" role="tab" id="ap-mob" aria-controls="panneau-apercu">Mobile</button>
+    </div>
+    <div class="panneau-apercu" role="tabpanel" id="panneau-apercu"><div id="cadre-apercu" class="cadre ordinateur"></div></div>
   </div></div>
-  <div id="zone-apercu">
-    <div id="avis-apercu" hidden></div>
-    <div id="cadre-apercu" class="cadre ordinateur"></div>
-  </div>
 </div>
 
 <!-- ===== Vue Rapport ===== -->
@@ -513,10 +543,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 64fa3dd · 2026-10-18 08:31 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// b38ab6f · 2026-10-19 07:41 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '64fa3dd · 2026-10-18 08:31';
+var VERSION_TBL = 'b38ab6f · 2026-10-19 07:41';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1882,7 +1912,7 @@ function majUI() {
   $('b-valider').textContent = revue ? 'Approuver et envoyer' : 'Publier';
   $('b-refuser').hidden = !revue;
   var pe = $('pastille-etat');
-  pe.className = 'pastille' + (etat.appr ? ' appr' : (etat.copie ? ' mod' : ''));
+  pe.className = 'pastille' + ({ aucune: ' pub', modifier: ' mod', attente: ' appr', corriger: ' corr' }[etat.d.etat] || '');
   pe.textContent = LIBELLES_ETAT[etat.d.etat] || 'Version publiée';
   $('b-enreg').disabled = !etat.dirty || etat.verrou || etat.occupe;
   $('b-enreg').textContent = etat.occupe ? 'Enregistrement…' : 'Enregistrer';
@@ -2303,7 +2333,7 @@ function ajusterCadre() {
   if (!cadre || $('vue-apercu').hidden) { return; }
   cadre.style.zoom = '';
   if (!cadre.classList.contains('ordinateur')) { return; }
-  var dispo = $('zone-apercu').clientWidth - 28;
+  var dispo = $('panneau-apercu').clientWidth - 30; // marges intérieures du panneau et bordure du cadre
   var echelle = Math.min(1, dispo / 1160);
   if (echelle < 1) { cadre.style.zoom = String(echelle); }
 }
@@ -2348,7 +2378,7 @@ function montrerApercu(d) {
   document.body.className = 'v-apercu';
   document.title = 'Aperçu : ' + d.livre.titre + ' | Éditions TBL';
   var src = d.copie || d.publie;
-  $('ap-titre').textContent = 'Aperçu : ' + d.livre.titre;
+  $('ap-titre').textContent = d.livre.titre;
   var av = $('avis-apercu');
   if (d.enPlace) {
     $('ap-sous').textContent = 'La page telle qu’elle paraîtra, avec vos modifications. Le menu et le pied de page du site ne sont pas montrés.';
@@ -2370,12 +2400,21 @@ function montrerApercu(d) {
     if (estBrut(c.cle)) { rt.classList.add('rt-hero'); }
     rt.appendChild(blocsVersDom(norm(src[c.cle])));
   });
-  $('ap-ord').href = '#'; $('ap-mob').href = '#';
-  $('ap-ord').onclick = function (e) { e.preventDefault(); APPAREIL = 'ordinateur'; montrerApercu(d); };
-  $('ap-mob').onclick = function (e) { e.preventDefault(); APPAREIL = 'mobile'; montrerApercu(d); };
-  $('ap-ord').setAttribute('aria-current', APPAREIL === 'ordinateur' ? 'page' : 'false');
-  $('ap-mob').setAttribute('aria-current', APPAREIL === 'mobile' ? 'page' : 'false');
-  $('ap-fermer').textContent = d.enPlace ? 'Retour à l’éditeur' : 'Fermer l’aperçu';
+  // Onglets Ordinateur / Mobile (Templates\tabs.html) : clic, ou flèches gauche et droite au clavier
+  [['ap-ord', 'ordinateur'], ['ap-mob', 'mobile']].forEach(function (o) {
+    var b = $(o[0]), actif = APPAREIL === o[1];
+    b.setAttribute('aria-selected', actif ? 'true' : 'false');
+    b.tabIndex = actif ? 0 : -1;
+    b.onclick = function () { if (APPAREIL !== o[1]) { APPAREIL = o[1]; montrerApercu(d); $(o[0]).focus(); } };
+    b.onkeydown = function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') { return; }
+      e.preventDefault();
+      APPAREIL = APPAREIL === 'ordinateur' ? 'mobile' : 'ordinateur';
+      montrerApercu(d);
+      $(APPAREIL === 'mobile' ? 'ap-mob' : 'ap-ord').focus();
+    };
+  });
+  $('ap-fermer').textContent = d.enPlace ? '← Retour à l’éditeur' : '← Fermer l’aperçu';
   $('ap-fermer').onclick = d.enPlace ? retourEdition : fermerPage;
   montrerVue('vue-apercu');
   ajusterCadre();
