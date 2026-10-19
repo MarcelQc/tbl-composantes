@@ -316,6 +316,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 #modal .corps table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.95rem}
 #modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
 #modal .corps td:last-child{text-align:right;font-weight:bold;color:var(--txt)}
+#modal .corps tr.total td{border-bottom:0;padding-top:10px;color:var(--txt);font-weight:bold;font-size:1.05rem}
+#modal .corps tr.total td:last-child{color:var(--gold)}
 #modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 /* Comme confirm-modal.html : Annuler à gauche, l'action principale à droite */
 #modal .btns .btn.sec{order:-1}
@@ -396,6 +398,7 @@ body.v-rapport{background:#fff;color:#111}
   <div id="outils" role="toolbar" aria-label="Actions de l’éditeur"><div class="wrap"><div class="bloc">
     <div class="rang-outils">
       <div class="taux-global"><span class="lib">Total à payer</span><strong id="total-val" aria-live="polite"></strong></div>
+      <button type="button" class="btn sec" id="b-detail" hidden>Voir le détail</button>
       <button type="button" class="btn sec" id="t-diff" aria-pressed="false" title="Colore le texte ajouté ou retiré par rapport à la version publiée">Voir les changements</button>
       <div class="legende" id="legende" hidden><span class="aj">Jaune : ajouté ou modifié</span><span class="re">Rouge barré : retiré</span></div>
       <span class="ecart"></span>
@@ -540,10 +543,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 65fbf92 · 2026-10-19 08:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// e1117ec · 2026-10-19 08:20 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '65fbf92 · 2026-10-19 08:03';
+var VERSION_TBL = 'e1117ec · 2026-10-19 08:20';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1862,6 +1865,33 @@ function rendreRecap(f) {
   // Bloc « Contrôle » : taxes théoriques, pour l'auteur de test seulement
   if (f.gratuit && f.controle) { ligne('Contrôle : TPS théorique', f.tpsTheorique, 'controle'); ligne('TVQ théorique', f.tvqTheorique, 'controle'); }
 }
+// Fenêtre « Détail des montants » : une ligne par composante payante modifiée, puis frais, taxes et total
+function voirDetail() {
+  var f = factureCourante();
+  if (!f) { return; }
+  var corps = document.createElement('div');
+  if (!f.lignes.length) {
+    var p = document.createElement('p');
+    p.textContent = 'Aucune modification à payer pour le moment. Chaque texte modifié coûte 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus), chaque image 10 $.';
+    corps.appendChild(p);
+  } else {
+    var t = document.createElement('table');
+    var rang = function (nom, cents, fort) {
+      var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+      a.textContent = nom; b.textContent = argent(cents);
+      if (fort) { tr.className = 'total'; }
+      tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+    };
+    f.lignes.forEach(function (l) { rang(l.nom, l.montant); });
+    rang('Frais de service (5' + NBSP + '%)', f.frais);
+    if (f.montantGratuite) { rang('Gratuité (services offerts)', f.montantGratuite); }
+    rang('TPS', f.tps);
+    rang('TVQ', f.tvq);
+    rang('Total à payer', f.total, true);
+    corps.appendChild(t);
+  }
+  modale({ titre: 'Détail des montants', corps: corps, boutons: [{ id: 'ok', libelle: 'Fermer', principal: true }] });
+}
 // Date de l'envoi en approbation : la copie (livre publié) ou, pour une première publication qui n'a pas de
 // copie, la date de dernière modification (inscrite à l'envoi).
 function dateEnvoi() {
@@ -1873,7 +1903,11 @@ function majUI() {
   $('t-rapport').hidden = prixFixe; // rien à comparer : un livre Nouveau n'a pas de version publiée
   // Montants au lieu des pourcentages : une ligne par composante payante, puis frais, taxes et total
   var fac = factureCourante();
-  rendreRecap(fac);
+  // Livre Nouveau : les services à prix fixe restent dans l'en-tête. Correction d'un livre publié : le détail
+  // s'ouvre dans une petite fenêtre, avec le bouton « Voir le détail » à droite du total.
+  $('recap-services').hidden = !prixFixe;
+  $('b-detail').hidden = prixFixe || !fac;
+  if (prixFixe) { rendreRecap(fac); }
   $('total-val').textContent = fac ? argent(fac.total) : 'Aucuns frais';
   var aPayer = fac && fac.total > 0 && paiementRequis();
   $('b-appr').textContent = prixFixe && fac
@@ -2364,6 +2398,7 @@ function brancherEdition() {
     $('b-retour').title = 'Fermer cet onglet et revenir à l’Espace Auteurs';
   }
   $('b-actualiser').addEventListener('click', actualiserTout);
+  $('b-detail').addEventListener('click', voirDetail);
   $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
   $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
