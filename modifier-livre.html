@@ -567,10 +567,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// dc0d5fc · 2026-10-21 06:39 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 06f14ba · 2026-10-21 06:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'dc0d5fc · 2026-10-21 06:39';
+var VERSION_TBL = '06f14ba · 2026-10-21 06:58';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1777,12 +1777,17 @@ function remplirVedettes(page, L, editable) {
   var places = placesVed(L.vedettes);
   var choisis = places.filter(Boolean);
   var restants = semaine.filter(function (s) { return choisis.indexOf(s.id) < 0; });
+  // Les places se remplissent dans l'ordre (demande de Marcel du 21 octobre 2026) : les places occupées et la
+  // première place libre sont modifiables ; les suivantes attendent que la précédente soit occupée.
+  var premiereLibre = places.indexOf(null);
   places.forEach(function (id, i) {
     var livre = livreVed(id), libre = !livre;
     var montre = livre || restants.shift() || null;
-    var legende = editable ? 'Place ' + (i + 1) + (libre ? ' · libre' : '') + ' · Changer' : (libre ? 'Vedette de la semaine' : '');
+    var modifiable = editable && (premiereLibre < 0 || i <= premiereLibre);
+    var legende = modifiable ? 'Place ' + (i + 1) + (libre ? ' · Choisir un livre' : ' · Changer')
+      : (libre ? 'Vedette de la semaine' : '');
     var f = figureVed(montre, legende, libre);
-    if (!editable) { z.appendChild(f); return; }
+    if (!modifiable) { z.appendChild(f); return; }
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'place-ved';
     b.title = 'Choisir le livre de la place ' + (i + 1);
@@ -1797,7 +1802,7 @@ function choisirVedette(i) {
   var W = placesVed(etat.L.work.vedettes);
   var corps = document.createElement('div');
   var p = document.createElement('p');
-  p.textContent = 'Choisissez un de vos livres pour la place ' + (i + 1) + '. Une place libre montre une vedette de la semaine.';
+  p.textContent = 'Choisissez un de vos livres pour la place ' + (i + 1) + '. Une place libre montre une vedette de la semaine ; si vous libérez une place, les suivantes remontent d’un rang.';
   corps.appendChild(p);
   var grille = document.createElement('div'); grille.className = 'choix-ved';
   function option(id, livre) {
@@ -1811,7 +1816,8 @@ function choisirVedette(i) {
     var t = document.createElement('span'); t.textContent = livre ? livre.titre + (pris ? ' (déjà placé)' : '') : 'Place libre'; b.appendChild(t);
     b.addEventListener('click', function () {
       var nouv = placesVed(etat.L.work.vedettes); nouv[i] = id;
-      etat.L.work.vedettes = nouv;
+      // Places toujours remplies dans l'ordre : une place libérée fait remonter les suivantes.
+      etat.L.work.vedettes = placesVed(nouv.filter(Boolean));
       if (modaleOuverte) { modaleOuverte('ok'); }
       rendreLivre(); recalculer();
     });
@@ -1866,7 +1872,7 @@ function majControleVedettes() {
   if (!c) { return; }
   var modifiable = vedettesModifiables();
   c.querySelector('[data-role="aide-ved"]').textContent = modifiable
-    ? 'Touchez une couverture pour choisir un de vos livres. Les places libres montrent les livres en vedette de la semaine.'
+    ? 'Touchez une couverture pour choisir un de vos livres, en commençant par la place 1 : chaque place s’ouvre quand la précédente est occupée. Les places libres montrent les livres en vedette de la semaine.'
       + (etat.nouveau ? '' : ' 10 $ par place changée.')
     : 'Quand vous aurez d’autres livres publiés chez TBL, vous pourrez les mettre en vedette ici. Pour l’instant, la section montre les livres en vedette de la semaine.';
   var n = placesChangees(referenceVedettes(), etat.L.work.vedettes);
