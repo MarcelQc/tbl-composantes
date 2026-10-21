@@ -69,7 +69,9 @@ function afficher(donnees) {
   });
 }
 
-fetch(ADRESSE)
+// ?livre=<identifiant> (page d'un livre) : les livres choisis par l'auteur dans l'éditeur de livre passent d'abord.
+var livre = params.get('livre');
+fetch(livre && /^[0-9a-f-]{36}$/i.test(livre) ? ADRESSE + '?livre=' + encodeURIComponent(livre) : ADRESSE)
   .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
   .then(afficher)
   .catch(function () { afficher(null); }); // en cas d'erreur, la composante reste vide plutôt que d'afficher un message

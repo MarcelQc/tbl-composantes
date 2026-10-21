@@ -289,8 +289,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 .msg-url{margin-top:12px;color:var(--rouge-texte);font:600 13px Arial,sans-serif}
 .note-champ{margin-top:10px;color:var(--muted);font:12px var(--tbl-font-body)}
 .v-edition .fige{opacity:.38;pointer-events:none;user-select:none}
-/* Section « En vedette » masquée dans l'édition et l'aperçu tant que les vedettes ne sont pas programmées (tâche 138) */
-.section-vedettes-cachee{display:none!important}
+/* Section « En vedette » : places choisies par l'auteur (bouton en édition) et places libres (vedette de la semaine,
+   pâlie). Fenêtre de choix : couvertures des livres proposés, sur le modèle de la Mise en vedette (EDV). */
+.vedettes button.place-ved{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:inherit;cursor:pointer}
+.vedettes button.place-ved:hover img,.vedettes button.place-ved:focus-visible img{outline:2px solid var(--accent);outline-offset:3px}
+.vedettes .libre img{opacity:.5}
+.vedettes .vide-ved{aspect-ratio:2/3;border:2px dashed var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:8px}
+.vedettes figcaption small{display:block;color:var(--muted);font-size:11px}
+.controle-ved{max-width:640px;margin:0 auto 26px}
+.choix-ved{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:6px}
+.choix-ved button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:var(--card2);color:var(--txt);font:inherit;font-size:.82rem;cursor:pointer;text-align:center}
+.choix-ved button:hover:not(:disabled){border-color:var(--accent)}
+.choix-ved button:disabled{opacity:.4;cursor:not-allowed}
+.choix-ved button[aria-pressed="true"]{border-color:var(--accent);background:var(--redsoft)}
+.choix-ved img,.choix-ved .vide-ved{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px}
 /* Aperçu : les boutons de la page affichent un message qui explique leur action sur le site */
 .v-apercu [data-action]{cursor:pointer}
 .bulle-apercu{position:absolute;z-index:130;max-width:min(340px,calc(100% - 16px));background:var(--card);border:1px solid var(--tbl-blue);color:var(--txt);border-radius:var(--tbl-radius-btn);padding:10px 14px;font:14px/1.45 var(--tbl-font-body);box-shadow:0 8px 30px rgba(0,0,0,.6)}
@@ -546,17 +558,19 @@ body.v-rapport{background:#fff;color:#111}
     <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
       <div data-zone-controle="extraitPdf"></div>
       <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
-    <!-- Section « En vedette » masquée (tâche 138) : l'affichage des livres vedettes n'est pas encore programmé -->
-    <img class="titre-img fige section-vedettes-cachee" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
-    <div class="vedettes fige section-vedettes-cachee" data-vedettes></div>
+    <!-- Section « En vedette » (tâches 138 et 143) : livres choisis par l'auteur parmi ses autres livres publiés et
+         actifs ; les places libres montrent les vedettes de la semaine, comme sur le site. -->
+    <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
+    <div class="vedettes" data-vedettes></div>
+    <div data-zone-controle="vedettes"></div>
   </div>
 </template>
 <script>
 // ===== Version publiée =====
-// 81d885f · 2026-10-19 16:33 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// dc0d5fc · 2026-10-21 06:39 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '81d885f · 2026-10-19 16:33';
+var VERSION_TBL = 'dc0d5fc · 2026-10-21 06:39';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1399,12 +1413,8 @@ function fabriquerPage(hote, d) {
   var numPapier = L.afficheNumPapier === true; // même règle que la page publique (Page de livres, Item)
   page.querySelector('[data-epub="numpapier"]').classList.toggle('cache', !numPapier);
   page.querySelector('[data-epub="seul"]').classList.toggle('cache', numPapier);
-  var ved = page.querySelector('[data-vedettes]');
-  (L.vedettes || []).forEach(function (v) {
-    var f = document.createElement('figure'), im = document.createElement('img'), c = document.createElement('figcaption');
-    im.src = v.miniature; im.alt = v.titre; c.textContent = v.titre;
-    f.appendChild(im); f.appendChild(c); ved.appendChild(f);
-  });
+  // Section « En vedette » : livres proposés à l'auteur et vedettes de la semaine (dessinées par remplirVedettes)
+  INFO_VEDETTES = { proposes: L.livresProposes || [], semaine: L.vedettesSemaine || [] };
   hote.appendChild(page);
   return page;
 }
@@ -1609,9 +1619,10 @@ function imageSure(u) {
 // (recadrage centré, puis redimensionnement), puis envoyée au serveur à l'enregistrement : elle va dans un champ
 // tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
 var CLES_IMAGES = ['image', 'photoAuteur'];
-var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf'];
+var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf', 'vedettes'];
 function valL(v, k) {
   if (k === 'extraitPdf') { return clePdf(v); }
+  if (k === 'vedettes') { return JSON.stringify(placesVed(v)); }
   return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || ''));
 }
 // Extrait en PDF : { url, nom } (fichier enregistré, venu du serveur), { data, nom } (fichier choisi, pas encore
@@ -1724,10 +1735,155 @@ function remplirImage(img, url, cle) {
     img.parentNode.appendChild(vide);
   }
 }
+// ---------- Section « En vedette » (décisions de Marcel du 21 octobre 2026, backend/suggestions.js) ----------
+// L.vedettes : 4 places (identifiant d'un livre ou null). L'auteur choisit parmi ses autres livres publiés et
+// actifs (INFO_VEDETTES.proposes) ; une place libre montre une vedette de la semaine, comme sur le site. Premier
+// livre d'un auteur (aucun autre livre) : vedettes de la semaine en lecture seule. Prix : 10 $ par place changée
+// pour un livre publié, compris dans le prix fixe d'un livre Nouveau.
+var NB_VEDETTES = 4, PRIX_PLACE_VEDETTE = 1000;
+var INFO_VEDETTES = { proposes: [], semaine: [] };
+function placesVed(v) { var p = Array.isArray(v) ? v.slice(0, NB_VEDETTES) : []; while (p.length < NB_VEDETTES) { p.push(null); } return p.map(function (x) { return x || null; }); }
+function livreVed(id) { return id ? INFO_VEDETTES.proposes.filter(function (l) { return l.id === id; })[0] || null : null; }
+function placesChangees(avant, apres) {
+  var a = placesVed(avant), b = placesVed(apres), n = 0;
+  for (var i = 0; i < NB_VEDETTES; i++) { if (a[i] !== b[i]) { n++; } }
+  return n;
+}
+function vedettesModifiables() { return INFO_VEDETTES.proposes.length > 0; }
+function figureVed(livre, legende, libre) {
+  var f = document.createElement('figure');
+  if (libre) { f.className = 'libre'; }
+  if (livre && livre.image) {
+    var im = document.createElement('img'); im.src = livre.image; im.alt = 'Couverture de ' + livre.titre; im.loading = 'lazy'; f.appendChild(im);
+  } else {
+    var v = document.createElement('div'); v.className = 'vide-ved'; v.textContent = livre ? livre.titre : 'Vedette de la semaine'; f.appendChild(v);
+  }
+  var c = document.createElement('figcaption');
+  c.textContent = livre ? livre.titre : 'Vedette de la semaine';
+  if (legende) { var s = document.createElement('small'); s.textContent = legende; c.appendChild(s); }
+  f.appendChild(c);
+  return f;
+}
+// Dessine les 4 places. editable : boutons qui ouvrent la fenêtre de choix (édition seulement).
+function remplirVedettes(page, L, editable) {
+  var z = page.querySelector('[data-vedettes]');
+  if (!z) { return; }
+  z.textContent = '';
+  var semaine = INFO_VEDETTES.semaine.map(function (s) { return { id: s.id, titre: s.titre, image: s.miniature }; });
+  if (!vedettesModifiables()) {
+    semaine.slice(0, NB_VEDETTES).forEach(function (s) { z.appendChild(figureVed(s, 'Vedette de la semaine', false)); });
+    return;
+  }
+  var places = placesVed(L.vedettes);
+  var choisis = places.filter(Boolean);
+  var restants = semaine.filter(function (s) { return choisis.indexOf(s.id) < 0; });
+  places.forEach(function (id, i) {
+    var livre = livreVed(id), libre = !livre;
+    var montre = livre || restants.shift() || null;
+    var legende = editable ? 'Place ' + (i + 1) + (libre ? ' · libre' : '') + ' · Changer' : (libre ? 'Vedette de la semaine' : '');
+    var f = figureVed(montre, legende, libre);
+    if (!editable) { z.appendChild(f); return; }
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'place-ved';
+    b.title = 'Choisir le livre de la place ' + (i + 1);
+    b.appendChild(f);
+    b.addEventListener('click', function () { choisirVedette(i); });
+    z.appendChild(b);
+  });
+}
+// Fenêtre de choix d'une place : les livres proposés (ceux des autres places grisés) et « Place libre ».
+function choisirVedette(i) {
+  if (etat.verrou) { return; }
+  var W = placesVed(etat.L.work.vedettes);
+  var corps = document.createElement('div');
+  var p = document.createElement('p');
+  p.textContent = 'Choisissez un de vos livres pour la place ' + (i + 1) + '. Une place libre montre une vedette de la semaine.';
+  corps.appendChild(p);
+  var grille = document.createElement('div'); grille.className = 'choix-ved';
+  function option(id, livre) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', W[i] === id ? 'true' : 'false');
+    var pris = id && W.some(function (x, j) { return j !== i && x === id; });
+    b.disabled = !!pris;
+    if (livre && livre.image) { var im = document.createElement('img'); im.src = livre.image; im.alt = ''; b.appendChild(im); }
+    else { var v = document.createElement('div'); v.className = 'vide-ved'; v.textContent = livre ? livre.titre : 'Vedette de la semaine'; b.appendChild(v); }
+    var t = document.createElement('span'); t.textContent = livre ? livre.titre + (pris ? ' (déjà placé)' : '') : 'Place libre'; b.appendChild(t);
+    b.addEventListener('click', function () {
+      var nouv = placesVed(etat.L.work.vedettes); nouv[i] = id;
+      etat.L.work.vedettes = nouv;
+      if (modaleOuverte) { modaleOuverte('ok'); }
+      rendreLivre(); recalculer();
+    });
+    grille.appendChild(b);
+  }
+  INFO_VEDETTES.proposes.forEach(function (l) { option(l.id, l); });
+  option(null, null);
+  corps.appendChild(grille);
+  modale({ titre: 'En vedette : place ' + (i + 1), corps: corps, boutons: [{ id: 'non', libelle: 'Fermer' }] });
+}
+function referenceVedettes() { return etat.nouveau ? etat.L.saved.vedettes : etat.L.pub.vedettes; }
+async function retablirVedettes() {
+  if (etat.verrou) { return; }
+  var r = await modale({
+    titre: 'Annuler les modifications ?',
+    corps: etat.nouveau ? 'Les livres en vedette reviendront au dernier choix enregistré.' : 'Les livres en vedette reviendront à ceux de la page publiée.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mon choix' }]
+  });
+  if (r !== 'ok') { return; }
+  etat.L.work.vedettes = placesVed(referenceVedettes());
+  rendreLivre(); recalculer();
+  toast(etat.nouveau ? 'Dernier choix enregistré remis.' : 'Livres publiés remis. Enregistrez pour conserver ce changement.');
+}
+async function actualiserVedettes() {
+  var r = await modale({
+    titre: 'Actualiser les livres en vedette ?',
+    corps: 'Les livres en vedette seront rechargés tels qu’ils sont enregistrés. Un choix pas encore enregistré sera perdu.',
+    boutons: [{ id: 'ok', libelle: 'Actualiser', principal: true, action: async function () {
+      var d = await appeler('obtenir', { livreId: LIVRE_ID });
+      if (d.statut !== 'ok') { throw new Error('Le livre ne peut pas être rechargé pour le moment.'); }
+      var LS = d.champsLivre.copie || d.champsLivre.publie;
+      INFO_VEDETTES = { proposes: d.livre.livresProposes || [], semaine: d.livre.vedettesSemaine || [] };
+      etat.L.saved.vedettes = placesVed(LS.vedettes);
+      etat.L.work.vedettes = placesVed(LS.vedettes);
+    } }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  rendreLivre(); recalculer();
+  toast('Livres en vedette actualisés.', 'ok');
+}
+function creerControleVedettes() {
+  var zone = $('hote-edition').querySelector('[data-zone-controle="vedettes"]');
+  zone.innerHTML = '<div class="controle-image controle-ved" data-controle-ved><div class="rang">' +
+    '<button type="button" class="mini gros" data-role="actualiser-ved" title="Actualiser : recharger le choix enregistré">↻</button>' +
+    '<button type="button" class="mini gros" data-role="retablir-ved">↺ Annuler les modifications</button></div>' +
+    '<div class="etat-img" data-role="etat-ved" hidden></div><div class="info-l" data-role="aide-ved"></div></div>';
+  zone.querySelector('[data-role="actualiser-ved"]').addEventListener('click', actualiserVedettes);
+  zone.querySelector('[data-role="retablir-ved"]').addEventListener('click', retablirVedettes);
+}
+function majControleVedettes() {
+  var c = $('hote-edition').querySelector('[data-controle-ved]');
+  if (!c) { return; }
+  var modifiable = vedettesModifiables();
+  c.querySelector('[data-role="aide-ved"]').textContent = modifiable
+    ? 'Touchez une couverture pour choisir un de vos livres. Les places libres montrent les livres en vedette de la semaine.'
+      + (etat.nouveau ? '' : ' 10 $ par place changée.')
+    : 'Quand vous aurez d’autres livres publiés chez TBL, vous pourrez les mettre en vedette ici. Pour l’instant, la section montre les livres en vedette de la semaine.';
+  var n = placesChangees(referenceVedettes(), etat.L.work.vedettes);
+  var fac = factureCourante();
+  var et = c.querySelector('[data-role="etat-ved"]');
+  et.hidden = !modifiable || !etat.chgL.vedettes;
+  et.textContent = n + (n > 1 ? ' places modifiées' : ' place modifiée') + (fac && !etat.nouveau ? ' : ' + argent(n * PRIX_PLACE_VEDETTE) : '');
+  c.querySelector('[data-role="actualiser-ved"]').hidden = !modifiable || etat.verrou;
+  c.querySelector('[data-role="retablir-ved"]').hidden = !modifiable || etat.verrou || placesChangees(referenceVedettes(), etat.L.work.vedettes) === 0;
+}
 function appliquerLivre(page, L) {
   remplirImage(page.querySelector('[data-img="couverture3d"]'), L.image, 'image');
   remplirImage(page.querySelector('[data-affiche="photoAuteur"]'), L.photoAuteur, 'photoAuteur');
   page.querySelector('[data-section="auteur"]').classList.toggle('masque', !L.afficheauteur);
+  // En vedette : boutons de choix seulement dans l'édition, page déverrouillée et hors « Voir les changements »
+  var edition = page.id === 'hote-edition';
+  remplirVedettes(page, L, edition && vedettesModifiables() && !etat.verrou && !etat.diff);
 }
 // Ajustement automatique au gabarit : recadrage centré aux proportions de l'emplacement, puis mise à la taille
 // du gabarit. Une image plus petite que le gabarit n'est pas refusée : on avertit seulement que le rendu
@@ -1772,6 +1928,7 @@ function monterLivre() {
   fichierPdf.addEventListener('change', function () { var fic = fichierPdf.files && fichierPdf.files[0]; fichierPdf.value = ''; if (fic) { choisirPdf(fic); } });
   cp.querySelector('[data-role="choisir-pdf"]').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fichierPdf.click(); } });
   cp.querySelector('[data-role="retablir-pdf"]').addEventListener('click', retablirPdf);
+  creerControleVedettes();
   var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
   em.addEventListener('input', function () { etat.L.work.email = em.value; recalculer(); });
@@ -1791,6 +1948,8 @@ function rendreLivre() {
     ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
   });
   rendrePdf(bloque);
+  var cv = $('hote-edition').querySelector('[data-controle-ved]');
+  if (cv) { cv.hidden = bloque; }
 }
 function remplirInfo(el, chg, ancien, nouveau) {
   el.textContent = '';
@@ -1814,6 +1973,7 @@ function majLivre() {
     // dernière image enregistrée pour un livre Nouveau).
     c.querySelector('[data-role="retablir-img"]').hidden = etat.verrou || W[cle] === referenceImage(cle);
   });
+  majControleVedettes();
   var cp = ctlPdf();
   cp.querySelector('[data-role="etat-pdf"]').hidden = !C.extraitPdf;
   cp.querySelector('[data-role="etat-pdf"]').textContent = C.extraitPdf ? 'Extrait PDF modifié (compris dans le prix de l’Extrait)' : '';
@@ -1919,11 +2079,13 @@ var SEUIL_TEXTE_GRAND = 20;
 var PRIX_IMAGE = 1000;        // image modifiée ou remplacée, retouches incluses
 var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de l’auteur']];
 function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
-// textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }]
-function factureCorrections(textes, images, gratuit) {
+// textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }] ; nbVedettes : places « En vedette » changées
+// (10 $ chacune, décision du 21 octobre 2026).
+function factureCorrections(textes, images, gratuit, nbVedettes) {
   var lignes = [];
   textes.forEach(function (t) { var m = prixTexte(t.chg, t.taux); if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle }); } });
   images.forEach(function (i) { if (i.chg) { lignes.push({ nom: i.nom, montant: PRIX_IMAGE, cle: i.cle }); } });
+  if (nbVedettes) { lignes.push({ nom: 'En vedette (' + nbVedettes + (nbVedettes > 1 ? ' places)' : ' place)'), montant: nbVedettes * PRIX_PLACE_VEDETTE, cle: 'vedettes' }); }
   return calculerFacture(lignes, { gratuit: !!gratuit });
 }
 // Facture de la page en cours : prix fixe d'un livre Nouveau (calculé par le serveur) ou prix des corrections.
@@ -1934,13 +2096,15 @@ function factureCourante() {
   return factureCorrections(
     CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: champModifie(c.cle), taux: etat.t[c.cle] || 0 }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] }; }),
-    etat.d.gratuit);
+    etat.d.gratuit,
+    vedettesModifiables() ? placesChangees(etat.L.pub.vedettes, etat.L.work.vedettes) : 0);
 }
 // Un texte compte comme modifié si son contenu a changé. L'extrait PDF fait partie de la composante Extrait
 // (décision de Marcel du 19 octobre 2026) : un nouveau PDF seul coûte 5 $, 10 $ si le texte change de 20 % ou plus.
 function champModifie(cle) { return !!etat.chg[cle] || (cle === 'extrait' && !!etat.chgL.extraitPdf); }
 function allerA(cle) {
-  var cible = etat.champs[cle] || (IMAGE_CONF[cle] ? ctl(cle) : zoneLivre(cle));
+  var cible = cle === 'vedettes' ? $('hote-edition').querySelector('[data-vedettes]')
+    : (etat.champs[cle] || (IMAGE_CONF[cle] ? ctl(cle) : zoneLivre(cle)));
   if (cible) { cible.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
 function rendreRecap(f) {
@@ -2266,12 +2430,15 @@ async function enregistrer() {
     if (clePdf(W.extraitPdf) !== clePdf(S.extraitPdf)) {
       livre.extraitPdf = W.extraitPdf && W.extraitPdf.data ? { data: W.extraitPdf.data, nom: W.extraitPdf.nom } : { retablir: true };
     }
+    // En vedette : les 4 places partent quand elles ont changé depuis le dernier enregistrement
+    if (valL(W.vedettes, 'vedettes') !== valL(S.vedettes, 'vedettes')) { livre.vedettes = placesVed(W.vedettes); }
     var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
     if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
     CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
     // Le serveur renvoie l'adresse définitive des images téléversées (Gestionnaire de médias)
     Object.keys(r.images || {}).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(livre.images, k)) { etat.L.work[k] = r.images[k]; } });
     if (livre.extraitPdf) { etat.L.work.extraitPdf = r.extraitPdf || null; }
+    if (livre.vedettes) { etat.L.work.vedettes = placesVed(livre.vedettes); }
     etat.L.work.email = livre.email;
     etat.L.saved = clone(etat.L.work);
     etat.copie = true;
@@ -2296,6 +2463,7 @@ function autresModifications() {
   if (C.afficheauteur) { o.push('Section Auteur ' + (W.afficheauteur ? 'affichée' : 'masquée')); }
   if (C.email) { o.push('Courriel de contact'); }
   if (C.extraitPdf) { o.push('Extrait PDF'); }
+  if (C.vedettes) { o.push('En vedette'); }
   return o;
 }
 // Approuver et envoyer (une demande En approbation) et Publier (édition directe par un administrateur, sans
@@ -2671,11 +2839,13 @@ function montrerRapport(d) {
   var chgs = paires.map(function (p) { return signature(p.avant) !== signature(p.apres); });
   var LPr = d.champsLivre.publie, LCr = d.champsLivre.copie || LPr;
   var pdfChg = clePdf(LPr.extraitPdf) !== clePdf(LCr.extraitPdf);
+  INFO_VEDETTES = { proposes: d.livre.livresProposes || [], semaine: d.livre.vedettesSemaine || [] };
+  var nbVed = vedettesModifiables() && !(d.premiere || d.etat === 'nouveau') ? placesChangees(LPr.vedettes, LCr.vedettes) : 0;
   // Montants de la grille (même calcul que l'éditeur) ; renvoi après un refus : déjà payé
   var fac = d.etat === 'corriger' ? null : factureCorrections(
     CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i] || (c.cle === 'extrait' && pdfChg), taux: taux[i] }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: LPr[x[0]] !== LCr[x[0]] }; }),
-    d.gratuit);
+    d.gratuit, nbVed);
   var racine = $('vue-rapport');
   racine.textContent = '';
   var rap = document.createElement('div');
@@ -2740,6 +2910,13 @@ function montrerRapport(d) {
   ligneAutre('Section Auteur', LP.afficheauteur ? 'Affichée' : 'Masquée', LC.afficheauteur ? 'Affichée' : 'Masquée', !!LP.afficheauteur !== !!LC.afficheauteur);
   ligneAutre('Courriel de contact', LP.email || '(aucun)', LC.email || '(aucun)', courrielNorm(LP.email) !== courrielNorm(LC.email));
   ligneAutre('Extrait PDF (compris dans l’Extrait)', LP.extraitPdf ? LP.extraitPdf.nom : '(aucun)', LC.extraitPdf ? LC.extraitPdf.nom : '(aucun)', pdfChg);
+  // En vedette : titres des 4 places, avant et après (place libre = vedette de la semaine)
+  function titresVed(v) {
+    return placesVed(v).map(function (id, i) { var l = livreVed(id); return (i + 1) + '. ' + (l ? l.titre : (id ? 'livre retiré' : 'place libre')); }).join(' · ');
+  }
+  if (vedettesModifiables()) {
+    ligneAutre('En vedette' + (nbVed ? ' (' + argent(nbVed * PRIX_PLACE_VEDETTE) + ')' : ''), titresVed(LP.vedettes), titresVed(LC.vedettes), placesChangees(LP.vedettes, LC.vedettes) > 0);
+  }
   sec2.appendChild(tb);
   rap.appendChild(sec2);
   racine.appendChild(rap);
