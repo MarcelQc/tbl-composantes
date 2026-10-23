@@ -229,6 +229,27 @@ textarea{min-height:96px;resize:vertical}
 .filtres{display:flex;gap:10px;flex-wrap:wrap}
 .filtres select{min-width:140px;padding:7px 10px}
 
+/* Commentaires : une carte par commentaire, la réponse de l'équipe en dessous (à la façon d'un forum).
+   La liste a une hauteur maximale et défile à l'intérieur (composante HTML Wix à hauteur fixe). */
+.pastille-nb.nouvelles{background:var(--red);color:#fff}
+.bandeau-reponses{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:12px 16px;border:1px solid var(--red);border-radius:var(--tbl-radius-btn);background:var(--redsoft);font-weight:bold}
+.intro-commentaires{margin:0 0 14px}
+.liste-commentaires{display:flex;flex-direction:column;gap:12px;max-height:760px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
+.commentaire{padding:16px 18px;flex:0 0 auto}
+.commentaire.nouvelle{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+.tete-commentaire{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.infos-commentaire{display:flex;flex-direction:column;gap:2px;min-width:0}
+.date-commentaire{font-weight:bold}
+.endroit-commentaire{color:var(--muted);font-size:.88rem}
+.texte-commentaire{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.modif-commentaire,.verrou-commentaire{margin:6px 0 0;font-size:.82rem}
+.actions-commentaire{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.reponse-commentaire{margin-top:12px;padding:10px 14px;border-left:3px solid var(--ok);background:var(--card);border-radius:0 var(--tbl-radius-btn) var(--tbl-radius-btn) 0}
+.reponse-commentaire .titre-reponse{margin:0 0 4px;font-weight:bold;color:var(--ok);font-size:.9rem}
+.reponse-commentaire .note{margin:6px 0 0;font-size:.82rem}
+.edition-commentaire textarea{min-height:110px}
+.edition-commentaire .statut{margin:4px 0 0}
+
 @media(max-width:900px){
   .colonnes-docs{grid-template-columns:1fr}
 }
@@ -290,12 +311,18 @@ textarea{min-height:96px;resize:vertical}
       <h1 class="titre-espace">Espace Auteur</h1>
       <p class="sub" id="accueil">Suivez vos ventes, gérez votre fiche et retrouvez vos documents au même endroit.</p>
     </div>
+    <!-- Nouvelles réponses de l'équipe TBL à des commentaires de l'auteur -->
+    <div class="bandeau-reponses" id="bandeau-reponses" role="status" hidden>
+      <span id="texte-bandeau-reponses"></span>
+      <button class="btn petit" type="button" id="btn-voir-reponses">Voir les réponses</button>
+    </div>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Auteurs">
       <button class="onglet" role="tab" id="onglet-ventes" aria-controls="panneau-ventes" aria-selected="true" tabindex="0">Ventes</button>
       <button class="onglet" role="tab" id="onglet-auteur" aria-controls="panneau-auteur" aria-selected="false" tabindex="-1">Auteur</button>
       <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres <span class="pastille-nb" id="nb-livres">0</span></button>
       <button class="onglet" role="tab" id="onglet-services" aria-controls="panneau-services" aria-selected="false" tabindex="-1">Services</button>
       <button class="onglet" role="tab" id="onglet-documents" aria-controls="panneau-documents" aria-selected="false" tabindex="-1">Documents <span class="pastille-nb" id="nb-documents">0</span></button>
+      <button class="onglet" role="tab" id="onglet-commentaires" aria-controls="panneau-commentaires" aria-selected="false" tabindex="-1">Commentaires <span class="pastille-nb nouvelles" id="nb-commentaires" aria-hidden="true" hidden>0</span></button>
     </div>
 
     <!-- VENTES -->
@@ -434,6 +461,19 @@ textarea{min-height:96px;resize:vertical}
           </div>
         </section>
       </div>
+    </div>
+
+    <!-- COMMENTAIRES -->
+    <div class="panneau" role="tabpanel" id="panneau-commentaires" aria-labelledby="onglet-commentaires" hidden>
+      <p class="sub intro-commentaires" id="intro-commentaires">Les commentaires que vous avez envoyés à l'équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier ou les détruire tant que l'équipe n'y a pas répondu.</p>
+      <!-- Administrateur : filtre par auteur (Tous, puis chaque auteur qui a écrit un commentaire) -->
+      <div class="card barre-admin" id="barre-admin-commentaires" hidden><strong>Administrateur</strong>
+        <label for="filtre-auteur-commentaires" class="sub">Auteur</label>
+        <select id="filtre-auteur-commentaires" aria-label="Filtrer les commentaires par auteur"></select>
+        <span class="sub" id="compte-commentaires"></span></div>
+      <p class="statut err" id="etat-commentaires" role="alert" hidden></p>
+      <div class="liste-commentaires" id="liste-commentaires"></div>
+      <div class="card vide" id="vide-commentaires" hidden>Vous n'avez pas encore envoyé de commentaire. Utilisez le bouton 💬 Commentaire en haut de la page pour écrire à l'équipe.</div>
     </div>
   </section>
 
@@ -590,6 +630,10 @@ function recevoir(msg) {
   else if (msg.type === 'resultatNouveauLivre') { surResultatNouveauLivre(msg); }
   else if (msg.type === 'resultatConfig' || msg.type === 'resultatEnregistrerConfig') { surConfig(msg); }
   else if (msg.type === 'resultatCommentaire') { surCommentaire(msg); }
+  else if (msg.type === 'resultatCommentaires') { surCommentaires(msg); }
+  else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
+  else if (msg.type === 'resultatDetruireCommentaire') { surDetruireCommentaire(msg); }
+  else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -643,6 +687,7 @@ function surEspace(msg) {
       restaurerRetour(); // retour de l'éditeur dans le même onglet : onglet Livres, sur le livre cliqué
     }
     demanderVentes(moisUtc(0));
+    demanderCommentaires();
   } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
     etat.donnees = null;
     montrer(msg.statut);
@@ -655,10 +700,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 06f14ba · 2026-10-21 06:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 44cbb1a · 2026-10-23 07:10 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '06f14ba · 2026-10-21 06:58';
+var VERSION_TBL = '44cbb1a · 2026-10-23 07:10';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -673,7 +718,7 @@ function afficherVersion(admin) {
 }
 
 /* ---------- Onglets ---------- */
-var ONGLETS = ['ventes', 'auteur', 'livres', 'services', 'documents'];
+var ONGLETS = ['ventes', 'auteur', 'livres', 'services', 'documents', 'commentaires'];
 function choisirOnglet(nom, focus) {
   ONGLETS.forEach(function (n) {
     var actif = (n === nom);
@@ -683,6 +728,7 @@ function choisirOnglet(nom, focus) {
     $('panneau-' + n).hidden = !actif;
     if (actif && focus) { bouton.focus(); }
   });
+  if (nom === 'commentaires' && etat.commentaires) { reponsesVues(); }
 }
 ONGLETS.forEach(function (nom, i) {
   var bouton = $('onglet-' + nom);
@@ -1578,6 +1624,7 @@ function surCommentaire(msg) {
     $('statut-commentaire').className = 'statut ok';
     $('statut-commentaire').textContent = msg.message || 'Merci ! Votre commentaire a été envoyé.';
     setTimeout(function () { if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); } }, 2500);
+    demanderCommentaires(); // le nouveau commentaire apparaît tout de suite dans l'onglet Commentaires
     return;
   }
   $('statut-commentaire').className = 'statut err';
@@ -1587,6 +1634,232 @@ $('btn-commentaire').addEventListener('click', ouvrirCommentaire);
 $('champ-commentaire').addEventListener('input', majCompteurCommentaire);
 $('btn-annuler-commentaire').addEventListener('click', function () { fermerFenetre('fenetre-commentaire'); });
 $('btn-envoyer-commentaire').addEventListener('click', envoyerCommentaire);
+
+/* ---------- Onglet Commentaires ---------- */
+// Les commentaires que l'auteur a envoyés avec le bouton Commentaire (plan « Plan de travail Commentaires »).
+// L'auteur les modifie ou les détruit tant que l'équipe n'y a pas répondu ; la réponse est en lecture seule.
+// Les réponses pas encore vues sont signalées par la pastille du titre de l'onglet, un bandeau en haut de
+// l'espace et, dans la liste, un fond de couleur avec le badge « Nouvelle réponse » (en tête de liste).
+var ENDROITS = { EDA: 'Espace Auteurs', EDL: 'Éditeur de livre', EDV: 'Mise en vedette' };
+var LONGUEUR_COMMENTAIRE = 2000;
+var fmtDateHeure = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' });
+etat.commentaires = null;     // liste reçue du serveur (null : pas encore chargée)
+etat.edition = null;          // id du commentaire en cours de modification
+etat.reponsesVuesEnvoye = false;
+function dateHeure(iso) { return iso ? fmtDateHeure.format(new Date(iso)) : ''; }
+function demanderCommentaires() {
+  envoyer({ type: 'commentaires' });
+}
+function nbNouvellesReponses() {
+  return (etat.commentaires || []).filter(function (c) { return c.reponseNouvelle && !c.vueCetteFois; }).length;
+}
+// Pastille du titre de l'onglet et bandeau de l'espace : nombre de réponses pas encore vues.
+function majSignalReponses() {
+  var n = nbNouvellesReponses();
+  var pastille = $('nb-commentaires');
+  pastille.textContent = n;
+  pastille.hidden = n === 0;
+  $('onglet-commentaires').setAttribute('aria-label', n ? 'Commentaires, ' + pluriel(n, 'nouvelle réponse', 'nouvelles réponses') : 'Commentaires');
+  $('bandeau-reponses').hidden = n === 0;
+  $('texte-bandeau-reponses').textContent = n === 1 ? 'Vous avez une nouvelle réponse de l’équipe TBL.' : 'Vous avez ' + n + ' nouvelles réponses de l’équipe TBL.';
+}
+function surCommentaires(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') {
+    if (etat.commentaires === null) {
+      $('etat-commentaires').textContent = 'Vos commentaires n’ont pas pu être chargés. Utilisez ↻ Actualiser pour réessayer.';
+      $('etat-commentaires').hidden = false;
+    }
+    return;
+  }
+  etat.commentaires = msg.commentaires || [];
+  etat.commentairesAdmin = !!msg.admin;
+  etat.reponsesVuesEnvoye = false;
+  construireFiltreAuteurCommentaires();
+  rendreCommentaires();
+  if (!$('panneau-commentaires').hidden) { reponsesVues(); }
+}
+// Commentaires avec une nouvelle réponse en tête, puis du plus récent au plus ancien.
+function commentairesTries() {
+  return (etat.commentaires || []).slice().sort(function (a, b) {
+    if (a.reponseNouvelle !== b.reponseNouvelle) { return a.reponseNouvelle ? -1 : 1; }
+    return String(b.date || '').localeCompare(String(a.date || ''));
+  });
+}
+function pastilleEtat(c) {
+  if (c.reponse) { return el('span', 'pastille ok', 'Répondu'); }
+  if (c.etat === 'Non lu') { return el('span', 'pastille attente', 'Envoyé'); }
+  return el('span', 'pastille bleu', 'Lu par l’équipe');
+}
+// Administrateur : il voit les commentaires de tous les auteurs (le serveur relit Auteurs.admin) et les filtre
+// par auteur ; « Tous » par défaut. Il ne peut modifier ou détruire que les siens.
+var TOUS_AUTEURS = '';
+function construireFiltreAuteurCommentaires() {
+  var admin = etat.commentairesAdmin;
+  $('barre-admin-commentaires').hidden = !admin;
+  $('intro-commentaires').textContent = admin
+    ? 'Les commentaires envoyés par tous les auteurs avec le bouton 💬 Commentaire, du plus récent au plus ancien. Choisissez un auteur pour ne voir que les siens. Vous pouvez modifier ou détruire vos propres commentaires tant que l’équipe n’y a pas répondu.'
+    : 'Les commentaires que vous avez envoyés à l’équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier ou les détruire tant que l’équipe n’y a pas répondu.';
+  if (!admin) { return; }
+  var select = $('filtre-auteur-commentaires');
+  var choix = select.value || TOUS_AUTEURS;
+  var auteurs = {};
+  (etat.commentaires || []).forEach(function (c) {
+    var cle = c.auteurId || c.auteurNom;
+    if (!auteurs[cle]) { auteurs[cle] = { nom: c.auteurNom || 'Auteur inconnu', n: 0 }; }
+    auteurs[cle].n += 1;
+  });
+  vider(select);
+  var tous = el('option', null, 'Tous (' + (etat.commentaires || []).length + ')'); tous.value = TOUS_AUTEURS;
+  select.appendChild(tous);
+  Object.keys(auteurs).sort(function (a, b) { return auteurs[a].nom.localeCompare(auteurs[b].nom, 'fr'); }).forEach(function (cle) {
+    var o = el('option', null, auteurs[cle].nom + ' (' + auteurs[cle].n + ')'); o.value = cle;
+    select.appendChild(o);
+  });
+  select.value = auteurs[choix] ? choix : TOUS_AUTEURS;
+}
+function commentairesFiltres() {
+  var choix = etat.commentairesAdmin ? $('filtre-auteur-commentaires').value : TOUS_AUTEURS;
+  return commentairesTries().filter(function (c) { return choix === TOUS_AUTEURS || (c.auteurId || c.auteurNom) === choix; });
+}
+function rendreCommentaires() {
+  var liste = $('liste-commentaires');
+  vider(liste);
+  $('etat-commentaires').hidden = true;
+  var visibles = commentairesFiltres();
+  $('vide-commentaires').hidden = visibles.length > 0;
+  $('vide-commentaires').textContent = (etat.commentaires || []).length
+    ? 'Aucun commentaire pour cet auteur.'
+    : 'Vous n’avez pas encore envoyé de commentaire. Utilisez le bouton 💬 Commentaire en haut de la page pour écrire à l’équipe.';
+  $('compte-commentaires').textContent = etat.commentairesAdmin ? pluriel(visibles.length, 'commentaire affiché', 'commentaires affichés') : '';
+  visibles.forEach(function (c) { liste.appendChild(carteCommentaire(c)); });
+  majSignalReponses();
+}
+$('filtre-auteur-commentaires').addEventListener('change', function () { etat.edition = null; rendreCommentaires(); });
+function carteCommentaire(c) {
+  var carte = el('article', 'card commentaire' + (c.reponseNouvelle ? ' nouvelle' : ''));
+  carte.id = 'commentaire-' + c.id;
+  var tete = el('div', 'tete-commentaire');
+  var infos = el('div', 'infos-commentaire');
+  infos.appendChild(el('span', 'date-commentaire', dateHeure(c.date)));
+  var endroit = ENDROITS[c.page] || 'Endroit inconnu';
+  infos.appendChild(el('span', 'endroit-commentaire', endroit + (c.livreTitre ? ' · ' + c.livreTitre : '')));
+  tete.appendChild(infos);
+  var badges = el('div', 'pastilles');
+  if (etat.commentairesAdmin) { badges.appendChild(el('span', 'pastille', c.aMoi === false ? (c.auteurNom || 'Auteur inconnu') : 'Moi')); }
+  if (c.reponseNouvelle) { badges.appendChild(el('span', 'pastille rouge', 'Nouvelle réponse')); }
+  badges.appendChild(pastilleEtat(c));
+  tete.appendChild(badges);
+  carte.appendChild(tete);
+
+  if (etat.edition === c.id) {
+    carte.appendChild(formulaireEdition(c));
+  } else {
+    carte.appendChild(el('p', 'texte-commentaire', c.commentaire));
+    if (c.dateModification) { carte.appendChild(el('p', 'note modif-commentaire', 'Modifié le ' + dateHeure(c.dateModification))); }
+    if (!c.verrouille) {
+      var actions = el('div', 'actions-commentaire');
+      var bModif = el('button', 'btn sec mini', 'Modifier'); bModif.type = 'button';
+      bModif.addEventListener('click', function () { commencerEdition(c.id); });
+      var bDetr = el('button', 'btn sec mini', 'Détruire'); bDetr.type = 'button';
+      bDetr.addEventListener('click', function () { confirmerDestruction(c); });
+      actions.appendChild(bModif); actions.appendChild(bDetr);
+      carte.appendChild(actions);
+    }
+  }
+
+  if (c.reponse) {
+    var rep = el('div', 'reponse-commentaire');
+    var titre = el('p', 'titre-reponse', 'Réponse de l’équipe TBL');
+    rep.appendChild(titre);
+    rep.appendChild(el('p', 'texte-commentaire', c.reponse));
+    var quand = 'Le ' + dateHeure(c.dateReponse);
+    if (c.dateModificationReponse) { quand += ' (modifiée le ' + dateHeure(c.dateModificationReponse) + ')'; }
+    rep.appendChild(el('p', 'note', quand));
+    carte.appendChild(rep);
+    carte.appendChild(el('p', 'note verrou-commentaire', 'L’équipe a répondu : ce commentaire ne peut plus être modifié ni détruit.'));
+  }
+  return carte;
+}
+function formulaireEdition(c) {
+  var bloc = el('div', 'edition-commentaire');
+  var zone = el('textarea'); zone.id = 'edition-' + c.id; zone.maxLength = LONGUEUR_COMMENTAIRE; zone.value = c.commentaire;
+  zone.setAttribute('aria-label', 'Modifier votre commentaire');
+  var compteur = el('div', 'aide', zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE);
+  zone.addEventListener('input', function () { compteur.textContent = zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE; });
+  var statut = el('p', 'statut'); statut.id = 'statut-edition'; statut.setAttribute('role', 'status');
+  var actions = el('div', 'actions-commentaire');
+  var bAnnuler = el('button', 'btn sec mini', 'Annuler'); bAnnuler.type = 'button';
+  bAnnuler.addEventListener('click', function () { etat.edition = null; rendreCommentaires(); });
+  var bEnreg = el('button', 'btn mini', 'Enregistrer'); bEnreg.type = 'button'; bEnreg.id = 'btn-enregistrer-edition';
+  bEnreg.addEventListener('click', function () {
+    var texte = zone.value.trim();
+    if (!texte) { statut.className = 'statut err'; statut.textContent = 'Le commentaire ne peut pas être vide.'; zone.focus(); return; }
+    if (texte === c.commentaire) { etat.edition = null; rendreCommentaires(); return; }
+    bEnreg.disabled = true; bAnnuler.disabled = true;
+    statut.className = 'statut'; statut.textContent = 'Enregistrement…';
+    envoyer({ type: 'modifierCommentaire', id: c.id, commentaire: texte });
+  });
+  actions.appendChild(bAnnuler); actions.appendChild(bEnreg);
+  bloc.appendChild(zone); bloc.appendChild(compteur); bloc.appendChild(statut); bloc.appendChild(actions);
+  return bloc;
+}
+function commencerEdition(id) {
+  etat.edition = id;
+  rendreCommentaires();
+  var zone = $('edition-' + id);
+  if (zone) { zone.focus(); zone.setSelectionRange(zone.value.length, zone.value.length); }
+}
+function remplacerCommentaire(nouveau) {
+  etat.commentaires = (etat.commentaires || []).map(function (c) { return c.id === nouveau.id ? nouveau : c; });
+}
+function surModifierCommentaire(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok' && msg.commentaire) {
+    etat.edition = null;
+    remplacerCommentaire(msg.commentaire);
+    rendreCommentaires();
+    return;
+  }
+  var statut = $('statut-edition');
+  if (msg.statut === 'verrouille') { etat.edition = null; demanderCommentaires(); }
+  if (statut) {
+    statut.className = 'statut err';
+    statut.textContent = msg.message || 'Votre commentaire n’a pas pu être modifié. Réessayez dans un instant.';
+    var bEnreg = $('btn-enregistrer-edition');
+    if (bEnreg) { bEnreg.disabled = false; bEnreg.previousSibling.disabled = false; }
+  }
+}
+function confirmerDestruction(c) {
+  confirmer('Détruire ce commentaire ?', 'Il disparaîtra de votre liste et ne pourra pas être récupéré.', 'Détruire', function () {
+    envoyer({ type: 'detruireCommentaire', id: c.id });
+  });
+}
+function surDetruireCommentaire(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok') {
+    etat.commentaires = (etat.commentaires || []).filter(function (c) { return c.id !== msg.id; });
+    rendreCommentaires();
+    return;
+  }
+  $('etat-commentaires').textContent = msg.message || 'Votre commentaire n’a pas pu être détruit. Réessayez dans un instant.';
+  $('etat-commentaires').hidden = false;
+  if (msg.statut === 'verrouille') { demanderCommentaires(); }
+}
+// L'auteur ouvre l'onglet : ses nouvelles réponses sont vues. La pastille et le bandeau disparaissent tout de
+// suite ; le fond de couleur et le badge restent jusqu'au prochain chargement, pour qu'il voie lesquelles.
+function reponsesVues() {
+  if (etat.reponsesVuesEnvoye || !nbNouvellesReponses()) { return; }
+  etat.reponsesVuesEnvoye = true;
+  (etat.commentaires || []).forEach(function (c) { if (c.reponseNouvelle) { c.vueCetteFois = true; } });
+  majSignalReponses();
+  envoyer({ type: 'reponsesVues' });
+}
+function surReponsesVues(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') { etat.reponsesVuesEnvoye = false; }
+}
+$('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); });
 
 $('btn-config').addEventListener('click', ouvrirConfig);
 $('btn-annuler-config').addEventListener('click', function () { fermerFenetre('fenetre-config'); });
