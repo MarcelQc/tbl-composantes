@@ -251,7 +251,12 @@ textarea{min-height:96px;resize:vertical}
 .edition-commentaire .statut{margin:4px 0 0}
 /* « Voir Commentaires » (administrateur, temporaire) : fenêtre large, une carte repliable par commentaire,
    la réponse de l'équipe en dessous comme dans le Forum du Dashboard. */
-.fenetre.fenetre-large{width:min(980px,100%)}
+/* Pleine grandeur (demande de Marcel du 23 octobre 2026) : la fenêtre occupe toute la composante et la liste
+   prend toute la hauteur qui reste sous les filtres. */
+.fond-fenetre.plein-ecran{padding:0;align-items:stretch;overflow:hidden}
+.fenetre.fenetre-large{width:100%;max-width:none;height:100vh;border-radius:0;border:0;display:flex;flex-direction:column;overflow:hidden}
+.fenetre.fenetre-large>*{flex:0 0 auto}
+.fenetre.fenetre-large .liste-admin-commentaires{flex:1 1 auto;min-height:0;max-height:none}
 .tete-admin-commentaires{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .tete-admin-commentaires h2{margin:0}
 .filtres-admin-commentaires{align-items:center;margin:10px 0 6px}
@@ -264,7 +269,7 @@ textarea{min-height:96px;resize:vertical}
 .adm-com.supprime{opacity:.75}
 .adm-com>button.tete-adm{all:unset;box-sizing:border-box;width:100%;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-start;justify-content:space-between;padding:12px 16px;cursor:pointer}
 .adm-com>button.tete-adm:focus-visible{outline:2px solid var(--or);outline-offset:-2px}
-.adm-com .apercu{color:var(--muted);font-size:.88rem;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px}
+.adm-com .apercu{color:var(--muted);font-size:.88rem;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(900px,100%)}
 .adm-com .corps-adm{padding:0 16px 14px}
 .adm-com .zone-reponse textarea{min-height:90px}
 .adm-com .zone-reponse .actions-commentaire{margin-top:8px}
@@ -565,7 +570,7 @@ textarea{min-height:96px;resize:vertical}
 
   <!-- TEMPORAIRE : « Voir Commentaires » (administrateur), côté ADM du plan Commentaires. Martin le déménagera
        dans le Dashboard Admin. Serveur : backend/commentairesAdmin.web.js (editionstbl). -->
-  <div class="fond-fenetre" id="fenetre-admin-commentaires" hidden>
+  <div class="fond-fenetre plein-ecran" id="fenetre-admin-commentaires" hidden>
     <div class="card fenetre fenetre-large" role="dialog" aria-modal="true" aria-labelledby="titre-admin-commentaires">
       <div class="tete-admin-commentaires">
         <h2 id="titre-admin-commentaires">Commentaires des auteurs</h2>
@@ -756,10 +761,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 990d6df · 2026-10-23 12:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// f70224a · 2026-10-23 12:21 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '990d6df · 2026-10-23 12:14';
+var VERSION_TBL = 'f70224a · 2026-10-23 12:21';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
