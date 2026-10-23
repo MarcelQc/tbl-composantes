@@ -465,7 +465,7 @@ textarea{min-height:96px;resize:vertical}
 
     <!-- COMMENTAIRES -->
     <div class="panneau" role="tabpanel" id="panneau-commentaires" aria-labelledby="onglet-commentaires" hidden>
-      <p class="sub intro-commentaires" id="intro-commentaires">Les commentaires que vous avez envoyés à l'équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier ou les détruire tant que l'équipe n'y a pas répondu.</p>
+      <p class="sub intro-commentaires" id="intro-commentaires">Les commentaires que vous avez envoyés à l'équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier tant que l'équipe n'y a pas répondu et les supprimer en tout temps.</p>
       <!-- Administrateur : filtre par auteur (Tous, puis chaque auteur qui a écrit un commentaire) -->
       <div class="card barre-admin" id="barre-admin-commentaires" hidden><strong>Administrateur</strong>
         <label for="filtre-auteur-commentaires" class="sub">Auteur</label>
@@ -632,7 +632,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatCommentaire') { surCommentaire(msg); }
   else if (msg.type === 'resultatCommentaires') { surCommentaires(msg); }
   else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
-  else if (msg.type === 'resultatDetruireCommentaire') { surDetruireCommentaire(msg); }
+  else if (msg.type === 'resultatSupprimerCommentaire' || msg.type === 'resultatDetruireCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
 }
 
@@ -700,10 +700,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 44cbb1a · 2026-10-23 07:10 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 6d28136 · 2026-10-23 07:18 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '44cbb1a · 2026-10-23 07:10';
+var VERSION_TBL = '6d28136 · 2026-10-23 07:18';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1637,7 +1637,8 @@ $('btn-envoyer-commentaire').addEventListener('click', envoyerCommentaire);
 
 /* ---------- Onglet Commentaires ---------- */
 // Les commentaires que l'auteur a envoyés avec le bouton Commentaire (plan « Plan de travail Commentaires »).
-// L'auteur les modifie ou les détruit tant que l'équipe n'y a pas répondu ; la réponse est en lecture seule.
+// L'auteur les modifie tant que l'équipe n'y a pas répondu et les supprime en tout temps (FlagDeleted) ; la
+// réponse est en lecture seule.
 // Les réponses pas encore vues sont signalées par la pastille du titre de l'onglet, un bandeau en haut de
 // l'espace et, dans la liste, un fond de couleur avec le badge « Nouvelle réponse » (en tête de liste).
 var ENDROITS = { EDA: 'Espace Auteurs', EDL: 'Éditeur de livre', EDV: 'Mise en vedette' };
@@ -1692,14 +1693,14 @@ function pastilleEtat(c) {
   return el('span', 'pastille bleu', 'Lu par l’équipe');
 }
 // Administrateur : il voit les commentaires de tous les auteurs (le serveur relit Auteurs.admin) et les filtre
-// par auteur ; « Tous » par défaut. Il ne peut modifier ou détruire que les siens.
+// par auteur ; « Tous » par défaut. Il ne peut modifier ou supprimer que les siens.
 var TOUS_AUTEURS = '';
 function construireFiltreAuteurCommentaires() {
   var admin = etat.commentairesAdmin;
   $('barre-admin-commentaires').hidden = !admin;
   $('intro-commentaires').textContent = admin
-    ? 'Les commentaires envoyés par tous les auteurs avec le bouton 💬 Commentaire, du plus récent au plus ancien. Choisissez un auteur pour ne voir que les siens. Vous pouvez modifier ou détruire vos propres commentaires tant que l’équipe n’y a pas répondu.'
-    : 'Les commentaires que vous avez envoyés à l’équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier ou les détruire tant que l’équipe n’y a pas répondu.';
+    ? 'Les commentaires envoyés par tous les auteurs avec le bouton 💬 Commentaire, du plus récent au plus ancien. Choisissez un auteur pour ne voir que les siens. Vous pouvez modifier vos propres commentaires tant que l’équipe n’y a pas répondu et les supprimer en tout temps.'
+    : 'Les commentaires que vous avez envoyés à l’équipe des Éditions TBL avec le bouton 💬 Commentaire, du plus récent au plus ancien. Vous pouvez les modifier tant que l’équipe n’y a pas répondu et les supprimer en tout temps.';
   if (!admin) { return; }
   var select = $('filtre-auteur-commentaires');
   var choix = select.value || TOUS_AUTEURS;
@@ -1757,15 +1758,6 @@ function carteCommentaire(c) {
   } else {
     carte.appendChild(el('p', 'texte-commentaire', c.commentaire));
     if (c.dateModification) { carte.appendChild(el('p', 'note modif-commentaire', 'Modifié le ' + dateHeure(c.dateModification))); }
-    if (!c.verrouille) {
-      var actions = el('div', 'actions-commentaire');
-      var bModif = el('button', 'btn sec mini', 'Modifier'); bModif.type = 'button';
-      bModif.addEventListener('click', function () { commencerEdition(c.id); });
-      var bDetr = el('button', 'btn sec mini', 'Détruire'); bDetr.type = 'button';
-      bDetr.addEventListener('click', function () { confirmerDestruction(c); });
-      actions.appendChild(bModif); actions.appendChild(bDetr);
-      carte.appendChild(actions);
-    }
   }
 
   if (c.reponse) {
@@ -1777,7 +1769,24 @@ function carteCommentaire(c) {
     if (c.dateModificationReponse) { quand += ' (modifiée le ' + dateHeure(c.dateModificationReponse) + ')'; }
     rep.appendChild(el('p', 'note', quand));
     carte.appendChild(rep);
-    carte.appendChild(el('p', 'note verrou-commentaire', 'L’équipe a répondu : ce commentaire ne peut plus être modifié ni détruit.'));
+    if (c.aMoi !== false) { carte.appendChild(el('p', 'note verrou-commentaire', 'L’équipe a répondu : ce commentaire ne peut plus être modifié, mais vous pouvez le supprimer.')); }
+  }
+
+  // Modifier : tant que l'équipe n'a pas répondu. Supprimer : en tout temps, pour ses propres commentaires.
+  var supprimable = c.supprimable !== undefined ? c.supprimable : c.aMoi !== false;
+  if (etat.edition !== c.id && (!c.verrouille || supprimable)) {
+    var actions = el('div', 'actions-commentaire');
+    if (!c.verrouille) {
+      var bModif = el('button', 'btn sec mini', 'Modifier'); bModif.type = 'button';
+      bModif.addEventListener('click', function () { commencerEdition(c.id); });
+      actions.appendChild(bModif);
+    }
+    if (supprimable) {
+      var bSuppr = el('button', 'btn sec mini', 'Supprimer'); bSuppr.type = 'button';
+      bSuppr.addEventListener('click', function () { confirmerSuppression(c); });
+      actions.appendChild(bSuppr);
+    }
+    carte.appendChild(actions);
   }
   return carte;
 }
@@ -1830,21 +1839,24 @@ function surModifierCommentaire(msg) {
     if (bEnreg) { bEnreg.disabled = false; bEnreg.previousSibling.disabled = false; }
   }
 }
-function confirmerDestruction(c) {
-  confirmer('Détruire ce commentaire ?', 'Il disparaîtra de votre liste et ne pourra pas être récupéré.', 'Détruire', function () {
-    envoyer({ type: 'detruireCommentaire', id: c.id });
+function confirmerSuppression(c) {
+  var texte = c.reponse
+    ? 'Le commentaire et la réponse de l’équipe disparaîtront de votre liste. Ils ne pourront pas être récupérés.'
+    : 'Il disparaîtra de votre liste et ne pourra pas être récupéré.';
+  confirmer('Supprimer ce commentaire ?', texte, 'Supprimer', function () {
+    envoyer({ type: 'supprimerCommentaire', id: c.id });
   });
 }
-function surDetruireCommentaire(msg) {
+function surSupprimerCommentaire(msg) {
   if (accesBloque(msg)) { return; }
   if (msg.statut === 'ok') {
     etat.commentaires = (etat.commentaires || []).filter(function (c) { return c.id !== msg.id; });
     rendreCommentaires();
     return;
   }
-  $('etat-commentaires').textContent = msg.message || 'Votre commentaire n’a pas pu être détruit. Réessayez dans un instant.';
+  $('etat-commentaires').textContent = msg.message || 'Votre commentaire n’a pas pu être supprimé. Réessayez dans un instant.';
   $('etat-commentaires').hidden = false;
-  if (msg.statut === 'verrouille') { demanderCommentaires(); }
+  demanderCommentaires();
 }
 // L'auteur ouvre l'onglet : ses nouvelles réponses sont vues. La pastille et le bandeau disparaissent tout de
 // suite ; le fond de couleur et le badge restent jusqu'au prochain chargement, pour qu'il voie lesquelles.
