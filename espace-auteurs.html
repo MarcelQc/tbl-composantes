@@ -249,31 +249,6 @@ textarea{min-height:96px;resize:vertical}
 .reponse-commentaire .note{margin:6px 0 0;font-size:.82rem}
 .edition-commentaire textarea{min-height:110px}
 .edition-commentaire .statut{margin:4px 0 0}
-/* « Voir Commentaires » (administrateur, temporaire) : fenêtre large, une carte repliable par commentaire,
-   la réponse de l'équipe en dessous comme dans le Forum du Dashboard. */
-/* Pleine grandeur (demande de Marcel du 23 octobre 2026) : la fenêtre occupe toute la composante et la liste
-   prend toute la hauteur qui reste sous les filtres. */
-.fond-fenetre.plein-ecran{padding:0;align-items:stretch;overflow:hidden}
-.fenetre.fenetre-large{width:100%;max-width:none;height:100vh;border-radius:0;border:0;display:flex;flex-direction:column;overflow:hidden}
-.fenetre.fenetre-large>*{flex:0 0 auto}
-.fenetre.fenetre-large .liste-admin-commentaires{flex:1 1 auto;min-height:0;max-height:none}
-.tete-admin-commentaires{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:6px}
-.tete-admin-commentaires h2{margin:0}
-.filtres-admin-commentaires{align-items:center;margin:10px 0 6px}
-.filtres-admin-commentaires select{min-width:150px;padding:7px 10px}
-.case-supprimes{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:.9rem;cursor:pointer}
-.case-supprimes input{width:18px;height:18px;accent-color:var(--or)}
-.liste-admin-commentaires{display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
-.adm-com{border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:var(--card2);flex:0 0 auto}
-.adm-com.non-lu{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
-.adm-com.supprime{opacity:.75}
-.adm-com>button.tete-adm{all:unset;box-sizing:border-box;width:100%;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-start;justify-content:space-between;padding:12px 16px;cursor:pointer}
-.adm-com>button.tete-adm:focus-visible{outline:2px solid var(--or);outline-offset:-2px}
-.adm-com .apercu{color:var(--muted);font-size:.88rem;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(900px,100%)}
-.adm-com .corps-adm{padding:0 16px 14px}
-.adm-com .zone-reponse textarea{min-height:90px}
-.adm-com .zone-reponse .actions-commentaire{margin-top:8px}
-.mention-detruite{color:var(--rouge-texte);font-weight:bold}
 
 @media(max-width:900px){
   .colonnes-docs{grid-template-columns:1fr}
@@ -329,7 +304,6 @@ textarea{min-height:96px;resize:vertical}
         <p class="version-tbl" id="version-tbl" hidden></p>
         <span class="actions-haut">
           <button class="btn sec" type="button" id="btn-config" title="Réglages du site (administrateur)" hidden>⚙ Configuration</button>
-          <button class="btn sec" type="button" id="btn-voir-commentaires" title="Lire les commentaires des auteurs et y répondre (administrateur)" hidden>📨 Voir Commentaires <span class="pastille-nb nouvelles" id="nb-admin-commentaires" hidden>0</span></button>
           <button class="btn sec" type="button" id="btn-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
           <button class="btn sec" type="button" id="btn-actualiser" title="Recharger l’Espace Auteurs depuis le serveur">↻ Actualiser</button>
         </span>
@@ -568,37 +542,6 @@ textarea{min-height:96px;resize:vertical}
     </div>
   </div>
 
-  <!-- TEMPORAIRE : « Voir Commentaires » (administrateur), côté ADM du plan Commentaires. Martin le déménagera
-       dans le Dashboard Admin. Serveur : backend/commentairesAdmin.web.js (editionstbl). -->
-  <div class="fond-fenetre plein-ecran" id="fenetre-admin-commentaires" hidden>
-    <div class="card fenetre fenetre-large" role="dialog" aria-modal="true" aria-labelledby="titre-admin-commentaires">
-      <div class="tete-admin-commentaires">
-        <h2 id="titre-admin-commentaires">Commentaires des auteurs</h2>
-        <button class="btn sec petit" type="button" id="btn-fermer-admin-commentaires">Fermer</button>
-      </div>
-      <p class="sub">Ouvrez un commentaire pour le lire (il passe alors à « Lu ») et y répondre. Le texte de l'auteur reste en lecture seule ; votre réponse peut être modifiée. La première réponse envoie un courriel à l'auteur.</p>
-      <div class="filtres filtres-admin-commentaires">
-        <label class="sub" for="filtre-adm-auteur">Auteur</label>
-        <select id="filtre-adm-auteur"></select>
-        <label class="sub" for="filtre-adm-endroit">Endroit</label>
-        <select id="filtre-adm-endroit">
-          <option value="">Tous les endroits</option>
-          <option value="EDA">Espace Auteurs</option>
-          <option value="EDL">Éditeur de livre</option>
-          <option value="EDV">Mise en vedette</option>
-        </select>
-        <label class="sub" for="filtre-adm-lus">Afficher</label>
-        <select id="filtre-adm-lus">
-          <option value="tous">Tous</option>
-          <option value="nonlus">Non lus seulement</option>
-        </select>
-        <label class="case-supprimes"><input type="checkbox" id="filtre-adm-supprimes"> Inclure les commentaires supprimés par l'auteur</label>
-      </div>
-      <p class="statut" id="statut-admin-commentaires" role="status" aria-live="polite"></p>
-      <div class="liste-admin-commentaires" id="liste-admin-commentaires"></div>
-    </div>
-  </div>
-
   <!-- Configuration du site (administrateur) : drapeaux de la collection Config. -->
   <div class="fond-fenetre" id="fenetre-config" hidden>
     <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-config">
@@ -691,9 +634,6 @@ function recevoir(msg) {
   else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
   else if (msg.type === 'resultatSupprimerCommentaire' || msg.type === 'resultatDetruireCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
-  else if (msg.type === 'resultatAdminCommentaires') { surAdminCommentaires(msg); }
-  else if (msg.type === 'resultatAdminCommentaireLu') { surAdminCommentaireLu(msg); }
-  else if (msg.type === 'resultatAdminRepondreCommentaire') { surAdminRepondreCommentaire(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -748,7 +688,6 @@ function surEspace(msg) {
     }
     demanderVentes(moisUtc(0));
     demanderCommentaires();
-    if (msg.auteur.admin) { demanderAdminCommentaires(); } // nombre de non-lus du bouton « Voir Commentaires »
   } else if (msg.statut === 'refuse' || msg.statut === 'inactif') {
     etat.donnees = null;
     montrer(msg.statut);
@@ -761,10 +700,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// f70224a · 2026-10-23 12:21 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1a58a58 · 2026-10-23 13:45 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'f70224a · 2026-10-23 12:21';
+var VERSION_TBL = '1a58a58 · 2026-10-23 13:45';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1328,7 +1267,6 @@ function rendreLivres() {
   // Administrateur (Auteurs.admin, vérifié par le serveur) : tous les livres de TBL et les demandes à valider
   $('barre-admin').hidden = !admin;
   $('btn-config').hidden = !admin;
-  $('btn-voir-commentaires').hidden = !admin;
   $('titre-mes-livres').textContent = admin ? 'Livres' : 'Mes livres';
   $('titre-mes-coffrets').textContent = admin ? 'Coffrets' : 'Mes coffrets';
   if (admin) {
@@ -1447,7 +1385,6 @@ document.addEventListener('keydown', function (e) {
   else if (!$('fenetre-nouveau').hidden) { fermerFenetre('fenetre-nouveau'); }
   else if (!$('fenetre-config').hidden) { fermerFenetre('fenetre-config'); }
   else if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); }
-  else if (!$('fenetre-admin-commentaires').hidden) { fermerAdminCommentaires(); }
 });
 ['fenetre-confirmer', 'fenetre-bientot', 'fenetre-nouveau', 'fenetre-config', 'fenetre-commentaire'].forEach(function (id) {
   $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
@@ -1935,223 +1872,6 @@ function surReponsesVues(msg) {
   if (msg.statut !== 'ok') { etat.reponsesVuesEnvoye = false; }
 }
 $('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); });
-
-/* ---------- Voir Commentaires (administrateur, TEMPORAIRE) ---------- */
-// Côté ADM du plan Commentaires (tâches #1090 à #1094), placé ici en attendant que Martin le déménage dans le
-// Dashboard Admin. Le serveur (backend/commentairesAdmin.web.js) revérifie Auteurs.admin à chaque appel.
-// Bouton avec le nombre de commentaires non lus ; liste du plus récent au plus ancien ; filtres Auteur, Endroit,
-// Non lus seulement ou Tous ; ouvrir un commentaire le passe à « Lu » ; réponse à la façon du Forum,
-// modifiable ; le texte de l'auteur reste en lecture seule.
-etat.adm = { liste: null, ouverts: {}, brouillons: {}, editions: {}, envoi: null, avecSupprimes: false };
-function demanderAdminCommentaires() {
-  envoyer({ type: 'adminCommentaires', avecSupprimes: etat.adm.avecSupprimes });
-}
-function nbAdminNonLus() {
-  return (etat.adm.liste || []).filter(function (c) { return !c.supprime && c.etat === 'Non lu'; }).length;
-}
-function majPastilleAdmin() {
-  var n = nbAdminNonLus();
-  $('nb-admin-commentaires').textContent = n;
-  $('nb-admin-commentaires').hidden = n === 0;
-  $('btn-voir-commentaires').setAttribute('aria-label', 'Voir Commentaires' + (n ? ', ' + pluriel(n, 'commentaire non lu', 'commentaires non lus') : ''));
-}
-function ouvrirAdminCommentaires() {
-  $('statut-admin-commentaires').className = 'statut';
-  $('statut-admin-commentaires').textContent = etat.adm.liste ? '' : 'Chargement des commentaires…';
-  ouvrirFenetre('fenetre-admin-commentaires', 'btn-fermer-admin-commentaires');
-  rendreAdminCommentaires();
-  demanderAdminCommentaires();
-}
-function fermerAdminCommentaires() { fermerFenetre('fenetre-admin-commentaires'); }
-function surAdminCommentaires(msg) {
-  if (msg.statut !== 'ok') {
-    $('statut-admin-commentaires').className = 'statut err';
-    $('statut-admin-commentaires').textContent = msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : 'Les commentaires n’ont pas pu être chargés. Réessayez dans un instant.';
-    return;
-  }
-  etat.adm.liste = msg.commentaires || [];
-  if ($('statut-admin-commentaires').textContent === 'Chargement des commentaires…') { $('statut-admin-commentaires').textContent = ''; }
-  construireFiltreAdmAuteur();
-  majPastilleAdmin();
-  if (!$('fenetre-admin-commentaires').hidden) { rendreAdminCommentaires(); }
-}
-function construireFiltreAdmAuteur() {
-  var select = $('filtre-adm-auteur');
-  var choix = select.value || '';
-  var auteurs = {};
-  (etat.adm.liste || []).forEach(function (c) {
-    var cle = c.auteurId || c.auteurNom;
-    if (!auteurs[cle]) { auteurs[cle] = c.auteurNom || 'Auteur inconnu'; }
-  });
-  vider(select);
-  var tous = el('option', null, 'Tous les auteurs'); tous.value = '';
-  select.appendChild(tous);
-  Object.keys(auteurs).sort(function (a, b) { return auteurs[a].localeCompare(auteurs[b], 'fr'); }).forEach(function (cle) {
-    var o = el('option', null, auteurs[cle]); o.value = cle;
-    select.appendChild(o);
-  });
-  select.value = auteurs[choix] ? choix : '';
-}
-function adminFiltres() {
-  var auteur = $('filtre-adm-auteur').value, endroit = $('filtre-adm-endroit').value, nonLus = $('filtre-adm-lus').value === 'nonlus';
-  return (etat.adm.liste || []).filter(function (c) {
-    return (!auteur || (c.auteurId || c.auteurNom) === auteur)
-      && (!endroit || c.page === endroit)
-      && (!nonLus || (!c.supprime && c.etat === 'Non lu'));
-  });
-}
-function badgeAdmin(c) {
-  if (c.supprime) { return el('span', 'pastille rouge', 'Détruite'); }
-  if (c.etat === 'Non lu') { return el('span', 'pastille attente', 'Non lu'); }
-  if (c.reponse) { return el('span', 'pastille ok', 'Répondu'); }
-  if (c.etat === 'Archivé') { return el('span', 'pastille', 'Archivé'); }
-  return el('span', 'pastille bleu', 'Lu');
-}
-function rendreAdminCommentaires() {
-  var liste = $('liste-admin-commentaires');
-  var defilement = liste.scrollTop;
-  vider(liste);
-  if (!etat.adm.liste) { return; }
-  var visibles = adminFiltres();
-  if (!visibles.length) {
-    liste.appendChild(el('p', 'vide', etat.adm.liste.length ? 'Aucun commentaire ne correspond à ces filtres.' : 'Aucun commentaire pour le moment.'));
-  }
-  visibles.forEach(function (c) { liste.appendChild(carteAdmin(c)); });
-  liste.scrollTop = defilement;
-  var n = nbAdminNonLus();
-  if (!$('statut-admin-commentaires').classList.contains('err') && !$('statut-admin-commentaires').classList.contains('ok')) {
-    $('statut-admin-commentaires').textContent = pluriel(visibles.length, 'commentaire affiché', 'commentaires affichés') + ' · ' + pluriel(n, 'non lu', 'non lus');
-  }
-}
-function carteAdmin(c) {
-  var ouvert = !!etat.adm.ouverts[c.id];
-  var carte = el('article', 'adm-com' + (!c.supprime && c.etat === 'Non lu' ? ' non-lu' : '') + (c.supprime ? ' supprime' : ''));
-  carte.id = 'adm-' + c.id;
-  var tete = el('button', 'tete-adm'); tete.type = 'button';
-  tete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
-  var infos = el('span', 'infos-commentaire');
-  infos.appendChild(el('span', 'date-commentaire', dateHeure(c.date)));
-  infos.appendChild(el('span', 'endroit-commentaire', (c.auteurNom || 'Auteur inconnu') + ' · ' + (ENDROITS[c.page] || 'Endroit inconnu') + (c.livreTitre ? ' · ' + c.livreTitre : '')));
-  if (!ouvert) { infos.appendChild(el('span', 'apercu', c.commentaire)); }
-  tete.appendChild(infos);
-  var badges = el('span', 'pastilles');
-  badges.appendChild(badgeAdmin(c));
-  tete.appendChild(badges);
-  tete.addEventListener('click', function () { basculerAdmin(c); });
-  carte.appendChild(tete);
-  if (!ouvert) { return carte; }
-
-  var corps = el('div', 'corps-adm');
-  corps.appendChild(el('p', 'texte-commentaire', c.commentaire)); // lecture seule : jamais modifiable ici
-  if (c.dateModification) { corps.appendChild(el('p', 'note modif-commentaire', 'Modifié par l’auteur le ' + dateHeure(c.dateModification))); }
-  if (c.supprime) {
-    corps.appendChild(el('p', 'mention-detruite', 'Détruite : l’auteur a supprimé ce commentaire. Il reste visible ici pour l’historique, sans réponse possible.'));
-  }
-  var enEdition = !!etat.adm.editions[c.id];
-  if (c.reponse && !enEdition) {
-    var rep = el('div', 'reponse-commentaire');
-    rep.appendChild(el('p', 'titre-reponse', 'Réponse de l’équipe TBL' + (c.reponduPar ? ' (' + c.reponduPar + ')' : '')));
-    rep.appendChild(el('p', 'texte-commentaire', c.reponse));
-    var quand = 'Le ' + dateHeure(c.dateReponse);
-    if (c.dateModificationReponse) { quand += ' (modifiée le ' + dateHeure(c.dateModificationReponse) + ')'; }
-    rep.appendChild(el('p', 'note', quand));
-    corps.appendChild(rep);
-    if (!c.supprime) {
-      var actions = el('div', 'actions-commentaire');
-      var bModif = el('button', 'btn sec mini', 'Modifier la réponse'); bModif.type = 'button';
-      bModif.addEventListener('click', function () { etat.adm.editions[c.id] = true; etat.adm.brouillons[c.id] = c.reponse; rendreAdminCommentaires(); focusReponse(c.id); });
-      actions.appendChild(bModif);
-      corps.appendChild(actions);
-    }
-  } else if (!c.supprime) {
-    corps.appendChild(zoneReponse(c));
-  }
-  var statut = el('p', 'statut'); statut.id = 'statut-adm-' + c.id; statut.setAttribute('role', 'status');
-  if (etat.adm.messages && etat.adm.messages[c.id]) { statut.className = 'statut ' + etat.adm.messages[c.id].classe; statut.textContent = etat.adm.messages[c.id].texte; }
-  corps.appendChild(statut);
-  carte.appendChild(corps);
-  return carte;
-}
-function zoneReponse(c) {
-  var bloc = el('div', 'zone-reponse');
-  var lab = el('label', null, c.reponse ? 'Modifier votre réponse' : 'Votre réponse à l’auteur');
-  lab.htmlFor = 'reponse-adm-' + c.id;
-  var zone = el('textarea'); zone.id = 'reponse-adm-' + c.id; zone.maxLength = LONGUEUR_COMMENTAIRE;
-  zone.value = etat.adm.brouillons[c.id] || '';
-  var compteur = el('div', 'aide', zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE);
-  zone.addEventListener('input', function () { etat.adm.brouillons[c.id] = zone.value; compteur.textContent = zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE; });
-  var actions = el('div', 'actions-commentaire');
-  if (c.reponse) {
-    var bAnnuler = el('button', 'btn sec mini', 'Annuler'); bAnnuler.type = 'button';
-    bAnnuler.addEventListener('click', function () { delete etat.adm.editions[c.id]; delete etat.adm.brouillons[c.id]; rendreAdminCommentaires(); });
-    actions.appendChild(bAnnuler);
-  }
-  var bEnvoyer = el('button', 'btn mini', c.reponse ? 'Enregistrer la réponse' : 'Répondre'); bEnvoyer.type = 'button';
-  bEnvoyer.disabled = etat.adm.envoi === c.id;
-  bEnvoyer.addEventListener('click', function () { envoyerReponseAdmin(c); });
-  actions.appendChild(bEnvoyer);
-  lab.style.display = 'block'; lab.style.fontWeight = 'bold'; lab.style.margin = '10px 0 6px';
-  bloc.appendChild(lab); bloc.appendChild(zone); bloc.appendChild(compteur); bloc.appendChild(actions);
-  return bloc;
-}
-function focusReponse(id) { var z = $('reponse-adm-' + id); if (z) { z.focus(); } }
-function messageAdmin(id, classe, texte) {
-  etat.adm.messages = etat.adm.messages || {};
-  etat.adm.messages[id] = { classe: classe, texte: texte };
-  var s = $('statut-adm-' + id);
-  if (s) { s.className = 'statut ' + classe; s.textContent = texte; }
-}
-function basculerAdmin(c) {
-  if (etat.adm.ouverts[c.id]) { delete etat.adm.ouverts[c.id]; rendreAdminCommentaires(); return; }
-  etat.adm.ouverts[c.id] = true;
-  if (!c.supprime && c.etat === 'Non lu') {
-    c.etat = 'Lu'; // tout de suite à l'écran ; le serveur confirme
-    majPastilleAdmin();
-    envoyer({ type: 'adminCommentaireLu', id: c.id });
-  }
-  rendreAdminCommentaires();
-}
-function remplacerAdmin(nouveau) {
-  etat.adm.liste = (etat.adm.liste || []).map(function (c) { return c.id === nouveau.id ? nouveau : c; });
-}
-function surAdminCommentaireLu(msg) {
-  if (msg.statut === 'ok' && msg.commentaire) { remplacerAdmin(msg.commentaire); majPastilleAdmin(); rendreAdminCommentaires(); return; }
-  if (msg.statut !== 'ok') { demanderAdminCommentaires(); }
-}
-function envoyerReponseAdmin(c) {
-  var texte = (etat.adm.brouillons[c.id] || '').trim();
-  if (!texte) { messageAdmin(c.id, 'err', 'Écrivez votre réponse avant de l’enregistrer.'); focusReponse(c.id); return; }
-  etat.adm.envoi = c.id;
-  messageAdmin(c.id, '', 'Enregistrement…');
-  rendreAdminCommentaires();
-  envoyer({ type: 'adminRepondreCommentaire', id: c.id, reponse: texte });
-}
-function surAdminRepondreCommentaire(msg) {
-  var id = msg.id || etat.adm.envoi;
-  etat.adm.envoi = null;
-  if (msg.statut === 'ok' && msg.commentaire) {
-    remplacerAdmin(msg.commentaire);
-    delete etat.adm.editions[id];
-    delete etat.adm.brouillons[id];
-    var envoiRate = msg.courriel && msg.courriel.envoye === false;
-    messageAdmin(id, envoiRate ? 'err' : 'ok', msg.message || 'Réponse enregistrée.');
-    majPastilleAdmin();
-    rendreAdminCommentaires();
-    demanderCommentaires(); // l'onglet Commentaires de l'EDA montre aussi la réponse
-    return;
-  }
-  messageAdmin(id, 'err', msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : (msg.message || 'La réponse n’a pas pu être enregistrée. Réessayez dans un instant.'));
-  rendreAdminCommentaires();
-}
-$('btn-voir-commentaires').addEventListener('click', ouvrirAdminCommentaires);
-$('btn-fermer-admin-commentaires').addEventListener('click', fermerAdminCommentaires);
-['filtre-adm-auteur', 'filtre-adm-endroit', 'filtre-adm-lus'].forEach(function (id) {
-  $(id).addEventListener('change', function () { rendreAdminCommentaires(); });
-});
-$('filtre-adm-supprimes').addEventListener('change', function () {
-  etat.adm.avecSupprimes = $('filtre-adm-supprimes').checked;
-  demanderAdminCommentaires();
-});
 
 $('btn-config').addEventListener('click', ouvrirConfig);
 $('btn-annuler-config').addEventListener('click', function () { fermerFenetre('fenetre-config'); });

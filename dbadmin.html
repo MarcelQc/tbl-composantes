@@ -1315,7 +1315,57 @@ select:focus { outline: none; border-color: var(--accent); }
 .forum-msg-actions { display: flex; gap: 8px; }
 .forum-edit-actions { display: flex; gap: 8px; }
 
+/* Commentaires des auteurs (plan « Plan de travail Commentaires », PBI #1084, déménagé de l'Espace Auteurs le
+   23 octobre 2026) : bouton de l'en-tête avec le nombre de non-lus, fenêtre pleine grandeur, une carte repliable
+   par commentaire, la réponse de l'équipe en dessous comme dans le Forum. */
+#btn-commentaires { display: inline-flex; align-items: center; gap: 8px; }
+#btn-commentaires[hidden], .com-pastille[hidden] { display: none; }
+.com-pastille { background: var(--accent); color: #fff; border-radius: 999px; padding: 0 8px; font-size: 0.75rem; font-weight: 700; min-width: 22px; text-align: center; }
+.com-overlay { position: fixed; inset: 0; z-index: 960; background: var(--bg-panel); display: flex; flex-direction: column; padding: 18px 26px 14px; }
+.com-overlay[hidden] { display: none; }
+.com-overlay > * { flex: 0 0 auto; }
+.com-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.com-tete h2 { margin: 0; font-size: 1.35rem; }
+.com-intro { margin: 6px 0 10px; color: var(--text-dim); font-size: 0.9rem; }
+.com-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 6px; }
+.com-filtres label { color: var(--text-dim); font-size: 0.85rem; }
+.com-filtres select { min-width: 150px; padding: 7px 10px; background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-btn); }
+.com-case { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.com-case input { width: 17px; height: 17px; accent-color: var(--accent); }
+.com-statut { min-height: 1.4em; margin: 2px 0 8px; color: var(--text-dim); font-size: 0.88rem; }
+.com-statut.err { color: var(--rouge-texte); }
+.com-liste { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.com-carte { flex: 0 0 auto; background: var(--bg-elevated); border: 1px solid var(--border-soft); border-radius: var(--radius-btn); }
+.com-carte.non-lu { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.com-carte.supprime { opacity: 0.75; }
+.com-carte > button.com-entete { all: unset; box-sizing: border-box; width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 6px 14px; padding: 12px 16px; cursor: pointer; }
+.com-carte > button.com-entete:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.com-infos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.com-date { font-weight: bold; }
+.com-endroit { color: var(--text-dim); font-size: 0.85rem; }
+.com-apercu { color: var(--text-dim); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(900px, 100%); }
+.com-badge { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; background: var(--bg-hover); color: var(--text-dim); }
+.com-badge.non-lu { background: var(--orange-soft); color: var(--orange); }
+.com-badge.lu { background: var(--blue-soft); color: var(--blue); }
+.com-badge.repondu { background: var(--green-soft); color: var(--green); }
+.com-badge.detruite { background: var(--accent-soft); color: var(--rouge-texte); }
+.com-corps { padding: 0 16px 14px; }
+.com-texte { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.com-note { margin: 6px 0 0; color: var(--text-faint); font-size: 0.8rem; }
+.com-detruite { margin: 8px 0 0; color: var(--rouge-texte); font-weight: bold; }
+.com-reponse { margin-top: 12px; padding: 10px 14px; border-left: 3px solid var(--green); background: var(--bg-panel); border-radius: 0 var(--radius-btn) var(--radius-btn) 0; }
+.com-reponse .com-titre-reponse { margin: 0 0 4px; font-weight: bold; color: var(--green); font-size: 0.88rem; }
+.com-zone label { display: block; font-weight: bold; margin: 10px 0 6px; font-size: 0.88rem; }
+.com-zone textarea { width: 100%; min-height: 90px; }
+.com-compteur { color: var(--text-faint); font-size: 0.78rem; margin-top: 2px; }
+.com-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.com-message { min-height: 1.2em; margin: 6px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+.com-message.ok { color: var(--green); }
+.com-message.err { color: var(--rouge-texte); }
+
 @media (max-width: 720px) {
+  .com-overlay { padding: 12px 14px 10px; }
+  .com-filtres select { min-width: 0; font-size: 16px; }
   .mobile-seulement { display: block; }
   span.mobile-seulement { display: inline; }
   .desktop-seulement { display: none; }
@@ -1393,6 +1443,7 @@ select:focus { outline: none; border-color: var(--accent); }
     </div>
   </div>
   <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
+  <button class="tabs-actualiser" type="button" id="btn-commentaires" title="Lire les commentaires des auteurs et y répondre" hidden>&#128232; Commentaires <span class="com-pastille" id="nb-commentaires" hidden>0</span></button>
 </header>
 
 <nav class="tabs" id="tabs" aria-label="Sections du tableau de bord">
@@ -1468,6 +1519,7 @@ select:focus { outline: none; border-color: var(--accent); }
       etat.admin = d.admin;
       etat.pret = true;
       renderTab(currentTab());
+      if (etat.admin) comDemarrer(); // bouton « Commentaires » et son nombre de non-lus
       return;
     }
     if (d.reqId && attentes[d.reqId]) {
@@ -1681,6 +1733,309 @@ select:focus { outline: none; border-color: var(--accent); }
   });
 
   window.addEventListener('hashchange', function () { renderTab(currentTab()); });
+
+  /* ===================== Commentaires des auteurs ===================== */
+  // Plan « Plan de travail Commentaires » (PBI #1084, tâches #1090 à #1094), déménagé de l'Espace Auteurs le
+  // 23 octobre 2026 avec l'accord de Martin. Serveur : backend/commentairesAdmin.web.js (Auteurs.admin relu à
+  // chaque appel ; les fonctions renvoient { statut, ... } au lieu de lever une erreur).
+  //   - bouton « Commentaires » de l'en-tête avec le nombre de commentaires non lus ;
+  //   - liste du plus récent au plus ancien : date, auteur, endroit, livre ; filtres Auteur, Endroit,
+  //     Non lus seulement ou Tous, et les commentaires supprimés par l'auteur sur demande (mention « Détruite ») ;
+  //   - ouvrir un commentaire le passe à « Lu » ; le texte de l'auteur reste en lecture seule ;
+  //   - réponse à la façon du Forum, modifiable ; la première réponse envoie un courriel à l'auteur.
+
+  var COM_ENDROITS = { EDA: 'Espace Auteurs', EDL: 'Éditeur de livre', EDV: 'Mise en vedette' };
+  var COM_MAX = 2000;
+  var com = { liste: null, ouverts: {}, brouillons: {}, editions: {}, messages: {}, envoi: null, avecSupprimes: false, overlay: null };
+
+  function comEl(tag, classe, texte) {
+    var n = document.createElement(tag);
+    if (classe) n.className = classe;
+    if (texte !== undefined && texte !== null) n.textContent = texte;
+    return n;
+  }
+  function comPluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+  function comDate(iso) {
+    if (!iso) return '';
+    return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' }).format(new Date(iso));
+  }
+  function comNonLus() {
+    return (com.liste || []).filter(function (c) { return !c.supprime && c.etat === 'Non lu'; }).length;
+  }
+  function comMajPastille() {
+    var n = comNonLus();
+    var p = document.getElementById('nb-commentaires');
+    p.textContent = n;
+    p.hidden = n === 0;
+    document.getElementById('btn-commentaires').setAttribute('aria-label', 'Commentaires' + (n ? ', ' + comPluriel(n, 'commentaire non lu', 'commentaires non lus') : ''));
+  }
+
+  function comDemarrer() {
+    document.getElementById('btn-commentaires').hidden = false;
+    comCharger();
+  }
+
+  function comCharger() {
+    return appeler('listerCommentairesAdmin', { avecSupprimes: com.avecSupprimes }).then(function (r) {
+      if (!r || r.statut !== 'ok') {
+        comStatut('err', r && r.statut === 'refuse' ? 'Les commentaires sont réservés aux administrateurs (champ admin de la collection Auteurs).' : 'Les commentaires n’ont pas pu être chargés. Réessayez dans un instant.');
+        return;
+      }
+      com.liste = r.commentaires || [];
+      comMajPastille();
+      if (com.overlay && !com.overlay.hidden) { comFiltreAuteur(); comRendre(); }
+    }).catch(function (e) {
+      comStatut('err', 'Les commentaires n’ont pas pu être chargés : ' + e.message);
+    });
+  }
+
+  function comStatut(classe, texte) {
+    if (!com.overlay) return;
+    var s = com.overlay.querySelector('.com-statut');
+    s.className = 'com-statut' + (classe ? ' ' + classe : '');
+    s.textContent = texte;
+  }
+
+  function comConstruire() {
+    if (com.overlay) return com.overlay;
+    var o = comEl('div', 'com-overlay');
+    o.setAttribute('role', 'dialog');
+    o.setAttribute('aria-modal', 'true');
+    o.setAttribute('aria-labelledby', 'com-titre');
+    o.hidden = true;
+    o.innerHTML =
+      '<div class="com-tete"><h2 id="com-titre">Commentaires des auteurs</h2>' +
+        '<button class="btn" type="button" id="com-fermer">Fermer</button></div>' +
+      '<p class="com-intro">Ouvrez un commentaire pour le lire (il passe alors à « Lu ») et y répondre. Le texte de l’auteur reste en lecture seule ; votre réponse peut être modifiée. La première réponse envoie un courriel à l’auteur.</p>' +
+      '<div class="com-filtres">' +
+        '<label for="com-filtre-auteur">Auteur</label><select id="com-filtre-auteur"></select>' +
+        '<label for="com-filtre-endroit">Endroit</label><select id="com-filtre-endroit">' +
+          '<option value="">Tous les endroits</option><option value="EDA">Espace Auteurs</option>' +
+          '<option value="EDL">Éditeur de livre</option><option value="EDV">Mise en vedette</option></select>' +
+        '<label for="com-filtre-lus">Afficher</label><select id="com-filtre-lus">' +
+          '<option value="tous">Tous</option><option value="nonlus">Non lus seulement</option></select>' +
+        '<label class="com-case"><input type="checkbox" id="com-filtre-supprimes"> Inclure les commentaires supprimés par l’auteur</label>' +
+      '</div>' +
+      '<p class="com-statut" role="status" aria-live="polite"></p>' +
+      '<div class="com-liste" id="com-liste"></div>';
+    document.body.appendChild(o);
+    com.overlay = o;
+    o.querySelector('#com-fermer').addEventListener('click', comFermer);
+    ['com-filtre-auteur', 'com-filtre-endroit', 'com-filtre-lus'].forEach(function (id) {
+      o.querySelector('#' + id).addEventListener('change', comRendre);
+    });
+    o.querySelector('#com-filtre-supprimes').addEventListener('change', function (e) {
+      com.avecSupprimes = e.target.checked;
+      comCharger();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !o.hidden && !(confirmEl && confirmEl.classList.contains('open'))) comFermer();
+    });
+    return o;
+  }
+
+  function comOuvrir() {
+    var o = comConstruire();
+    o.hidden = false;
+    document.body.style.overflow = 'hidden';
+    comStatut('', com.liste ? '' : 'Chargement des commentaires…');
+    comFiltreAuteur();
+    comRendre();
+    comCharger();
+    o.querySelector('#com-fermer').focus();
+  }
+  function comFermer() {
+    if (!com.overlay) return;
+    com.overlay.hidden = true;
+    document.body.style.overflow = '';
+    document.getElementById('btn-commentaires').focus();
+  }
+
+  function comFiltreAuteur() {
+    var select = com.overlay.querySelector('#com-filtre-auteur');
+    var choix = select.value || '';
+    var auteurs = {};
+    (com.liste || []).forEach(function (c) {
+      var cle = c.auteurId || c.auteurNom;
+      if (!auteurs[cle]) auteurs[cle] = c.auteurNom || 'Auteur inconnu';
+    });
+    select.innerHTML = '';
+    var tous = comEl('option', null, 'Tous les auteurs'); tous.value = '';
+    select.appendChild(tous);
+    Object.keys(auteurs).sort(function (a, b) { return auteurs[a].localeCompare(auteurs[b], 'fr'); }).forEach(function (cle) {
+      var opt = comEl('option', null, auteurs[cle]); opt.value = cle;
+      select.appendChild(opt);
+    });
+    select.value = auteurs[choix] ? choix : '';
+  }
+
+  function comFiltres() {
+    var o = com.overlay;
+    var auteur = o.querySelector('#com-filtre-auteur').value;
+    var endroit = o.querySelector('#com-filtre-endroit').value;
+    var nonLus = o.querySelector('#com-filtre-lus').value === 'nonlus';
+    return (com.liste || []).filter(function (c) {
+      return (!auteur || (c.auteurId || c.auteurNom) === auteur)
+        && (!endroit || c.page === endroit)
+        && (!nonLus || (!c.supprime && c.etat === 'Non lu'));
+    });
+  }
+
+  function comBadge(c) {
+    if (c.supprime) return comEl('span', 'com-badge detruite', 'Détruite');
+    if (c.etat === 'Non lu') return comEl('span', 'com-badge non-lu', 'Non lu');
+    if (c.reponse) return comEl('span', 'com-badge repondu', 'Répondu');
+    if (c.etat === 'Archivé') return comEl('span', 'com-badge', 'Archivé');
+    return comEl('span', 'com-badge lu', 'Lu');
+  }
+
+  function comRendre() {
+    if (!com.overlay) return;
+    var liste = com.overlay.querySelector('#com-liste');
+    var defilement = liste.scrollTop;
+    liste.innerHTML = '';
+    if (!com.liste) return;
+    var visibles = comFiltres();
+    if (!visibles.length) {
+      liste.appendChild(comEl('p', 'empty', com.liste.length ? 'Aucun commentaire ne correspond à ces filtres.' : 'Aucun commentaire pour le moment.'));
+    }
+    visibles.forEach(function (c) { liste.appendChild(comCarte(c)); });
+    liste.scrollTop = defilement;
+    var s = com.overlay.querySelector('.com-statut');
+    if (!s.classList.contains('err')) {
+      comStatut('', comPluriel(visibles.length, 'commentaire affiché', 'commentaires affichés') + ' · ' + comPluriel(comNonLus(), 'non lu', 'non lus'));
+    }
+  }
+
+  function comCarte(c) {
+    var ouvert = !!com.ouverts[c.id];
+    var carte = comEl('article', 'com-carte' + (!c.supprime && c.etat === 'Non lu' ? ' non-lu' : '') + (c.supprime ? ' supprime' : ''));
+    carte.id = 'com-' + c.id;
+    var entete = comEl('button', 'com-entete'); entete.type = 'button';
+    entete.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    var infos = comEl('span', 'com-infos');
+    infos.appendChild(comEl('span', 'com-date', comDate(c.date)));
+    infos.appendChild(comEl('span', 'com-endroit', (c.auteurNom || 'Auteur inconnu') + ' · ' + (COM_ENDROITS[c.page] || 'Endroit inconnu') + (c.livreTitre ? ' · ' + c.livreTitre : '')));
+    if (!ouvert) infos.appendChild(comEl('span', 'com-apercu', c.commentaire));
+    entete.appendChild(infos);
+    entete.appendChild(comBadge(c));
+    entete.addEventListener('click', function () { comBasculer(c); });
+    carte.appendChild(entete);
+    if (!ouvert) return carte;
+
+    var corps = comEl('div', 'com-corps');
+    corps.appendChild(comEl('p', 'com-texte', c.commentaire)); // lecture seule : jamais modifiable ici
+    if (c.dateModification) corps.appendChild(comEl('p', 'com-note', 'Modifié par l’auteur le ' + comDate(c.dateModification)));
+    if (c.supprime) corps.appendChild(comEl('p', 'com-detruite', 'Détruite : l’auteur a supprimé ce commentaire. Il reste visible ici pour l’historique, sans réponse possible.'));
+
+    if (c.reponse && !com.editions[c.id]) {
+      var rep = comEl('div', 'com-reponse');
+      rep.appendChild(comEl('p', 'com-titre-reponse', 'Réponse de l’équipe TBL' + (c.reponduPar ? ' (' + c.reponduPar + ')' : '')));
+      rep.appendChild(comEl('p', 'com-texte', c.reponse));
+      var quand = 'Le ' + comDate(c.dateReponse);
+      if (c.dateModificationReponse) quand += ' (modifiée le ' + comDate(c.dateModificationReponse) + ')';
+      rep.appendChild(comEl('p', 'com-note', quand));
+      corps.appendChild(rep);
+      if (!c.supprime) {
+        var actions = comEl('div', 'com-actions');
+        var bModif = comEl('button', 'btn btn-sm', 'Modifier la réponse'); bModif.type = 'button';
+        bModif.addEventListener('click', function () {
+          com.editions[c.id] = true;
+          com.brouillons[c.id] = c.reponse;
+          comRendre();
+          var z = document.getElementById('com-reponse-' + c.id);
+          if (z) z.focus();
+        });
+        actions.appendChild(bModif);
+        corps.appendChild(actions);
+      }
+    } else if (!c.supprime) {
+      corps.appendChild(comZoneReponse(c));
+    }
+    var msg = comEl('p', 'com-message'); msg.id = 'com-message-' + c.id; msg.setAttribute('role', 'status');
+    if (com.messages[c.id]) { msg.className = 'com-message ' + com.messages[c.id].classe; msg.textContent = com.messages[c.id].texte; }
+    corps.appendChild(msg);
+    carte.appendChild(corps);
+    return carte;
+  }
+
+  function comZoneReponse(c) {
+    var bloc = comEl('div', 'com-zone');
+    var lab = comEl('label', null, c.reponse ? 'Modifier votre réponse' : 'Votre réponse à l’auteur');
+    lab.htmlFor = 'com-reponse-' + c.id;
+    var zone = comEl('textarea'); zone.id = 'com-reponse-' + c.id; zone.maxLength = COM_MAX;
+    zone.value = com.brouillons[c.id] || '';
+    var compteur = comEl('div', 'com-compteur', zone.value.length + ' / ' + COM_MAX);
+    zone.addEventListener('input', function () { com.brouillons[c.id] = zone.value; compteur.textContent = zone.value.length + ' / ' + COM_MAX; });
+    var actions = comEl('div', 'com-actions');
+    if (c.reponse) {
+      var bAnnuler = comEl('button', 'btn btn-sm', 'Annuler'); bAnnuler.type = 'button';
+      bAnnuler.addEventListener('click', function () { delete com.editions[c.id]; delete com.brouillons[c.id]; comRendre(); });
+      actions.appendChild(bAnnuler);
+    }
+    var bEnvoyer = comEl('button', 'btn btn-primary btn-sm', c.reponse ? 'Enregistrer la réponse' : 'Répondre'); bEnvoyer.type = 'button';
+    bEnvoyer.disabled = com.envoi === c.id;
+    bEnvoyer.addEventListener('click', function () { comRepondre(c); });
+    actions.appendChild(bEnvoyer);
+    bloc.appendChild(lab); bloc.appendChild(zone); bloc.appendChild(compteur); bloc.appendChild(actions);
+    return bloc;
+  }
+
+  function comMessage(id, classe, texte) {
+    com.messages[id] = { classe: classe, texte: texte };
+    var m = document.getElementById('com-message-' + id);
+    if (m) { m.className = 'com-message ' + classe; m.textContent = texte; }
+  }
+
+  function comRemplacer(nouveau) {
+    com.liste = (com.liste || []).map(function (c) { return c.id === nouveau.id ? nouveau : c; });
+  }
+
+  function comBasculer(c) {
+    if (com.ouverts[c.id]) { delete com.ouverts[c.id]; comRendre(); return; }
+    com.ouverts[c.id] = true;
+    if (!c.supprime && c.etat === 'Non lu') {
+      c.etat = 'Lu'; // tout de suite à l'écran ; le serveur confirme
+      comMajPastille();
+      appeler('marquerCommentaireLu', { id: c.id }).then(function (r) {
+        if (r && r.statut === 'ok' && r.commentaire) { comRemplacer(r.commentaire); comMajPastille(); comRendre(); }
+        else comCharger();
+      }).catch(function () { comCharger(); });
+    }
+    comRendre();
+  }
+
+  function comRepondre(c) {
+    var texte = (com.brouillons[c.id] || '').trim();
+    if (!texte) {
+      comMessage(c.id, 'err', 'Écrivez votre réponse avant de l’enregistrer.');
+      var z = document.getElementById('com-reponse-' + c.id);
+      if (z) z.focus();
+      return;
+    }
+    com.envoi = c.id;
+    comMessage(c.id, '', 'Enregistrement…');
+    comRendre();
+    appeler('repondreCommentaire', { id: c.id, reponse: texte }).then(function (r) {
+      com.envoi = null;
+      if (r && r.statut === 'ok' && r.commentaire) {
+        comRemplacer(r.commentaire);
+        delete com.editions[c.id];
+        delete com.brouillons[c.id];
+        comMessage(c.id, r.courriel && r.courriel.envoye === false ? 'err' : 'ok', r.message || 'Réponse enregistrée.');
+        comMajPastille();
+      } else {
+        comMessage(c.id, 'err', r && r.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : ((r && r.message) || 'La réponse n’a pas pu être enregistrée. Réessayez dans un instant.'));
+      }
+      comRendre();
+    }).catch(function (e) {
+      com.envoi = null;
+      comMessage(c.id, 'err', 'La réponse n’a pas pu être enregistrée : ' + e.message);
+      comRendre();
+    });
+  }
+
+  document.getElementById('btn-commentaires').addEventListener('click', comOuvrir);
 
   /* ===================== Accueil ===================== */
 
