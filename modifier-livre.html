@@ -567,10 +567,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 1a58a58 · 2026-10-23 13:45 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 600cca8 · 2026-10-23 15:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '1a58a58 · 2026-10-23 13:45';
+var VERSION_TBL = '600cca8 · 2026-10-23 15:48';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1379,6 +1379,11 @@ function montrerEtat(ico, titre, texte, btn, action) {
 function retourEspace() {
   if (EN_WIX) { window.parent.postMessage({ type: 'retourEspace' }, '*'); return; }
   location.href = 'espace-auteurs.html';
+}
+// Trace d'engagement d'un clic (collection Events, voir backend/auteurs-events.js) : la page Wix la transmet au
+// serveur, qui ignore les administrateurs et les doublons de moins de 10 minutes. Aucune réponse attendue.
+function tracer(action, detail) {
+  if (EN_WIX) { window.parent.postMessage({ type: 'evenement', action: action, detail: detail || '', livreId: LIVRE_ID }, '*'); }
 }
 function fermerPage() {
   if (VUE !== 'edition') { try { window.top.close(); } catch (e) { /* onglet non ouvert par script */ } }
@@ -2712,17 +2717,20 @@ function basculerDiff() {
 function brancherEdition() {
   $('t-diff').addEventListener('mousedown', function (e) { e.preventDefault(); });
   $('t-diff').addEventListener('click', basculerDiff);
+  $('t-diff').addEventListener('click', function () { tracer('rapport', 'changements'); });
   $('b-retour').addEventListener('click', retourEspaceAuteurs);
   if (ouvertDansUnOnglet()) {
     $('b-retour').textContent = '✕ Fermer l’éditeur';
     $('b-retour').title = 'Fermer cet onglet et revenir à l’Espace Auteurs';
   }
   $('b-actualiser').addEventListener('click', actualiserTout);
+  $('b-actualiser').addEventListener('click', function () { tracer('actualiser'); });
   $('b-detail').addEventListener('click', voirDetail);
+  $('b-detail').addEventListener('click', function () { tracer('rapport', 'detail'); });
   $('b-commentaire').addEventListener('click', ecrireCommentaire);
-  $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); });
-  $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); });
-  $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); });
+  $('t-ap-ord').addEventListener('click', function () { ouvrirVue('apercu', 'ordinateur'); tracer('apercu', 'ordinateur'); });
+  $('t-ap-mob').addEventListener('click', function () { ouvrirVue('apercu', 'mobile'); tracer('apercu', 'mobile'); });
+  $('t-rapport').addEventListener('click', function () { ouvrirVue('rapport'); tracer('rapport', 'rapport'); });
   $('b-enreg').addEventListener('click', enregistrer);
   $('b-appr').addEventListener('click', lancerApprobation);
   $('b-valider').addEventListener('click', function () { if (APPROBATION_ACTIVE) { valider(); } else { bientot(etat.revue ? 'revue' : 'publier'); } });

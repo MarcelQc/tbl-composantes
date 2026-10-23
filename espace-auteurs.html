@@ -610,6 +610,13 @@ function envoyer(message) {
   if (EN_WIX) { window.parent.postMessage(message, '*'); }
 
 }
+// Trace d'engagement d'un clic (collection Events, voir backend/auteurs-events.js) : la page Wix la transmet au
+// serveur, qui ignore les administrateurs et les doublons de moins de 10 minutes. Aucune réponse attendue.
+var NOMS_ONGLETS = { ventes: 'Ventes', auteur: 'Auteur', livres: 'Livres', services: 'Services', documents: 'Documents', commentaires: 'Commentaires' };
+function tracer(action, infos) {
+  envoyer(Object.assign({ type: 'evenement', action: action }, infos || {}));
+}
+function tracerOnglet(nom) { tracer('onglet', { onglet: NOMS_ONGLETS[nom] }); }
 // La page est servie par GitHub Pages et chargée dans la composante HTML de la page Wix : on n'accepte
 // que les messages de cette page parente (site publié, ou Aperçu dans l'éditeur Wix).
 var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
@@ -700,10 +707,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 1a58a58 · 2026-10-23 13:45 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 600cca8 · 2026-10-23 15:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '1a58a58 · 2026-10-23 13:45';
+var VERSION_TBL = '600cca8 · 2026-10-23 15:48';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -732,14 +739,14 @@ function choisirOnglet(nom, focus) {
 }
 ONGLETS.forEach(function (nom, i) {
   var bouton = $('onglet-' + nom);
-  bouton.addEventListener('click', function () { choisirOnglet(nom, false); });
+  bouton.addEventListener('click', function () { choisirOnglet(nom, false); tracerOnglet(nom); });
   bouton.addEventListener('keydown', function (e) {
     var cible = null;
     if (e.key === 'ArrowRight') { cible = ONGLETS[(i + 1) % ONGLETS.length]; }
     else if (e.key === 'ArrowLeft') { cible = ONGLETS[(i + ONGLETS.length - 1) % ONGLETS.length]; }
     else if (e.key === 'Home') { cible = ONGLETS[0]; }
     else if (e.key === 'End') { cible = ONGLETS[ONGLETS.length - 1]; }
-    if (cible) { e.preventDefault(); choisirOnglet(cible, true); }
+    if (cible) { e.preventDefault(); choisirOnglet(cible, true); tracerOnglet(cible); }
   });
 });
 
@@ -781,7 +788,7 @@ function demanderVentes(mois) {
   $('etat-ventes').textContent = 'Chargement des ventes…';
   envoyer({ type: 'ventes', mois: mois });
 }
-$('choix-mois').addEventListener('change', function () { demanderVentes(this.value); });
+$('choix-mois').addEventListener('change', function () { demanderVentes(this.value); tracer('mois-ventes', { detail: this.value }); });
 
 function surVentes(msg) {
   if (accesBloque(msg)) { return; }
@@ -876,7 +883,7 @@ function rendreGraphique(mois12, moisActif) {
     lib.setAttribute('text-anchor', 'middle');
     lib.textContent = libelleMois(m.mois, true).replace('.', '');
     g.appendChild(lib);
-    var choisir = function () { demanderVentes(m.mois); };
+    var choisir = function () { demanderVentes(m.mois); tracer('graphique-ventes', { detail: m.mois }); };
     g.addEventListener('click', choisir);
     g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choisir(); } });
     svg.appendChild(g);
@@ -1057,13 +1064,14 @@ function bouton(texte, classe, action) {
   return b;
 }
 // Couverture de la carte ; si la page publique existe, un clic sur l'image l'ouvre dans un nouvel onglet.
-function couverture(carte, url, titre, page) {
+function couverture(carte, url, titre, page, livreId) {
   var mini = urlSure(url), image;
   if (mini) { image = el('img', 'couv'); image.alt = 'Couverture de ' + titre; image.loading = 'lazy'; image.src = mini; }
   else { image = el('div', 'couv', 'Couverture à venir'); }
   if (page) {
     var a = el('a', 'lien-couv');
     a.href = page; a.target = '_blank'; a.rel = 'noopener'; a.title = 'Voir la page';
+    a.addEventListener('click', function () { tracer('page-publique', { livreId: livreId }); });
     a.appendChild(image);
     carte.appendChild(a);
   } else {
@@ -1071,12 +1079,13 @@ function couverture(carte, url, titre, page) {
   }
 }
 // Titre de la carte, en lien vers la page publique quand elle existe.
-function titreCarte(titre, page) {
+function titreCarte(titre, page, livreId) {
   var h = el('h3');
   h.title = titre;
   if (page) {
     var a = el('a', null, titre);
     a.href = page; a.target = '_blank'; a.rel = 'noopener';
+    a.addEventListener('click', function () { tracer('page-publique', { livreId: livreId }); });
     h.appendChild(a);
   } else {
     h.textContent = titre;
@@ -1132,6 +1141,7 @@ function restaurerRetour() {
 // onglet par le code de la page Wix, et le retour se fait à l'endroit mémorisé (memoriserRetour).
 var URL_EDITEUR = 'https://www.editionstbl.ca/dashboardlivre';
 function ouvrirEditeur(livreId) {
+  tracer('editeur-ouvert', { livreId: livreId });
   memoriserRetour(livreId);
   if (EN_WIX) {
     var onglet = null;
@@ -1196,10 +1206,10 @@ function carteLivre(l, admin) {
   carte.setAttribute('data-livre', l.id);
   if (etat.retour && etat.retour.id === l.id && Date.now() < etat.retour.jusqua) { carte.classList.add('retour'); }
   var page = urlSure(l.page);
-  couverture(carte, l.miniature, l.titre, page);
+  couverture(carte, l.miniature, l.titre, page, l.id);
   var corps = el('div', 'corps');
   carte.appendChild(corps);
-  corps.appendChild(titreCarte(l.titre, page));
+  corps.appendChild(titreCarte(l.titre, page, l.id));
   if (admin && l.auteurNom) { corps.appendChild(ligneCourte('auteur-livre', 'Auteur : ' + l.auteurNom)); }
   var pastilles = el('div', 'pastilles');
   if (l.statut === 'Publier') { pastilles.appendChild(el('span', 'pastille ok', 'Publié')); }
@@ -1228,10 +1238,10 @@ function pastilleAttente() {
 function carteCoffret(d, admin) {
   var carte = el('article', 'card livre coffret');
   var page = urlSure(d.page);
-  couverture(carte, d.miniature, d.titre, page);
+  couverture(carte, d.miniature, d.titre, page, d.id);
   var corps = el('div', 'corps');
   carte.appendChild(corps);
-  corps.appendChild(titreCarte(d.titre, page));
+  corps.appendChild(titreCarte(d.titre, page, d.id));
   if (admin && d.auteurNom) { corps.appendChild(ligneCourte('auteur-livre', 'Auteur : ' + d.auteurNom)); }
   var titres = (d.livres || []).filter(Boolean);
   // Un coffret compte deux livres ou plus : « A, B et C ».
@@ -1340,7 +1350,7 @@ function bientot(cle, titreLivre) {
   ouvrirFenetre('fenetre-bientot', 'btn-fermer-bientot');
 }
 $('btn-fermer-bientot').addEventListener('click', function () { fermerFenetre('fenetre-bientot'); });
-$('btn-creer-coffret').addEventListener('click', function () { bientot('coffret'); });
+$('btn-creer-coffret').addEventListener('click', function () { bientot('coffret'); tracer('coffret'); });
 // Confirmation simple : titre, texte, libellé du bouton d'action et action à faire si l'utilisateur confirme.
 var actionConfirmee = null;
 function confirmer(titre, texte, libelle, action) {
@@ -1433,6 +1443,8 @@ function selectLivres(livres, libelle) {
 }
 function carteService(service) {
   var carte = el('article', 'card service');
+  // Trace d'engagement : tout clic sur un bouton de la carte du service.
+  carte.addEventListener('click', function (e) { if (e.target.closest('button')) { tracer('service', { detail: service.cle }); } });
   if (service.admin) { carte.appendChild(el('span', 'etiquette-admin', 'Administrateur')); }
   carte.appendChild(el('h3', null, service.nom));
   carte.appendChild(el('div', 'prix', service.prix));
@@ -1871,7 +1883,7 @@ function surReponsesVues(msg) {
   if (accesBloque(msg)) { return; }
   if (msg.statut !== 'ok') { etat.reponsesVuesEnvoye = false; }
 }
-$('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); });
+$('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); tracerOnglet('commentaires'); });
 
 $('btn-config').addEventListener('click', ouvrirConfig);
 $('btn-annuler-config').addEventListener('click', function () { fermerFenetre('fenetre-config'); });
@@ -1997,12 +2009,14 @@ function creerLigneDoc(doc) {
     var v = el('a', 'btn mini', 'Visualiser');
     v.href = urlVue; v.target = '_blank'; v.rel = 'noopener';
     v.setAttribute('aria-label', 'Visualiser ' + doc.titre + ' dans un nouvel onglet');
+    v.addEventListener('click', function () { tracer('document', { detail: 'visualiser' }); });
     action.appendChild(v);
   }
   if (url) {
     var a = el('a', urlVue ? 'btn sec mini' : 'btn mini', 'Télécharger');
     a.href = url; a.target = '_blank'; a.rel = 'noopener';
     a.setAttribute('aria-label', 'Télécharger ' + doc.titre);
+    a.addEventListener('click', function () { tracer('document', { detail: 'telecharger' }); });
     action.appendChild(a);
   } else if (!urlVue) {
     action.appendChild(el('span', 'note', 'Indisponible'));
