@@ -306,10 +306,10 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 
 <script>
 // ===== Version publiée =====
-// 600cca8 · 2026-10-23 15:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 88ce8e7 · 2026-10-23 16:02 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '600cca8 · 2026-10-23 15:48';
+var VERSION_TBL = '88ce8e7 · 2026-10-23 16:02';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1144,12 +1144,12 @@ document.getElementById('b-actualiser').addEventListener('click', function () {
 document.getElementById('choix-livre').addEventListener('change', function () { etat.livreChoisi = this.value; message(''); rendreSemaines(); });
 document.getElementById('b-reserver').addEventListener('click', reserver);
 document.getElementById('b-ajout-semaine').addEventListener('click', function () {
+  // Trace d'engagement (collection Events, backend/auteurs-events.js) : aucune réponse attendue.
+  envoyer('tbl-vedette:evenement', { action: 'semaine-ajoutee' });
   NB_SEMAINES = Math.min(NB_SEMAINES + 1, limiteSemaines());
   rendreSemaines();
   var zone = document.getElementById('semaines');
   zone.scrollTop = zone.scrollHeight; // montre la semaine ajoutée
-  // Trace d'engagement (collection Events, backend/auteurs-events.js) : aucune réponse attendue.
-  envoyer('tbl-vedette:evenement', { action: 'semaine-ajoutee' });
 });
 
 // La composante peut se charger avant le code de la page : elle redemande ses données jusqu'à la première réponse.
