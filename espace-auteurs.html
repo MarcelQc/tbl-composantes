@@ -707,10 +707,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 9fcce6d · 2026-10-24 08:21 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// fa00b89 · 2026-10-24 08:26 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '9fcce6d · 2026-10-24 08:21';
+var VERSION_TBL = 'fa00b89 · 2026-10-24 08:26';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1152,6 +1152,22 @@ function ouvrirEditeur(livreId) {
 
 }
 
+// Éditeur de coffret (EDC, page Wix /dashboardcoffret) : même principe, dans un nouvel onglet. Sans coffretId,
+// l'EDC s'ouvre en mode nouveau : l'auteur y choisit lui-même les livres du coffret (24 octobre 2026).
+var URL_COFFRET = 'https://www.editionstbl.ca/dashboardcoffret';
+function ouvrirCoffret(coffretId) {
+  tracer('coffret-ouvert', { coffretId: coffretId || '' });
+  var suffixe = coffretId ? '?coffret=' + encodeURIComponent(coffretId) : '';
+  if (EN_WIX) {
+    var onglet = null;
+    try { onglet = window.open(URL_COFFRET + suffixe, '_blank'); } catch (e) { onglet = null; }
+    if (onglet) { return; }
+    envoyer({ type: 'ouvrirCoffret', coffretId: coffretId || '' });
+    return;
+  }
+  location.href = 'modifier-coffret.html' + suffixe;
+}
+
 // Calendrier des vedettes (service « Mise en vedette ») : même principe, dans un nouvel onglet. Le livre se
 // choisit dans le calendrier ; livreId (facultatif) le présélectionne.
 var URL_VEDETTES = 'https://www.editionstbl.ca/miseenvedette';
@@ -1350,7 +1366,7 @@ function bientot(cle, titreLivre) {
   ouvrirFenetre('fenetre-bientot', 'btn-fermer-bientot');
 }
 $('btn-fermer-bientot').addEventListener('click', function () { fermerFenetre('fenetre-bientot'); });
-$('btn-creer-coffret').addEventListener('click', function () { bientot('coffret'); tracer('coffret'); });
+$('btn-creer-coffret').addEventListener('click', function () { tracer('coffret'); ouvrirCoffret(); });
 // Confirmation simple : titre, texte, libellé du bouton d'action et action à faire si l'utilisateur confirme.
 var actionConfirmee = null;
 function confirmer(titre, texte, libelle, action) {
@@ -1468,7 +1484,13 @@ function carteService(service) {
     return carte;
   }
   // Services à un livre : plus de liste « Choisir un livre » (demande de Marcel du 17 octobre 2026),
-  // le bouton Continuer suffit. Le Forfait Coffret garde ses deux listes (le choix des livres fait la demande).
+  // le bouton Continuer suffit. Forfait Coffret : plus de listes non plus (24 octobre 2026), les livres se
+  // choisissent dans l'éditeur de coffret (EDC), ouvert en mode nouveau.
+  if (service.cle === 'coffret') {
+    zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirCoffret(); }));
+    carte.appendChild(zone);
+    return carte;
+  }
   if (besoin === 1) {
     zone.appendChild(bouton('Continuer', 'btn petit', function () { bientot(service.cle); }));
     carte.appendChild(zone);
