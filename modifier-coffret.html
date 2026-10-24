@@ -399,9 +399,9 @@ var CHAMPS = [
   { k: 'accroche', t: 'texte', nom: 'Message (numérique et papier, ou numérique seulement)' },
   { k: 'texteAcheter', t: 'texte', nom: 'Bouton « Acheter l’ensemble »' },
   { k: 'section2', t: 'autre', nom: 'Section 2 affichée' },
-  { k: 'image2', t: 'image', nom: 'Image du prix (section 2)' },
-  { k: 'demande2', t: 'demande', nom: 'Image du prix créée par TBL' },
-  { k: 'indic2', t: 'info', nom: 'Indications pour l’image du prix' }
+  { k: 'image2', t: 'image', nom: 'Image supplémentaire (section 2)' },
+  { k: 'demande2', t: 'demande', nom: 'Image supplémentaire créée par TBL' },
+  { k: 'indic2', t: 'info', nom: 'Indications pour l’image supplémentaire' }
 ];
 [1, 2, 3, 4].forEach(function (i) {
   CHAMPS.push({ k: 'livre' + i, t: 'livre', nom: 'Livre ' + i });
@@ -453,7 +453,7 @@ function appeler(action, params, delai) {
       setTimeout(function () { if (attentes[id]) { delete attentes[id]; ok({ statut: 'erreur', delai: true, message: 'Le serveur ne répond pas. Réessayez dans un instant.' }); } }, delai || DELAI_REPONSE_MS);
       return;
     }
-
+    
   });
 }
 window.addEventListener('message', function (e) {
@@ -500,7 +500,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '088300f · 2026-10-24 14:58';
+var VERSION_TBL = 'e128a76 · 2026-10-24 15:07';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -643,7 +643,7 @@ function manques(c) {
   if (!c.imageBoutique) { m.push('l’image du coffret'); }
   if (!livresChoisis(c).length) { m.push('au moins un livre'); }
   if (c.presentation1 === 'image' && !c.image1Ord && !c.demande1) { m.push('l’image publicitaire (ou la demande à TBL)'); }
-  if (c.section2 && !c.image2 && !c.demande2) { m.push('l’image du prix (ou la demande à TBL)'); }
+  if (c.section2 && !c.image2 && !c.demande2) { m.push('l’image supplémentaire (ou la demande à TBL)'); }
   return m;
 }
 function modifie() { etat.dirty = true; majOutils(); }
@@ -854,21 +854,21 @@ function rendrePage(c, mode, appareil) {
   cent.appendChild(acheter); sMsg.appendChild(cent);
   page.appendChild(sMsg);
 
-  // ----- Section 2 (facultative) : image qui annonce le prix
+  // ----- Section 2 (facultative) : une image supplémentaire, au choix de l'auteur (prix, ambiance, extrait…)
   if (ed) {
     var ctl2 = el('div', 'controle-section');
     var lab = el('label', 'interrupteur'); var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!c.section2; cb.disabled = !editable();
     cb.addEventListener('change', function () { majChamp('section2', cb.checked, true); });
-    lab.appendChild(cb); lab.appendChild(el('span', 'piste')); lab.appendChild(document.createTextNode('Section 2 : image du prix'));
-    ctl2.appendChild(lab); ctl2.appendChild(el('span', 'info-l', 'Facultative : une deuxième image qui annonce le prix du coffret.'));
+    lab.appendChild(cb); lab.appendChild(el('span', 'piste')); lab.appendChild(document.createTextNode('Section 2 : image supplémentaire'));
+    ctl2.appendChild(lab); ctl2.appendChild(el('span', 'info-l', 'Facultative : une image de plus, à votre choix (le prix, une ambiance, un extrait…).'));
     if (etat.diff && change('section2')) { ctl2.classList.add('chg'); }
     page.appendChild(ctl2);
   }
   if (c.section2) {
     var s2 = el('section', 'pg s2'); s2.setAttribute('data-section', '2');
-    if (ed) { s2.appendChild(blocImage('image2', { ratio: '3/1', max: [1600, 600], vide: 'Image du prix', demande: 'demande2', indic: 'indic2' })); }
-    else if (urlSure(c.image2)) { var i2 = el('img'); i2.src = c.image2; i2.alt = 'Prix du coffret'; s2.appendChild(i2); }
-    else { var v2 = el('div', 'image-vide' + (c.demande2 ? ' tbl' : '')); v2.appendChild(el('strong', null, c.demande2 ? 'Image du prix créée par TBL (en préparation)' : 'Image du prix')); s2.appendChild(v2); }
+    if (ed) { s2.appendChild(blocImage('image2', { ratio: '3/1', max: [1600, 600], vide: 'Image supplémentaire', demande: 'demande2', indic: 'indic2' })); }
+    else if (urlSure(c.image2)) { var i2 = el('img'); i2.src = c.image2; i2.alt = c.titre ? 'Image du coffret ' + c.titre : 'Image du coffret'; s2.appendChild(i2); }
+    else { var v2 = el('div', 'image-vide' + (c.demande2 ? ' tbl' : '')); v2.appendChild(el('strong', null, c.demande2 ? 'Image supplémentaire créée par TBL (en préparation)' : 'Image supplémentaire')); s2.appendChild(v2); }
     page.appendChild(s2);
   } else if (ed) {
     page.appendChild(el('div', 'section-masquee', 'Section 2 masquée : elle n’apparaîtra pas sur le site.'));
