@@ -499,9 +499,16 @@ function toast(texte, classe) {
   clearTimeout(minuterieToast); minuterieToast = setTimeout(function () { t.hidden = true; }, 4200);
 }
 
-/* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = 'ae1fe26 · 2026-10-24 13:30';
-function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
+/* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
+var VERSION_TBL = '2b7853f · 2026-10-24 13:47';
+// Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
+// (demande de Marcel du 24 octobre 2026).
+function texteVersion(admin) {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
+  var morceaux = VERSION_TBL.split(' · ');
+  return 'Version ' + (admin === false && morceaux.length > 1 ? morceaux.slice(1).join(' · ') : VERSION_TBL);
+}
 console.log('[modifier-coffret] ' + texteVersion());
 
 /* ---------- États de la page ---------- */
@@ -534,7 +541,7 @@ async function demarrer() {
   etat.c = Object.assign(vierge(), d.copie || d.publie || {});
   if (!d.publie && !d.copie) { etat.c = remplirParDefaut(vierge()); }
   etat.dirty = false;
-  $('version-tbl').textContent = texteVersion(); $('version-tbl').hidden = !d.admin;
+  $('version-tbl').textContent = texteVersion(!!d.admin); $('version-tbl').hidden = false;
   montrer('vue-edition');
   rendreTout();
 }

@@ -42,7 +42,7 @@ select{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding
 .etat-page{margin-bottom:16px;font-size:1rem}
 /* Tant que la page Wix n'a pas envoyé les données (ou si l'accès est refusé), le calendrier reste caché. */
 body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{display:none}
-/* Version publiée (ligne grise en bas de la page, administrateurs seulement) : voir afficherVersion(). */
+/* Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) : voir afficherVersion(). */
 .version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
 .actions-haut{display:flex;flex-wrap:wrap;gap:8px}
 /* Fenêtre Configuration (administrateur) : un réglage par ligne, comme dans l'Espace Auteurs. */
@@ -306,21 +306,25 @@ body.sans-donnees .vitrine,body.sans-donnees .mise,body.sans-donnees #b-defauts{
 
 <script>
 // ===== Version publiée =====
-// ae1fe26 · 2026-10-24 13:30 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 2b7853f · 2026-10-24 13:47 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'ae1fe26 · 2026-10-24 13:30';
-function texteVersion() {
+var VERSION_TBL = '2b7853f · 2026-10-24 13:47';
+// Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
+// (demande de Marcel du 24 octobre 2026).
+function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
-  return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
+  if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
+  var morceaux = VERSION_TBL.split(' · ');
+  return 'Version ' + (admin === false && morceaux.length > 1 ? morceaux.slice(1).join(' · ') : VERSION_TBL);
 }
 console.log('[calendrier-vedettes] ' + texteVersion());
 function afficherVersion(admin) {
   var p = document.getElementById('version-tbl');
   // Élément placé en haut de la page s'il existe (composante à hauteur fixe), sinon ajouté en bas.
   if (!p) { p = document.createElement('p'); p.id = 'version-tbl'; p.className = 'version-tbl'; document.body.appendChild(p); }
-  p.textContent = texteVersion();
-  p.hidden = !admin;
+  p.textContent = texteVersion(!!admin);
+  p.hidden = false;
 }
 
 // ===== Calcul de la facture (mêmes règles que calculerFacture, livres-textes.js) =====
