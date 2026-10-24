@@ -181,8 +181,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Section 3 : livres du coffret (modèle de la page True Crime Québec) */
 .s3{padding:30px 0 20px;scroll-margin-top:70px}
 .titre-s3{font:600 24px 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:0 0 18px;letter-spacing:.04em}
-.livres-coffret{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:22px;align-items:start}
+.livres-coffret{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:22px;align-items:stretch}
 .carte-livre{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+/* Boutons poussés au bas de la carte : toujours alignés d'une carte à l'autre (demande de Marcel du 24 octobre 2026) */
+.carte-livre .boutons-carte{margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center}
+.carte-livre .btn-amazon.reserve{visibility:hidden}
 .carte-livre .couv{width:100%;max-width:230px;aspect-ratio:2/3;object-fit:cover;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
 .carte-livre .ct-titre{font:600 24px 'Oswald','Arial Narrow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-top:6px;display:block}
 .carte-livre .ct-accroche{font:700 19px/1.25 Georgia,'Times New Roman',serif;display:block}
@@ -494,7 +497,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = '30494be · 2026-10-24 08:02';
+var VERSION_TBL = '9fcce6d · 2026-10-24 08:21';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -947,11 +950,18 @@ function carteLivre(c, i, mode) {
   var m = texteEditable('span', 'ct-mots', 'carte' + i + 'Mots', 'Mots clés (ex. Lieu • Personnage)', mode);
   if (!ed) { t.textContent = c['carte' + i + 'Titre']; a.textContent = c['carte' + i + 'Accroche']; m.textContent = c['carte' + i + 'Mots']; }
   carte.appendChild(t); carte.appendChild(a); carte.appendChild(m);
-  var b = el('button', 'btn-num', 'Numérique - ' + prixTexte(l.prix)); b.type = 'button'; carte.appendChild(b);
+  // Boutons regroupés au bas de la carte : alignés d'une carte à l'autre, quelle que soit la longueur des textes.
+  var bas = el('div', 'boutons-carte');
+  var b = el('button', 'btn-num', 'Numérique - ' + prixTexte(l.prix)); b.type = 'button'; bas.appendChild(b);
   // « Livre papier sur Amazon.ca » : bouton noir (gabarit bouton-noir.html), seulement si le message du coffret est
   // « Disponible en numérique et en papier » (demande de Marcel du 24 octobre 2026).
   var papier = (c.accroche || ACCROCHES[0]) === ACCROCHES[0];
-  if (l.amazon && papier) { var am = el('a', 'btn-decouvrir btn-amazon', 'Livre papier sur Amazon.ca'); am.href = l.amazon; am.target = '_blank'; am.rel = 'noopener'; carte.appendChild(am); }
+  if (l.amazon && papier) { var am = el('a', 'btn-decouvrir btn-amazon', 'Livre papier sur Amazon.ca'); am.href = l.amazon; am.target = '_blank'; am.rel = 'noopener'; bas.appendChild(am); }
+  else if (papier && livresChoisis(c).some(function (x) { var lx = livre(x); return lx && lx.amazon; })) {
+    // Pas de lien Amazon pour ce livre : place réservée invisible, pour que son bouton Numérique reste aligné.
+    var vide = el('span', 'btn-decouvrir btn-amazon reserve', 'Livre papier sur Amazon.ca'); vide.setAttribute('aria-hidden', 'true'); bas.appendChild(vide);
+  }
+  carte.appendChild(bas);
   return carte;
 }
 // Choix d'un livre à la place i (création seulement). Vide = retirer : les livres suivants remontent d'une place.
