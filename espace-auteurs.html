@@ -710,10 +710,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// fdd7bb7 · 2026-10-24 10:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1cc324e · 2026-10-24 12:15 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'fdd7bb7 · 2026-10-24 10:46';
+var VERSION_TBL = '1cc324e · 2026-10-24 12:15';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1261,6 +1261,7 @@ function pastilleAttente() {
 // Un coffret de la collection Coffrets : boutons selon son statut (forfait-duo.md).
 function carteCoffret(d, admin) {
   var carte = el('article', 'card livre coffret');
+  carte.setAttribute('data-livre', d.id); // pour y revenir depuis l'onglet Services (allerAuxCoffrets)
   var page = urlSure(d.page);
   couverture(carte, d.miniature, d.titre, page, d.id);
   var corps = el('div', 'corps');
@@ -1335,7 +1336,8 @@ function rendreLivres() {
 
   // Offre du forfait Coffret : dès 1 livre publié de l'auteur connecté (décision de Marcel du 24 octobre 2026).
   var offre = (d && d.offreCoffret) || {};
-  $('offre-coffret').hidden = !offre.offerte;
+  // Un coffret déjà en cours : pas de bandeau « Créez un coffret », sa carte ci-dessous a son bouton.
+  $('offre-coffret').hidden = !offre.offerte || !!coffretEnCoursDe(d && d.auteurId);
   $('btn-creer-coffret').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un coffret';
   var note = $('note-coffret');
   if (!offre.offerte && !admin) {
@@ -1457,6 +1459,20 @@ function remplirAuteursServices() {
   sel.value = sel.querySelector('option[value="' + choix + '"]') ? choix : '';
 }
 $('service-auteur').addEventListener('change', function () { rendreServices(); });
+// Coffret en cours d'un auteur : un coffret Nouveau, ou une demande ouverte (modification, attente, à corriger).
+function coffretEnCoursDe(auteurId) {
+  return ((etat.donnees && etat.donnees.coffrets) || []).filter(function (c) {
+    return c.auteurId === auteurId && (c.statut === 'Nouveau' || !!c.copie);
+  })[0] || null;
+}
+// Onglet Livres, section des coffrets, avec la carte du coffret mise en évidence un instant.
+function allerAuxCoffrets(coffretId) {
+  choisirOnglet('livres', false);
+  if (estAdmin()) { $('filtre-livres').value = 'tous'; rendreLivres(); }
+  var cible = document.querySelector('#liste-coffrets [data-livre="' + coffretId + '"]') || $('section-coffrets');
+  cible.scrollIntoView({ block: 'center' });
+  if (cible.classList.contains('livre')) { cible.classList.add('retour'); setTimeout(function () { cible.classList.remove('retour'); }, 2500); }
+}
 // Livres proposés dans les services : ceux de l'auteur connecté, ou ceux de l'auteur choisi par un admin.
 function livresPourService(service) {
   var d = etat.donnees;
@@ -1504,6 +1520,13 @@ function carteService(service) {
   // Forfait Coffret : plus de listes de livres (24 octobre 2026), ils se choisissent dans l'éditeur de coffret
   // (EDC), ouvert en mode nouveau ; pour l'auteur choisi quand c'est un admin.
   if (service.cle === 'coffret') {
+    // Un seul coffret en cours par auteur (24 octobre 2026) : on renvoie à sa carte dans l'onglet Livres.
+    var enCours = coffretEnCoursDe(auteur);
+    if (enCours) {
+      zone.appendChild(el('p', 'note', (admin ? 'Cet auteur a' : 'Vous avez') + ' déjà un coffret en cours (« ' + enCours.titre + ' »). Terminez-le dans l\'onglet Livres, section ' + (admin ? 'Coffrets' : 'Mes coffrets') + ', avant d\'en commencer un autre.'));
+      zone.appendChild(bouton('Voir ' + (admin ? 'le coffret en cours' : 'mon coffret en cours'), 'btn petit', function () { allerAuxCoffrets(enCours.id); }));
+      return carte;
+    }
     zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirCoffret('', admin ? auteur : ''); }));
     return carte;
   }
