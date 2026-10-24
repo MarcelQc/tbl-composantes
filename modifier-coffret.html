@@ -212,8 +212,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .vedettes figcaption small{display:block;color:var(--muted);font-size:11px}
 .vedettes button.place-ved{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:inherit;cursor:pointer}
 .vedettes button.place-ved:hover img,.vedettes button.place-ved:focus-visible img{outline:2px solid var(--accent);outline-offset:3px}
-.vedettes button.place-ved:disabled{cursor:not-allowed;opacity:.5}
-.vedettes .libre img{opacity:.5}
+.vedettes button.place-ved:disabled{cursor:not-allowed}
+/* Vedette de la semaine dans une place libre : bien visible, à peine atténuée pour la distinguer d'un choix */
+.vedettes .libre img{opacity:.8}
 .vedettes .vide-ved{aspect-ratio:2/3;border:2px dashed var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:8px}
 .choix-ved{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:6px}
 .choix-ved button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:var(--card2);color:var(--txt);font:inherit;font-size:.82rem;cursor:pointer;text-align:center}
@@ -499,7 +500,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = '92866ff · 2026-10-24 09:06';
+var VERSION_TBL = 'b6cb4fe · 2026-10-24 09:18';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -987,16 +988,25 @@ function choisirLivre(i, id) {
   modifie(); rendreTout();
 }
 
+// Vedette de la semaine montrée dans la place libre v (comme l'EDL) : les vedettes de la semaine, ou les livres TBL
+// par défaut, qui ne sont pas déjà choisis, dans l'ordre des places libres (elles sont toujours à la fin).
+function vedetteSemaineDe(c, v) {
+  var choisis = [1, 2, 3, 4].map(function (n) { return c['vedette' + n]; }).filter(Boolean);
+  var restants = ((etat.d && etat.d.vedettesSemaine) || []).filter(function (s) { return choisis.indexOf(s.id) < 0; });
+  return restants[v - 1 - choisis.length] || null;
+}
 // En vedette : livres de l'auteur choisis par place ; une place libre montre la vedette de la semaine.
 function placeVedette(c, v, mode) {
   var ed = mode === 'edition';
   var id = c['vedette' + v], l = id ? livre(id) : null;
+  var sem = l ? null : vedetteSemaineDe(c, v);
   var fig = el('figure', l ? '' : 'libre');
   var contenu;
   if (l) { contenu = el('img'); contenu.src = l.couverture; contenu.alt = l.titre; }
+  else if (sem && urlSure(sem.couverture)) { contenu = el('img', 'ved-semaine'); contenu.src = sem.couverture; contenu.alt = sem.titre; }
   else { contenu = el('div', 'vide-ved', 'Vedette de la semaine'); }
-  var cap = el('figcaption', null, l ? l.titre : 'Place libre');
-  if (!l) { cap.appendChild(el('small', null, 'choisie par TBL chaque semaine')); }
+  var cap = el('figcaption', null, l ? l.titre : (sem ? sem.titre : 'Place libre'));
+  if (!l) { cap.appendChild(el('small', null, 'Vedette de la semaine, choisie par TBL')); }
   if (ed && editable()) {
     var b = el('button', 'place-ved'); b.type = 'button';
     b.disabled = !l && v > 1 && !c['vedette' + (v - 1)];
@@ -1217,7 +1227,8 @@ function donneesDemo() {
     vedette1: 'demo5', vedette2: 'demo6' });
   [1, 2, 3, 4].forEach(function (i) { var l = livres[i - 1]; c['livre' + i] = l.id; c['carte' + i + 'Titre'] = l.titreCourt; c['carte' + i + 'Accroche'] = l.accroche; c['carte' + i + 'Mots'] = l.motsCles; });
   return { statut: 'ok', demo: true, coffretId: '', etat: 'nouveau', dejaPublie: false, admin: false, gratuit: false,
-    auteur: { nom: 'Auteur de démonstration' }, publie: null, copie: c, livresAuteur: livres, produitBoutique: null, derniereModification: null, refus: null };
+    auteur: { nom: 'Auteur de démonstration' }, publie: null, copie: c, livresAuteur: livres,
+    vedettesSemaine: [1, 2, 3, 4].map(function (i) { return { id: 'sem' + i, titre: 'Vedette de la semaine ' + i, couverture: couverture('VEDETTE|' + i, '#1d3557', '#111') }; }), produitBoutique: null, derniereModification: null, refus: null };
 }
 
 demarrer();
