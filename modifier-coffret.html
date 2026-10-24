@@ -500,7 +500,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = '1cc324e · 2026-10-24 12:15';
+var VERSION_TBL = 'ae1fe26 · 2026-10-24 13:30';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -868,8 +868,13 @@ function rendrePage(c, mode, appareil) {
   }
 
   // ----- Section 3 : les livres du coffret (1 à 4), allure de la Mise en vedette pour le choix
+  // Titre en image « Les livres du coffret » (Livresducoffret.png de la médiathèque, demande de Marcel du 24 octobre
+  // 2026), au-dessus de la boîte grise comme le titre « En vedette », dans l'éditeur et les aperçus.
+  var titreS3 = el('img', 'titre-img');
+  titreS3.src = 'https://static.wixstatic.com/media/26b968_d371f860a35f47908994bb4f58be685d~mv2.png';
+  titreS3.alt = 'Livres du coffret';
+  page.appendChild(titreS3);
   var s3 = el('section', 'pg s3'); s3.setAttribute('data-section', '3'); s3.id = ed ? 's3-edition' : '';
-  if (ed) { s3.appendChild(el('h2', 'titre-s3', 'Les livres du coffret')); }
   if (ed && !livresModifiables()) {
     s3.appendChild(el('p', 'verrou-livres', '🔒 Les livres d’un coffret créé ne peuvent plus être changés, ajoutés ni retirés. Leurs cartes restent modifiables.'));
   }
