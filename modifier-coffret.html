@@ -500,7 +500,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = 'c1c5fd1 · 2026-10-24 09:53';
+var VERSION_TBL = '22ef142 · 2026-10-24 10:14';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -1080,7 +1080,9 @@ async function lancerApprobation() {
 }
 async function valider() {
   var corps = el('div');
-  corps.appendChild(el('p', null, 'Le coffret sera publié sur sa page. Le produit de la boutique sera mis à jour automatiquement : nom, prix, description et image' + (etat.d.produitBoutique ? '.' : ' (il sera créé, ce coffret n’en a pas encore).')));
+  corps.appendChild(el('p', null, etat.d.produitBoutique
+    ? 'Le coffret sera publié. Il est déjà relié à son produit de la boutique, qui n’est pas modifié.'
+    : 'Le coffret sera publié et un NOUVEAU produit sera ajouté à la boutique (nom, prix, description et image du coffret). Il sera caché tant que son fichier numérique n’y est pas ajouté. Les autres produits ne sont pas touchés.'));
   if (revueAdmin()) { corps.appendChild(el('p', null, 'Un courriel d’approbation sera envoyé à l’auteur.')); }
   var r = await modale({ titre: 'Approuver et publier', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Publier', principal: true, cls: 'valider' }] });
   if (r !== 'ok') { return; }
@@ -1088,7 +1090,8 @@ async function valider() {
   var rep = await appeler('approuver', { coffretId: etat.d.coffretId });
   etat.occupe = false;
   if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'La publication a échoué.', 'mal'); return; }
-  toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Produit créé dans la boutique.' : (rep.produit === 'maj' ? 'Produit de la boutique mis à jour.' : 'Le produit de la boutique sera relié par l’équipe TBL.')), 'ok');
+  if (rep.raisonProduit) { toast('Coffret publié, mais le produit n’a pas été ajouté à la boutique : ' + rep.raisonProduit, 'mal'); }
+  else { toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Nouveau produit ajouté à la boutique, caché : ajoutez-y le fichier numérique, puis affichez-le.' : 'Produit de la boutique inchangé.'), 'ok'); }
   demarrer();
 }
 async function refuser() {
