@@ -107,7 +107,7 @@ select:focus,input:focus,textarea:focus{border-color:var(--or);outline:none}
 /* Listes à hauteur fixe : Ventes par livre (5 lignes) et Documents (10 lignes).
    Si le contenu dépasse, il défile DANS la zone : la page garde toujours la même hauteur,
    donc la composante HTML Wix n'affiche jamais de barre de défilement à cause d'une longue liste. */
-:root{--h-entete:40px;--h-ligne:48px;--h-doc:64px}
+:root{--h-entete:40px;--h-ligne:48px;--h-doc:56px} /* --h-doc : une ligne de document (gabarit list-grid, icônes de 36 px) */
 .zone-fixe{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card2);scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .zone-ventes{height:calc(var(--h-entete) + 6 * var(--h-ligne) + 2px)} /* en-tête + 5 livres + ligne Total */
 .zone-docs{height:calc(var(--h-entete) + 5 * var(--h-doc) + 2px)} /* en-tête + 5 documents (24 octobre 2026) */
@@ -119,19 +119,30 @@ select:focus,input:focus,textarea:focus{border-color:var(--or);outline:none}
 .zone-fixe thead th{position:sticky;top:0;z-index:1;height:var(--h-entete);background:var(--card);border-bottom:1px solid var(--line);color:var(--muted);font-weight:600;font-size:.9rem}
 .zone-fixe tbody td{height:var(--h-ligne);border-bottom:1px solid var(--line)}
 .zone-docs tbody td{height:var(--h-doc)}
+/* Documents : gabarit Templates\list-grid.html (présentation « tableau ») : une colonne par information sous l'en-tête
+   collant, icônes d'action à droite (demande de Marcel du 24 octobre 2026). */
+.zone-docs thead th{text-transform:uppercase;letter-spacing:.05em;font-size:.78rem}
+.zone-docs tbody tr:hover td{background:rgba(255,255,255,.03)}
+.zone-docs .t-titre{font-weight:bold}
+.zone-docs .c-type{width:150px}
+.zone-docs .c-date{width:130px}
+.zone-docs .c-montant{width:110px;text-align:right}
+.zone-docs .c-auteur{width:170px}
+.zone-docs table:not(.avec-auteur) .c-auteur{display:none}
+.zone-docs .c-action{width:104px;text-align:right}
+.zone-docs .c-action .action{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.lg-icone{width:36px;height:36px;flex:0 0 36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);background:transparent;color:var(--txt);cursor:pointer;text-decoration:none}
+.lg-icone:hover{border-color:var(--red);color:#fff}
+.lg-icone.principal{background:var(--red);border-color:var(--red);color:#fff}
+.lg-icone.principal:hover{filter:brightness(1.1)}
+.lg-icone[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
+.lg-icone svg{width:18px;height:18px}
 .zone-fixe tbody tr:last-child td{border-bottom:0}
 .zone-fixe tfoot td{position:sticky;bottom:0;height:var(--h-ligne);background:var(--card);border-top:1px solid var(--line);font-weight:bold}
 .zone-fixe td.n,.zone-fixe th.n{text-align:right}
 .zone-ventes .c-ex{width:120px}
 .zone-ventes .c-brut{width:130px}
 .zone-ventes .c-liens{width:200px}
-.zone-docs .c-action{width:214px;padding-left:4px;padding-right:10px}
-.zone-docs th.c-action{text-align:right}
-.zone-docs .c-action .action{display:flex;gap:6px;justify-content:flex-end;align-items:center}
-.zone-docs .t-titre{font-weight:bold;overflow:hidden;text-overflow:ellipsis}
-.zone-docs .meta{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.zone-docs .meta>*{margin-right:10px}
-.zone-docs .pastille{display:inline-block;line-height:1.4;vertical-align:middle}
 .btn.mini{padding:6px 10px;font-size:.85rem;border-radius:var(--tbl-radius-btn)}
 
 /* Fiche auteur */
@@ -262,8 +273,18 @@ textarea{min-height:96px;resize:vertical}
   .card.graphique{padding:14px 21px 12px}
 }
 @media(max-width:520px){
-  .zone-docs .c-action{width:104px}
-  .zone-docs .c-action .action{flex-direction:column;align-items:stretch;gap:4px}
+  /* Documents (gabarit list-grid) : liste empilée, titre et icônes sur la même ligne, le reste dessous */
+  .zone-docs thead{display:none}
+  .zone-docs table,.zone-docs tbody{display:block}
+  .zone-docs tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 12px;border-bottom:1px solid var(--line);min-height:var(--h-doc)}
+  .zone-docs tbody tr:last-child{border-bottom:0}
+  .zone-docs tbody td{display:block;height:auto;padding:0;border:0;white-space:normal;width:auto;text-align:left}
+  .zone-docs tbody td.c-titre{grid-column:1;grid-row:1}
+  .zone-docs tbody td.c-action{grid-column:2;grid-row:1 / span 4;width:auto}
+  .zone-docs tbody td.c-type,.zone-docs tbody td.c-date,.zone-docs tbody td.c-montant,.zone-docs tbody td.c-auteur{grid-column:1;color:var(--muted);font-size:.85rem}
+  .zone-docs table:not(.avec-auteur) td.c-auteur{display:none}
+  .zone-docs tbody td.c-montant{text-align:left;width:auto}
+  .zone-docs .t-titre{overflow-wrap:anywhere}
   .btn.mini{padding:4px 8px;font-size:.8rem}
   .onglets{gap:6px}
   .onglet{padding:10px 11px;font-size:.9rem;gap:5px}
@@ -444,7 +465,7 @@ textarea{min-height:96px;resize:vertical}
           </div>
           <div class="zone-fixe zone-docs" id="zone-docs-auteur" role="region" aria-labelledby="titre-docs-auteur" tabindex="0">
             <table id="table-docs-auteur">
-              <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
+              <thead><tr><th class="c-titre">Document</th><th class="c-auteur">Auteur</th><th class="c-type">Type</th><th class="c-date">Date</th><th class="c-montant">Montant</th><th class="c-action">Actions</th></tr></thead>
               <tbody id="docs-auteur"></tbody>
             </table>
             <p class="vide-zone" id="vide-auteur" hidden>Aucun document à votre nom pour le moment. Vos relevés de commission, factures et notes de crédit apparaîtront ici.</p>
@@ -460,7 +481,7 @@ textarea{min-height:96px;resize:vertical}
           </div>
           <div class="zone-fixe zone-docs" id="zone-docs-generaux" role="region" aria-labelledby="titre-docs-generaux" tabindex="0">
             <table id="table-docs-generaux">
-              <thead><tr><th>Document</th><th class="c-action">Fichier</th></tr></thead>
+              <thead><tr><th class="c-titre">Document</th><th class="c-type">Type</th><th class="c-date">Date</th><th class="c-action">Actions</th></tr></thead>
               <tbody id="docs-generaux"></tbody>
             </table>
             <p class="vide-zone" id="vide-generaux" hidden>Aucun document général pour le moment.</p>
@@ -713,10 +734,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 046ba6c · 2026-10-24 14:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 088300f · 2026-10-24 14:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '046ba6c · 2026-10-24 14:22';
+var VERSION_TBL = '088300f · 2026-10-24 14:58';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2040,43 +2061,44 @@ function surResultatNouveauLivre(msg) {
 }
 
 /* ---------- Documents ---------- */
-// Une ligne = une hauteur fixe : titre (une seule ligne, coupé par « … » si trop long) et, dessous,
-// type, date et montant. Le titre complet reste lisible au survol (attribut title).
-function creerLigneDoc(doc) {
+// Gabarit Templates\list-grid.html (présentation « tableau ») : une ligne par document, une colonne par information
+// (Document, Auteur pour l'administrateur, Type, Date, Montant) et les icônes d'action à droite. Le titre est coupé
+// par « … » s'il est trop long ; le texte complet reste lisible au survol (attribut title).
+var ICONES_DOC = {
+  visualiser: { label: 'Visualiser', svg: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>' },
+  telecharger: { label: 'Télécharger', svg: '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>' }
+};
+function iconeDoc(type, url, titreDoc, principal) {
+  var def = ICONES_DOC[type];
+  var a = el('a', 'lg-icone' + (principal ? ' principal' : ''));
+  a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + def.svg + '</svg>';
+  if (url) {
+    // Visualiser ouvre le PDF dans le navigateur ; Télécharger donne le fichier. Les deux dans un nouvel onglet.
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.title = def.label;
+    a.setAttribute('aria-label', def.label + ' : ' + titreDoc + (type === 'visualiser' ? ' (nouvel onglet)' : ''));
+    a.addEventListener('click', function () { tracer('document', { detail: type }); });
+  } else {
+    a.setAttribute('aria-disabled', 'true'); a.title = 'Indisponible pour le moment'; a.tabIndex = -1;
+    a.setAttribute('aria-label', def.label + ' : indisponible pour le moment');
+  }
+  return a;
+}
+function creerLigneDoc(doc, avecMontant) {
   var tr = el('tr');
-  var cellule = el('td');
-  var titre = el('div', 't-titre', doc.titre);
-  titre.title = doc.titre;
-  cellule.appendChild(titre);
-  var meta = el('div', 'meta');
-  if (doc.auteurNom) { meta.appendChild(el('span', 'pastille', doc.auteurNom)); }
-  if (doc.type) { meta.appendChild(el('span', 'pastille', doc.type)); }
-  if (doc.date) { meta.appendChild(el('span', null, dateCourte(doc.date))); }
-  if (doc.montant) { meta.appendChild(el('span', null, doc.montant)); }
-  cellule.appendChild(meta);
-  tr.appendChild(cellule);
-
+  function cellule(cls, texte) { var td = el('td', cls, texte || ''); if (texte) { td.title = texte; } tr.appendChild(td); return td; }
+  var celTitre = cellule('c-titre');
+  var titre = el('div', 't-titre', doc.titre); titre.title = doc.titre; celTitre.appendChild(titre);
+  if (avecMontant) { cellule('c-auteur', doc.auteurNom); }
+  cellule('c-type', doc.type);
+  cellule('c-date', doc.date ? dateCourte(doc.date) : '');
+  if (avecMontant) { cellule('c-montant', doc.montant); }
   var celluleAction = el('td', 'c-action');
   var action = el('div', 'action');
   var url = urlSure(doc.url);
   var urlVue = urlSure(doc.urlVisualisation); // fournie seulement pour les PDF
-  if (urlVue) {
-    // Ouvre le PDF dans le navigateur, dans un nouvel onglet.
-    var v = el('a', 'btn mini', 'Visualiser');
-    v.href = urlVue; v.target = '_blank'; v.rel = 'noopener';
-    v.setAttribute('aria-label', 'Visualiser ' + doc.titre + ' dans un nouvel onglet');
-    v.addEventListener('click', function () { tracer('document', { detail: 'visualiser' }); });
-    action.appendChild(v);
-  }
-  if (url) {
-    var a = el('a', urlVue ? 'btn sec mini' : 'btn mini', 'Télécharger');
-    a.href = url; a.target = '_blank'; a.rel = 'noopener';
-    a.setAttribute('aria-label', 'Télécharger ' + doc.titre);
-    a.addEventListener('click', function () { tracer('document', { detail: 'telecharger' }); });
-    action.appendChild(a);
-  } else if (!urlVue) {
-    action.appendChild(el('span', 'note', 'Indisponible'));
-  }
+  if (urlVue) { action.appendChild(iconeDoc('visualiser', urlVue, doc.titre, !!url)); }
+  action.appendChild(iconeDoc('telecharger', url, doc.titre, false));
   celluleAction.appendChild(action);
   tr.appendChild(celluleAction);
   return tr;
@@ -2084,8 +2106,8 @@ function creerLigneDoc(doc) {
 function remplirListe(idListe, idVide, docs) {
   var corps = $(idListe);
   vider(corps);
-  docs.forEach(function (d) { corps.appendChild(creerLigneDoc(d)); });
   var suffixe = idListe.slice('docs-'.length); // « generaux » ou « auteur »
+  docs.forEach(function (d) { corps.appendChild(creerLigneDoc(d, suffixe === 'auteur')); });
   basculerZone('zone-docs-' + suffixe, 'table-docs-' + suffixe, idVide, docs.length > 0);
 }
 function anneeDe(doc) { return doc.date ? doc.date.slice(0, 4) : ''; }
@@ -2108,6 +2130,7 @@ function rendreDocuments() {
   docs.auteur.forEach(function (d) { if (d.auteurNom && auteurs.indexOf(d.auteurNom) < 0) { auteurs.push(d.auteurNom); } });
   auteurs.sort(function (a, b) { return a.localeCompare(b, 'fr'); });
   $('filtre-auteur').hidden = auteurs.length <= 1;
+  $('table-docs-auteur').classList.toggle('avec-auteur', auteurs.length > 1);
   remplirFiltre($('filtre-auteur'), 'Tous les auteurs', auteurs);
   construireFiltres('auteur', docs.auteur);
   appliquerTousLesFiltres();
