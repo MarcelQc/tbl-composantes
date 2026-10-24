@@ -347,7 +347,7 @@ body.v-rapport{background:#fff;color:#111}
       <button type="button" class="onglet" role="tab" id="ap-ord" aria-selected="true">Ordinateur</button>
       <button type="button" class="onglet" role="tab" id="ap-mob" aria-selected="false">Mobile</button>
     </div>
-    <div class="panneau-apercu"><div class="cadre ordinateur" id="cadre-apercu"></div></div>
+    <div class="panneau-apercu" id="panneau-apercu"><div class="cadre ordinateur" id="cadre-apercu"></div></div>
   </div></main>
 </div>
 
@@ -500,7 +500,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = 'b6cb4fe · 2026-10-24 09:18';
+var VERSION_TBL = 'c1c5fd1 · 2026-10-24 09:53';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -1154,8 +1154,20 @@ function ouvrirApercu(appareil) {
   $('ap-mob').setAttribute('aria-selected', appareil === 'mobile' ? 'true' : 'false');
   var cadre = $('cadre-apercu'); cadre.className = 'cadre ' + appareil; cadre.textContent = '';
   cadre.appendChild(rendrePage(etat.c, 'apercu', appareil));
-  montrer('vue-apercu'); window.scrollTo(0, 0);
+  montrer('vue-apercu'); ajusterCadre(); window.scrollTo(0, 0);
 }
+// L'aperçu ordinateur est dessiné à 1160 px de large, comme le site : on le réduit pour qu'il tienne en entier,
+// sans barre de défilement horizontale (comme l'EDL, demande de Marcel du 24 octobre 2026).
+function ajusterCadre() {
+  var cadre = $('cadre-apercu');
+  if (!cadre || $('vue-apercu').hidden) { return; }
+  cadre.style.zoom = '';
+  if (!cadre.classList.contains('ordinateur')) { return; }
+  var dispo = $('panneau-apercu').clientWidth - 30; // marges intérieures du panneau et bordure du cadre
+  var echelle = Math.min(1, dispo / 1160);
+  if (echelle < 1) { cadre.style.zoom = String(echelle); }
+}
+window.addEventListener('resize', ajusterCadre);
 function ouvrirRapport() {
   var v = $('vue-rapport'); v.textContent = '';
   var r = el('div', 'rap');
