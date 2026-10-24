@@ -710,10 +710,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 22ef142 · 2026-10-24 10:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// fdd7bb7 · 2026-10-24 10:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '22ef142 · 2026-10-24 10:14';
+var VERSION_TBL = 'fdd7bb7 · 2026-10-24 10:46';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1285,12 +1285,14 @@ function carteCoffret(d, admin) {
   var ouvrir = function () { ouvrirCoffret(d.id); };
   var enAttenteCoffret = copie === 'En attente de validation' || d.statut === 'En attente de validation';
   var aCorriger = copie === 'Corriger' || d.statut === 'Corriger';
-  if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', ouvrir)); }
-  else if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre coffret. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
+  // La demande en cours passe avant le statut : un nouveau coffret envoyé ou refusé garde le statut Nouveau dans
+  // la carte, avec sa demande comme copie (comme un livre).
+  if (d.statut === 'Payé' || d.statut === 'En production') { zone.appendChild(el('p', 'note', 'L\'équipe TBL prépare votre coffret. Vous serez avisé par courriel dès qu\'il sera en ligne.')); }
   else if (enAttenteCoffret) {
     if (admin) { zone.appendChild(bouton('Examiner la demande', 'btn petit', ouvrir)); }
     else { zone.appendChild(bouton('En attente de validation par TBL', 'btn sec petit', ouvrir)); }
   } else if (copie === 'Modifier' || aCorriger) { zone.appendChild(bouton(aCorriger ? 'Reprendre ma correction' : 'Reprendre ma modification', 'btn petit', ouvrir)); }
+  else if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', ouvrir)); }
   else if (d.statut === 'Publier') { zone.appendChild(bouton('Modifier le coffret', 'btn sec petit', ouvrir)); }
   corps.appendChild(zone);
   return carte;
