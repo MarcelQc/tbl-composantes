@@ -712,10 +712,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 2cc7b40 · 2026-10-24 14:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 6bfb935 · 2026-10-24 14:08 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '2cc7b40 · 2026-10-24 14:03';
+var VERSION_TBL = '6bfb935 · 2026-10-24 14:08';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1342,8 +1342,11 @@ function rendreLivres() {
 
   // Offre du forfait Coffret : dès 1 livre publié de l'auteur connecté (décision de Marcel du 24 octobre 2026).
   var offre = (d && d.offreCoffret) || {};
-  // Un coffret déjà en cours : pas de bandeau « Créez un coffret », sa carte ci-dessous a son bouton.
-  $('offre-coffret').hidden = !offre.offerte || !!coffretEnCoursDe(d && d.auteurId);
+  // Bandeau « Créez un coffret de vos livres » : jamais pour un administrateur, ni pour un auteur qui a déjà un
+  // coffret, quel que soit son statut (demande de Marcel du 24 octobre 2026). Le service Forfait Coffret de
+  // l'onglet Services reste offert.
+  var aDejaUnCoffret = ((d && d.coffrets) || []).some(function (c) { return c.auteurId === (d && d.auteurId); });
+  $('offre-coffret').hidden = !offre.offerte || admin || aDejaUnCoffret;
   $('btn-creer-coffret').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un coffret';
   var note = $('note-coffret');
   if (!offre.offerte && !admin) {
