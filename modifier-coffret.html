@@ -360,6 +360,9 @@ body.v-rapport{background:#fff;color:#111}
 var EN_WIX = true;
 var PARAMS = new URLSearchParams(location.search);
 var COFFRET_ID = PARAMS.get('coffret') || '';
+// Administrateur qui crée un coffret pour un auteur (onglet Services de l'Espace Auteurs, 24 octobre 2026) :
+// envoyé avec chaque demande, le serveur revérifie que le membre connecté est administrateur.
+var AUTEUR_ID = /^[0-9a-f-]{36}$/i.test(PARAMS.get('auteur') || '') ? PARAMS.get('auteur') : '';
 var DELAI_REPONSE_MS = 20000;
 // Ouverte dans l'éditeur Wix (mode design ou aperçu) : si la page ne répond pas vite, on passe en démonstration.
 function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
@@ -438,6 +441,7 @@ function livresChoisis(c) { return [1, 2, 3, 4].map(function (i) { return c['liv
 /* ---------- Pont avec la page Wix ---------- */
 var attentes = {}, numero = 0;
 function appeler(action, params, delai) {
+  if (AUTEUR_ID) { params = Object.assign({ auteurId: AUTEUR_ID }, params || {}); }
   return new Promise(function (ok) {
     numero += 1;
     var id = numero;
@@ -495,7 +499,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = 'a0740a6 · 2026-10-24 08:30';
+var VERSION_TBL = 'e92d70f · 2026-10-24 08:48';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 

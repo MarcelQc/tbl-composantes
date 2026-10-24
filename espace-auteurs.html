@@ -420,6 +420,9 @@ textarea{min-height:96px;resize:vertical}
 
     <!-- SERVICES -->
     <div class="panneau" role="tabpanel" id="panneau-services" aria-labelledby="onglet-services" hidden>
+      <div class="card barre-admin" id="barre-admin-services" hidden><strong>Administrateur</strong>
+        <label for="service-auteur" class="sub">Service pour l'auteur</label>
+        <select id="service-auteur" aria-label="Auteur pour qui configurer le service"><option value="">Choisir un auteur</option></select></div>
       <p class="sub" id="intro-services">Les services offerts par les Éditions TBL pour faire connaître vos livres. Les prix n'incluent pas les frais de service (5 %) ni les taxes.</p>
       <div class="services" id="liste-services"></div>
     </div>
@@ -707,10 +710,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// a0740a6 · 2026-10-24 08:30 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// e92d70f · 2026-10-24 08:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'a0740a6 · 2026-10-24 08:30';
+var VERSION_TBL = 'e92d70f · 2026-10-24 08:48';
 function texteVersion() {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL;
@@ -1154,15 +1157,20 @@ function ouvrirEditeur(livreId) {
 
 // Éditeur de coffret (EDC, page Wix /dashboardcoffret) : même principe, dans un nouvel onglet. Sans coffretId,
 // l'EDC s'ouvre en mode nouveau : l'auteur y choisit lui-même les livres du coffret (24 octobre 2026).
+// auteurId (administrateur seulement, onglet Services) : le coffret est créé pour cet auteur. Le serveur de l'EDC
+// revérifie que le membre connecté est administrateur avant d'en tenir compte.
 var URL_COFFRET = 'https://www.editionstbl.ca/dashboardcoffret';
-function ouvrirCoffret(coffretId) {
+function ouvrirCoffret(coffretId, auteurId) {
   tracer('coffret-ouvert', { coffretId: coffretId || '' });
-  var suffixe = coffretId ? '?coffret=' + encodeURIComponent(coffretId) : '';
+  var p = new URLSearchParams();
+  if (coffretId) { p.set('coffret', coffretId); }
+  if (auteurId) { p.set('auteur', auteurId); }
+  var suffixe = p.toString() ? '?' + p.toString() : '';
   if (EN_WIX) {
     var onglet = null;
     try { onglet = window.open(URL_COFFRET + suffixe, '_blank'); } catch (e) { onglet = null; }
     if (onglet) { return; }
-    envoyer({ type: 'ouvrirCoffret', coffretId: coffretId || '' });
+    envoyer({ type: 'ouvrirCoffret', coffretId: coffretId || '', auteurId: auteurId || '' });
     return;
   }
   location.href = 'modifier-coffret.html' + suffixe;
@@ -1430,32 +1438,29 @@ var SERVICES = [
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
   { cle: 'couverture', nom: 'Image recto/verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
 ];
-// Livres proposés dans les services : ceux de l'auteur, ou tous pour un admin. Le coffret n'accepte que
-// les livres publiés de l'auteur connecté (même pour un admin).
+// Administrateur : les services se configurent et s'exécutent pour un auteur choisi en haut de l'onglet
+// (demande de Marcel du 24 octobre 2026). Sans auteur choisi, les cartes invitent à en choisir un.
+function auteurService() { return estAdmin() ? $('service-auteur').value : ((etat.donnees && etat.donnees.auteurId) || ''); }
+function remplirAuteursServices() {
+  var sel = $('service-auteur');
+  var choix = sel.value;
+  while (sel.options.length > 1) { sel.remove(1); }
+  ((etat.donnees && etat.donnees.auteursActifs) || []).forEach(function (a) {
+    var o = document.createElement('option'); o.value = a.id; o.textContent = a.nom; sel.appendChild(o);
+  });
+  sel.value = sel.querySelector('option[value="' + choix + '"]') ? choix : '';
+}
+$('service-auteur').addEventListener('change', function () { rendreServices(); });
+// Livres proposés dans les services : ceux de l'auteur connecté, ou ceux de l'auteur choisi par un admin.
 function livresPourService(service) {
   var d = etat.donnees;
-  var livres = (d && d.livres) || [];
-  if (service.livres === 2) {
-    return livres.filter(function (l) { return l.statut === 'Publier' && l.auteurId === d.auteurId; });
-  }
-  // Mise en vedette : seulement les livres publiés (décision du 12 octobre 2026).
-  if (service.cle === 'vedette') {
+  var auteur = auteurService();
+  var livres = ((d && d.livres) || []).filter(function (l) { return auteur && l.auteurId === auteur; });
+  // Coffret et Mise en vedette (décision du 12 octobre 2026) : seulement les livres publiés.
+  if (service.livres === 2 || service.cle === 'vedette') {
     return livres.filter(function (l) { return l.statut === 'Publier'; });
   }
   return livres;
-}
-function libelleChoix(l) {
-  var texte = l.titre;
-  if (estAdmin() && l.auteurNom) { texte += ' (' + l.auteurNom + ')'; }
-  if (l.statut === 'Nouveau') { texte += ', à compléter'; }
-  return texte;
-}
-function selectLivres(livres, libelle) {
-  var s = el('select');
-  s.setAttribute('aria-label', libelle);
-  var vide = el('option', null, libelle); vide.value = ''; s.appendChild(vide);
-  livres.forEach(function (l) { var o = el('option', null, libelleChoix(l)); o.value = l.id; s.appendChild(o); });
-  return s;
 }
 function carteService(service) {
   var carte = el('article', 'card service');
@@ -1466,60 +1471,47 @@ function carteService(service) {
   carte.appendChild(el('div', 'prix', service.prix));
   carte.appendChild(el('p', 'desc', service.desc));
   var zone = el('div', 'choix-livres');
+  carte.appendChild(zone);
+  var admin = estAdmin();
+  var auteur = auteurService();
+  if (admin && !auteur) {
+    zone.appendChild(el('p', 'note', 'Choisissez d\'abord l\'auteur en haut de l\'onglet.'));
+    return carte;
+  }
   var livres = livresPourService(service);
-  // Mise en vedette : le livre et les semaines se choisissent dans le calendrier lui-même.
+  var de = admin ? 'livres de cet auteur' : 'vos livres';
+  // Mise en vedette : le livre et les semaines se choisissent dans le calendrier lui-même (admin : présélection
+  // du premier livre publié de l'auteur choisi).
   if (service.calendrier) {
     if (!livres.length) {
-      zone.appendChild(el('p', 'note', 'Offert dès qu\'un de vos livres est publié.'));
+      zone.appendChild(el('p', 'note', 'Offert dès qu\'un de ' + (admin ? 'ses' : 'vos') + ' livres est publié.'));
     } else {
-      zone.appendChild(bouton('Ouvrir le calendrier', 'btn petit', function () { ouvrirVedettes(); }));
+      zone.appendChild(bouton('Ouvrir le calendrier', 'btn petit', function () { ouvrirVedettes(admin ? livres[0].id : ''); }));
     }
-    carte.appendChild(zone);
     return carte;
   }
   var besoin = service.livres;
   if (livres.length < besoin) {
-    zone.appendChild(el('p', 'note', besoin === 2 ? 'Offert dès que deux de vos livres sont publiés.' : 'Aucun livre disponible pour le moment.'));
-    carte.appendChild(zone);
+    zone.appendChild(el('p', 'note', besoin === 2 ? 'Offert dès que deux des ' + de + ' sont publiés.' : 'Aucun livre disponible pour le moment.'));
+    return carte;
+  }
+  // Forfait Coffret : plus de listes de livres (24 octobre 2026), ils se choisissent dans l'éditeur de coffret
+  // (EDC), ouvert en mode nouveau ; pour l'auteur choisi quand c'est un admin.
+  if (service.cle === 'coffret') {
+    zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirCoffret('', admin ? auteur : ''); }));
     return carte;
   }
   // Services à un livre : plus de liste « Choisir un livre » (demande de Marcel du 17 octobre 2026),
-  // le bouton Continuer suffit. Forfait Coffret : plus de listes non plus (24 octobre 2026), les livres se
-  // choisissent dans l'éditeur de coffret (EDC), ouvert en mode nouveau.
-  if (service.cle === 'coffret') {
-    zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirCoffret(); }));
-    carte.appendChild(zone);
-    return carte;
-  }
-  if (besoin === 1) {
-    zone.appendChild(bouton('Continuer', 'btn petit', function () { bientot(service.cle); }));
-    carte.appendChild(zone);
-    return carte;
-  }
-  var choix = [];
-  for (var i = 0; i < besoin; i++) {
-    choix.push(selectLivres(livres, i === 0 ? 'Premier livre' : 'Deuxième livre'));
-    zone.appendChild(choix[i]);
-  }
-  var continuer = bouton('Continuer', 'btn petit', function () {
-    var ids = choix.map(function (s) { return s.value; });
-    var titres = ids.map(function (id) { var l = livres.filter(function (x) { return x.id === id; })[0]; return l ? l.titre : ''; });
-    bientot(service.cle, titres.join(' et '));
-  });
-  function majContinuer() {
-    var ids = choix.map(function (s) { return s.value; });
-    continuer.disabled = ids.some(function (v) { return !v; }) || (ids.length === 2 && ids[0] === ids[1]);
-  }
-  choix.forEach(function (s) { s.addEventListener('change', majContinuer); });
-  majContinuer();
-  zone.appendChild(continuer);
-  carte.appendChild(zone);
+  // le bouton Continuer suffit.
+  zone.appendChild(bouton('Continuer', 'btn petit', function () { bientot(service.cle); }));
   return carte;
 }
 function rendreServices() {
   var liste = $('liste-services');
   vider(liste);
   var admin = estAdmin();
+  $('barre-admin-services').hidden = !admin;
+  if (admin) { remplirAuteursServices(); }
   SERVICES.filter(function (s) { return admin || !s.admin; }).forEach(function (s) { liste.appendChild(carteService(s)); });
 }
 
