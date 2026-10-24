@@ -499,7 +499,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, administrateurs seulement) ---------- */
-var VERSION_TBL = 'e92d70f · 2026-10-24 08:48';
+var VERSION_TBL = '92866ff · 2026-10-24 09:06';
 function texteVersion() { return VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL; }
 console.log('[modifier-coffret] ' + texteVersion());
 
@@ -1045,6 +1045,9 @@ async function enregistrer() {
   if (!r || !r.ok) { majOutils(); toast((r && r.message) || 'L’enregistrement a échoué. Réessayez dans un instant.', 'mal'); return; }
   etat.d.coffretId = r.coffretId || etat.d.coffretId;
   etat.d.etat = r.etat || etat.d.etat;
+  // Valeurs telles qu'enregistrées (images téléversées : leur adresse remplace l'image en mémoire, pour ne pas
+  // la renvoyer au prochain enregistrement).
+  if (r.champs) { etat.c = Object.assign(vierge(), r.champs); }
   etat.d.derniereModification = r.date || new Date().toISOString();
   etat.dirty = false;
   rendreTout();
@@ -1075,7 +1078,7 @@ async function valider() {
   var rep = await appeler('approuver', { coffretId: etat.d.coffretId });
   etat.occupe = false;
   if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'La publication a échoué.', 'mal'); return; }
-  toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Produit créé dans la boutique.' : 'Produit de la boutique mis à jour.'), 'ok');
+  toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Produit créé dans la boutique.' : (rep.produit === 'maj' ? 'Produit de la boutique mis à jour.' : 'Le produit de la boutique sera relié par l’équipe TBL.')), 'ok');
   demarrer();
 }
 async function refuser() {
