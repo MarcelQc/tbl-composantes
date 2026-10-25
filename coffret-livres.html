@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Livres du coffret | Éditions TBL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Bas de la page dynamique Coffrets (/coffrets/{cle}) : titre en image « Livres du coffret » et cartes des livres
+   (couverture, titre court, accroche, mots clés, bouton « Numérique - prix », « Livre papier sur Amazon.ca »),
+   puis titre en image « En vedette » et ses 4 places. Même allure que l'aperçu de l'éditeur de coffret (EDC,
+   Web\modifier-coffret.html, section 3 et En vedette). Demande de Marcel du 25 octobre 2026.
+   Données : envoyées par la page (public/coffret-page.js du dépôt editionstbl, brancherCoffret), message
+   { type: 'tbl-coffret', coffret } (coffret.cartes, coffret.vedettes, coffret.accroche). Liens du site : la
+   composante demande à la page d'y aller (message 'tbl-coffret:aller') ; Amazon s'ouvre dans un nouvel onglet.
+   Ouverte seule dans un navigateur (hors Wix) : démonstration. Dans l'éditeur Wix : coffret de ?apercu=<cle>,
+   sinon le plus récent publié (comme coffret-numerique.html). */
+:root{--tbl-paper:#16181c;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-radius:14px;--vide:#20232a}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+.page{width:min(1160px,100%);margin:0 auto}
+/* Chaque section dans une boîte grise, comme l'EDC */
+.pg{max-width:1000px;margin:0 auto 22px;background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+/* Section des livres (modèle de la page True Crime Québec) */
+.s3{padding:30px 20px 20px}
+.livres-coffret{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:22px;align-items:stretch}
+.carte-livre{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.carte-livre .couv-lien{display:block;width:100%;max-width:230px;border:0;padding:0;background:none;cursor:pointer}
+.carte-livre .couv{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6);display:block;transition:transform .2s}
+.carte-livre .couv-lien:hover .couv,.carte-livre .couv-lien:focus-visible .couv{transform:translateY(-4px)}
+.carte-livre .ct-titre{font:600 24px 'Oswald','Arial Narrow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;margin-top:6px;display:block}
+.carte-livre .ct-accroche{font:700 19px/1.25 Georgia,'Times New Roman',serif;display:block}
+.carte-livre .ct-mots{font:14px Georgia,'Times New Roman',serif;color:#ddd;display:block}
+/* Boutons poussés au bas de la carte : alignés d'une carte à l'autre */
+.carte-livre .boutons-carte{margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center}
+.btn-num{width:100%;max-width:230px;background:#8b0000;color:#fff;border:2px solid #8b0000;border-radius:99px;padding:10px 12px;font:700 14px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap;margin-top:10px;cursor:pointer}
+.btn-num:hover,.btn-num:focus-visible{filter:brightness(1.15)}
+/* « Livre papier sur Amazon.ca » : bouton noir (Templates\bouton-noir.html) */
+.btn-amazon{display:block;width:100%;max-width:230px;margin-top:8px;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:10px 12px;font:700 14px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap;text-decoration:none;text-align:center;transition:background .15s,color .15s}
+.btn-amazon:hover,.btn-amazon:focus-visible{background:#fff;color:#000}
+.btn-amazon.reserve{visibility:hidden}
+.livres-coffret.n4 .btn-num,.livres-coffret.n4 .btn-amazon{font-size:12.5px;padding:10px 14px}
+/* En vedette (comme l'EDC et l'EDL) */
+.vedettes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:6px 0 10px}
+.vedettes figure{margin:0}
+.vedettes .place{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:center;cursor:pointer}
+.vedettes .place:disabled{cursor:default}
+.vedettes img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;border-radius:4px;transition:transform .2s}
+.vedettes .place:not(:disabled):hover img,.vedettes .place:not(:disabled):focus-visible img{transform:translateY(-4px)}
+.vedettes figcaption{font-size:12px;text-align:center;padding-top:6px;color:#ddd}
+/* Chargement */
+.chargement{min-height:220px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
+.roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.roue{animation:none}.carte-livre .couv,.vedettes img{transition:none}}
+@media (max-width:760px){
+  .livres-coffret{grid-template-columns:1fr}
+  .carte-livre .couv-lien{max-width:200px}
+  .livres-coffret.n4 .btn-num,.livres-coffret.n4 .btn-amazon{font-size:14px}
+  .vedettes{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pg{padding:18px 14px}
+}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <section class="pg chargement" aria-busy="true"><span class="roue" aria-hidden="true"></span>Chargement des livres du coffret…</section>
+</div>
+<script>
+(function () {
+  var page = document.getElementById('page');
+  var IMAGE_LIVRES = 'https://static.wixstatic.com/media/26b968_d371f860a35f47908994bb4f58be685d~mv2.png';
+  var IMAGE_VEDETTE = 'https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png';
+  var PAPIER = 'Disponible en numérique et en papier';
+  var DEMO = {
+    titre: 'Coffret de démonstration', accroche: PAPIER,
+    cartes: [
+      { titre: 'Tome 1', accroche: 'Une accroche d’une ligne', mots: 'Lieu • Personnage', livre: 'Mon premier livre démo', couverture: 'https://via.placeholder.com/440x660/1d3b6e/ffffff?text=Livre+1', prix: 8.99, amazon: 'https://www.amazon.ca/', achat: null },
+      { titre: 'Tome 2', accroche: 'Une autre accroche', mots: 'Lieu • Personnage', livre: 'Mon deuxième livre démo', couverture: 'https://via.placeholder.com/440x660/1b5e3a/ffffff?text=Livre+2', prix: 8.98, amazon: null, achat: null }
+    ],
+    vedettes: [1, 2, 3, 4].map(function (n) { return { titre: 'Vedette ' + n, couverture: 'https://via.placeholder.com/384x576/333/ffffff?text=Vedette+' + n, lien: null, semaine: true }; })
+  };
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined && txt !== null) { e.textContent = txt; } return e; }
+  function argent(n) { return n.toFixed(2).replace('.', ',') + ' $'; }
+  function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
+  function aller(url) { if (url && window.parent !== window) { window.parent.postMessage({ type: 'tbl-coffret:aller', url: url }, '*'); } }
+  function titreImage(src, alt) { var t = el('img', 'titre-img'); t.src = src; t.alt = alt; return t; }
+
+  function carte(c, x, avecAmazon, reserveAmazon) {
+    var d = el('div', 'carte-livre');
+    var lienCouv = x.page || x.achat;
+    var couv = el(lienCouv ? 'button' : 'div', 'couv-lien');
+    if (lienCouv) { couv.type = 'button'; couv.title = 'Voir la page du livre'; couv.addEventListener('click', function () { aller(lienCouv); }); }
+    var img = el('img', 'couv'); img.src = x.couverture; img.alt = x.livre || x.titre; couv.appendChild(img);
+    d.appendChild(couv);
+    if (x.titre) { d.appendChild(el('span', 'ct-titre', x.titre)); }
+    if (x.accroche) { d.appendChild(el('span', 'ct-accroche', x.accroche)); }
+    if (x.mots) { d.appendChild(el('span', 'ct-mots', x.mots)); }
+    var bas = el('div', 'boutons-carte');
+    var b = el('button', 'btn-num', 'Numérique' + (x.prix > 0 ? ' - ' + argent(x.prix) : '')); b.type = 'button';
+    b.addEventListener('click', function () { aller(x.achat || x.page); });
+    bas.appendChild(b);
+    // « Livre papier sur Amazon.ca » seulement si le message du coffret est « Disponible en numérique et en papier »
+    if (avecAmazon && urlSure(x.amazon)) { var am = el('a', 'btn-amazon', 'Livre papier sur Amazon.ca'); am.href = x.amazon; am.target = '_blank'; am.rel = 'noopener'; bas.appendChild(am); }
+    else if (reserveAmazon) { var r = el('span', 'btn-amazon reserve', 'Livre papier sur Amazon.ca'); r.setAttribute('aria-hidden', 'true'); bas.appendChild(r); }
+    d.appendChild(bas);
+    return d;
+  }
+
+  function afficher(c) {
+    page.textContent = '';
+    var cartes = (c && c.cartes) || [];
+    if (!cartes.length) { page.hidden = true; return; }
+    page.hidden = false;
+    var papier = (c.accroche || PAPIER) === PAPIER;
+    var reserve = papier && cartes.some(function (x) { return urlSure(x.amazon); });
+    // Livres du coffret
+    page.appendChild(titreImage(IMAGE_LIVRES, 'Livres du coffret'));
+    var s3 = el('section', 'pg s3');
+    var grille = el('div', 'livres-coffret' + (cartes.length >= 4 ? ' n4' : ''));
+    grille.style.setProperty('--n', String(Math.max(cartes.length, 1)));
+    cartes.slice(0, 4).forEach(function (x) { grille.appendChild(carte(c, x, papier, reserve)); });
+    s3.appendChild(grille);
+    page.appendChild(s3);
+    // En vedette
+    var ved = (c.vedettes || []).slice(0, 4);
+    if (ved.length) {
+      page.appendChild(titreImage(IMAGE_VEDETTE, 'En vedette'));
+      var sv = el('section', 'pg');
+      var g = el('div', 'vedettes');
+      ved.forEach(function (v) {
+        var fig = el('figure');
+        var bt = el('button', 'place'); bt.type = 'button'; bt.disabled = !v.lien;
+        if (v.lien) { bt.title = 'Voir la page du livre'; bt.addEventListener('click', function () { aller(v.lien); }); }
+        var im = el('img'); im.src = v.couverture; im.alt = v.titre; bt.appendChild(im);
+        fig.appendChild(bt);
+        fig.appendChild(el('figcaption', null, v.titre));
+        g.appendChild(fig);
+      });
+      sv.appendChild(g);
+      page.appendChild(sv);
+    }
+  }
+
+  var recu = false;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.type === 'tbl-coffret') { recu = true; afficher(d.coffret); }
+  });
+  if (window.parent === window) { afficher(DEMO); return; }
+  window.parent.postMessage({ type: 'tbl-coffret:pret' }, '*');
+
+  // Éditeur Wix (Design) : le code de la page ne tourne pas. La composante lit elle-même un coffret publié, comme
+  // coffret-numerique.html. Seuls les noms de serveurs comptent ; l'éditeur a priorité sur le site.
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  if (surLeSite) { return; }
+  setTimeout(function () {
+    if (recu) { return; }
+    var cle = new URLSearchParams(location.search).get('apercu') || '';
+    fetch('https://www.editionstbl.ca/_functions/coffretPublic?cle=' + encodeURIComponent(cle))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) { if (!recu) { afficher(c && c.cartes && c.cartes.length ? c : DEMO); } })
+      .catch(function () { if (!recu) { afficher(DEMO); } });
+  }, 1500);
+})();
+</script>
+</body>
+</html>
