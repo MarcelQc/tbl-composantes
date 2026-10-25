@@ -94,8 +94,19 @@ body{padding:4px}
   // Éditeur Wix (Design) : le code de la page ne tourne pas, rien n'arrive du dataset. La composante lit alors
   // elle-même un coffret publié : celui de ?apercu=<cle> dans son adresse (ex. ?apercu=epdl), sinon le plus
   // récent. Sur le site (et dans l'Aperçu), c'est toujours le coffret du dataset envoyé par la page.
-  function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
-  if (/editionstbl\.ca/i.test(originesParent())) { return; }
+  // Seuls les noms de serveurs comptent (l'adresse de l'éditeur Wix contient elle aussi « editionstbl.ca » dans
+  // ses paramètres) ; l'éditeur a priorité sur le site.
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  console.log('[coffret-numerique] parents :', hotes.join(', ') || '(inconnus)', dansEditeur ? '→ éditeur' : (surLeSite ? '→ site' : '→ autre'));
+  if (surLeSite) { return; }
   setTimeout(function () {
     if (recu) { return; }
     var cle = new URLSearchParams(location.search).get('apercu') || '';
