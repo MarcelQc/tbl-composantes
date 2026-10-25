@@ -31,6 +31,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 /* Chaque section dans une boîte grise ; ses éléments intérieurs un ton plus foncé (comme l'EDC) */
 .pg.s1,.pg.s-message{background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px;margin:0 auto 22px}
 .titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+/* Titre du coffret, centré sous l'image « Coffret » */
+.titre-coffret{font:600 clamp(22px,3.2vw,30px)/1.25 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;letter-spacing:.03em;margin:14px auto 16px;padding:0 14px;max-width:1000px;color:#fff}
 .s1{text-align:center}
 .s1 .image-pub{width:100%;display:block;border-radius:6px}
 .boutons-s1{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:22px 0 6px}
@@ -116,8 +118,10 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var livres = c.livres.slice(0, 4);
     var mobile = window.matchMedia('(max-width:600px)').matches;
     var imagePub = c.presentation1 === 'image' ? urlSure(mobile ? (c.image1Mob || c.image1Ord) : c.image1Ord) : '';
-    // Section 1 : image publicitaire, ou titre « Coffret » au-dessus de la boîte et présentation des livres
-    if (!imagePub) { var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Coffret'; page.appendChild(t); }
+    // Titre en image « Coffret » puis titre du coffret centré, dans les deux présentations (comme l'EDC)
+    var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Coffret'; page.appendChild(t);
+    if (c.titre) { page.appendChild(el('h1', 'titre-coffret', c.titre)); }
+    // Section 1 : image publicitaire, ou présentation des livres
     var s1 = el('section', 'pg s1');
     if (imagePub) { var im = el('img', 'image-pub'); im.src = imagePub; im.alt = c.titre || 'Coffret'; s1.appendChild(im); }
     else { s1.appendChild(gabarit(c, livres)); }

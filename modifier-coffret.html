@@ -236,6 +236,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* En vedette (comme l'EDL) */
 /* Titre en image, comme dans l'EDL (.titre-img de Web\modifier-livre.html) */
 .titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto}
+/* Titre du coffret, centré sous l'image « Coffret » */
+.titre-coffret{font:600 clamp(22px,3.2cqw,30px)/1.25 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;letter-spacing:.03em;margin:14px auto 16px;padding:0 14px;max-width:1000px;color:#fff}
 .vedettes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:6px 0 30px}
 .vedettes img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;border-radius:4px}
 .vedettes figure{margin:0}
@@ -547,7 +549,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '1979455 · 2026-10-25 09:44';
+var VERSION_TBL = '503ac24 · 2026-10-25 10:12';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -801,7 +803,10 @@ function manques(c) {
 function modifie() { etat.dirty = true; majOutils(); }
 function majChamp(k, v, redessiner) {
   etat.c[k] = v;
-  if (k === 'titre') { $('h-titre').textContent = v || 'Nouveau coffret'; }
+  if (k === 'titre') {
+    $('h-titre').textContent = v || 'Nouveau coffret';
+    document.querySelectorAll('.titre-coffret').forEach(function (t) { t.textContent = v || 'Titre du coffret'; });
+  }
   modifie();
   if (redessiner) { rendreTout(); }
 }
@@ -1037,12 +1042,11 @@ function rendrePage(c, mode, appareil) {
   var choisis = livresChoisis(c).map(livre).filter(Boolean);
 
   // ----- Section 1 : image publicitaire ou présentation du gabarit, bouton d'achat avec prix, Découvrir les livres
-  // Présentation des livres : titre en image « Coffret » (coffret.png) au-dessus de la boîte grise, comme « Livres
-  // du coffret » (demande de Marcel du 25 octobre 2026).
-  if (c.presentation1 !== 'image') {
-    var titreS1 = el('img', 'titre-img'); titreS1.src = IMAGE_TITRE_COFFRET; titreS1.alt = 'Coffret';
-    page.appendChild(titreS1);
-  }
+  // Titre en image « Coffret » (coffret.png) au-dessus de la boîte grise, comme « Livres du coffret », puis le titre
+  // du coffret centré en dessous ; dans les deux présentations (demandes de Marcel du 25 octobre 2026).
+  var titreS1 = el('img', 'titre-img'); titreS1.src = IMAGE_TITRE_COFFRET; titreS1.alt = 'Coffret';
+  page.appendChild(titreS1);
+  page.appendChild(el('h1', 'titre-coffret', c.titre || 'Titre du coffret'));
   var s1 = el('section', 'pg s1'); s1.setAttribute('data-section', '1');
   if (ed) {
     var ctl = el('div', 'controle-section');
