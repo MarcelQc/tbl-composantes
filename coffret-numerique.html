@@ -48,29 +48,25 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 .tbl-bundle .covers.n1{--cw:clamp(110px,24cqw,220px)}
 .tbl-bundle .covers.n3{--cw:clamp(80px,17cqw,170px)}
 .tbl-bundle .covers.n4{--cw:clamp(70px,14cqw,150px)}
-.tbl-bundle .covers img,.chargement .covers span{width:var(--cw);height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 calc(var(--cw) * -.14)}
+.tbl-bundle .covers img{width:var(--cw);height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 calc(var(--cw) * -.14)}
 .tbl-bundle .covers.n1 img{margin:0}
 .tbl-bundle .titles{font-size:clamp(.9rem,.5rem + 1.2cqw,1.25rem);color:var(--tbl-muted);margin-bottom:clamp(8px,1.6cqw,16px)}
 .tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:clamp(1.3rem,.6rem + 2.2cqw,2.2rem);margin-bottom:4px}
 .tbl-bundle .price .old{text-decoration:line-through;color:var(--tbl-muted);font-size:.7em;margin-right:.5em}
-/* Chargement : couvertures grises et petit message */
-.chargement .covers span{display:block;aspect-ratio:2/3;background:var(--vide);animation:pulse 1.2s ease-in-out infinite}
+/* Chargement : boîte grise et petit message (demande de Marcel du 25 octobre 2026) */
+.s1.chargement{min-height:220px;display:flex;align-items:center;justify-content:center}
 .chargement .msg{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted);font-size:1rem}
 .chargement .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
 @keyframes tourne{to{transform:rotate(360deg)}}
-@keyframes pulse{50%{opacity:.5}}
-@media (prefers-reduced-motion:reduce){.chargement .roue,.chargement .covers span{animation:none}}
+@media (prefers-reduced-motion:reduce){.chargement .roue{animation:none}}
 @media (max-width:520px){.btn-achat,.btn-decouvrir{padding:11px 20px;font-size:15px}.accroche{font-size:22px}}
 </style>
 </head>
 <body>
 <div class="page" id="page">
-  <img class="titre-img" src="https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png" alt="Coffret">
-  <section class="pg s1">
-    <div class="tbl-bundle chargement" aria-busy="true">
-      <div class="covers n2"><span></span><span></span></div>
-      <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
-    </div>
+  <!-- Chargement neutre : ni titre ni couvertures, la présentation (livres ou image publicitaire) n'est pas encore connue -->
+  <section class="pg s1 chargement" aria-busy="true">
+    <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
   </section>
 </div>
 <script>
