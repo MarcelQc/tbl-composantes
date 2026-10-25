@@ -135,6 +135,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 .interrupteur input:disabled+.piste{opacity:.5}
 .controle-section{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;margin:18px auto 8px;padding:8px 14px;border-radius:var(--tbl-radius);background:var(--card);font:13px var(--tbl-font-body);color:var(--txt);max-width:760px}
 .controle-section .info-l{color:var(--muted);font-size:12px}
+/* Prix d'une section modifiée (comme les pastilles dorées de l'EDL) */
+.chip-prix{display:inline-block;border:1px solid var(--gold);color:var(--gold);background:var(--card2);border-radius:99px;padding:2px 10px;font:600 12px var(--tbl-font-body);white-space:nowrap;vertical-align:middle}
+.chip-prix[hidden]{display:none!important}
+/* Description : éditeur enrichi (barre de mise en forme comme l'EDL) */
+.outils-desc{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
+.tb{min-width:34px;height:32px;border:1px solid var(--line);background:transparent;color:var(--txt);border-radius:var(--tbl-radius-btn);cursor:pointer;padding:0 10px;font-size:.85rem}
+.tb:hover{border-color:var(--accent)}
+.desc-riche{min-height:140px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:15px/1.55 var(--tbl-font-body);color:var(--txt);overflow-wrap:anywhere}
+.desc-riche:focus{outline:none;border-color:var(--edit)}
+.desc-riche p{margin:0 0 6px}
+.desc-riche ul,.desc-riche ol{margin:0 0 6px;padding-left:22px}
+.desc-riche.lecture{opacity:.75}
+.rap .desc-riche{min-height:0;opacity:1;background:transparent;border:0;padding:0}
+.desc-riche[contenteditable="true"]:empty::before{content:attr(data-vide);color:var(--muted);font-style:italic}
+.champ-f input[readonly]{opacity:.7;cursor:not-allowed}
 .choix-pres{display:inline-flex;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);overflow:hidden}
 .choix-pres button{border:0;background:transparent;color:var(--txt);padding:7px 14px;font:600 13px var(--tbl-font-body);cursor:pointer}
 .choix-pres button[aria-pressed="true"]{background:var(--redsoft);color:#fff}
@@ -371,13 +386,29 @@ var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.tes
 var SUR_LE_SITE = /editionstbl\.ca/i.test(originesParent());
 var DELAI_EDITEUR_MS = 3000;
 
-// Tarifs (en cents), à valider par Marcel (plan Plan-de-travail-coffret.md).
+// Tarifs (en cents). Après la publication, chaque élément modifié a son prix (décisions de Marcel du 25 octobre
+// 2026, comme l'EDL) ; à la création, tout est compris dans le forfait.
 var PRIX = {
   forfait: 5000,      // Forfait Coffret : création, images 1 et 2 par TBL et vedettes comprises
-  texte: 500,         // texte modifié après la publication
-  image: 1000,        // image téléversée par l'auteur après la publication
-  imageTbl: 2000,     // image créée par TBL après la publication (plus élaborée, recherche de l'admin)
-  place: 1000         // place « En vedette » changée après la publication
+  texte: 500,         // texte modifié (boutons, cartes des livres)
+  image: 1000,        // image téléversée par l'auteur (image du coffret, sections 1 et 2)
+  imageTbl: 2000,     // image créée par TBL (plus élaborée, recherche de l'admin)
+  choix: 500,         // passer d'une présentation à l'autre (section 1), afficher ou masquer la section 2
+  message: 500,       // changer le message « Disponible en numérique et en papier / seulement »
+  prix: 500,          // changer le prix du coffret
+  descPetit: 500,     // description : moins de 20 % des mots changés
+  descGrand: 1000,    // description : 20 % ou plus des mots changés
+  place: 1000         // place « En vedette » changée
+};
+var SEUIL_DESCRIPTION = 0.2;
+// Groupes de champs : chaque section modifiée affiche son prix (pastille dorée), comme l'EDL.
+var GROUPES = {
+  fiche: ['titre', 'prix', 'description', 'imageBoutique'],
+  s1: ['presentation1', 'image1Ord', 'image1Mob', 'demande1', 'texteAchat', 'texteDecouvrir'],
+  message: ['accroche', 'texteAcheter'],
+  s2: ['section2', 'image2', 'demande2'],
+  s3: ['carte1Titre', 'carte1Accroche', 'carte1Mots', 'carte2Titre', 'carte2Accroche', 'carte2Mots', 'carte3Titre', 'carte3Accroche', 'carte3Mots', 'carte4Titre', 'carte4Accroche', 'carte4Mots'],
+  vedettes: ['vedette1', 'vedette2', 'vedette3', 'vedette4']
 };
 var FRAIS = 0.05, TPS = 0.05, TVQ = 0.09975;
 var MAX_LIVRES = 4;
@@ -500,7 +531,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '3a862da · 2026-10-24 15:09';
+var VERSION_TBL = '0924186 · 2026-10-25 07:06';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -562,15 +593,10 @@ function facture() {
   if (!etat.d.dejaPublie) {
     lignes.push({ nom: 'Forfait Coffret (création, images par TBL et vedettes comprises)', montant: PRIX.forfait });
   } else {
-    var chg = changements();
-    var textes = chg.filter(function (f) { return f.t === 'texte'; }).length;
-    var images = chg.filter(function (f) { return f.t === 'image' && !demandeDe(f.k); }).length;
-    var demandes = chg.filter(function (f) { return f.t === 'demande' && etat.c[f.k]; }).length;
-    var places = chg.filter(function (f) { return f.t === 'vedette'; }).length;
-    if (textes) { lignes.push({ nom: 'Textes modifiés (' + textes + ')', montant: textes * PRIX.texte }); }
-    if (images) { lignes.push({ nom: 'Images téléversées (' + images + ')', montant: images * PRIX.image }); }
-    if (demandes) { lignes.push({ nom: 'Images créées par TBL (' + demandes + ')', montant: demandes * PRIX.imageTbl }); }
-    if (places) { lignes.push({ nom: 'En vedette (' + places + (places > 1 ? ' places)' : ' place)'), montant: places * PRIX.place }); }
+    changements().forEach(function (f) {
+      var m = coutChamp(f);
+      if (m) { lignes.push({ nom: f.nom + (f.k === 'description' ? ' (' + Math.round(tauxDescription() * 100) + ' % des mots)' : ''), montant: m }); }
+    });
   }
   var sous = lignes.reduce(function (s, l) { return s + l.montant; }, 0);
   var frais = Math.round(sous * FRAIS);
@@ -578,6 +604,51 @@ function facture() {
   var base = gratuit ? 0 : sous + frais;
   var tps = Math.round(base * TPS), tvq = Math.round(base * TVQ);
   return { lignes: lignes, sous: sous, frais: frais, gratuite: gratuit ? -(sous + frais) : 0, tps: tps, tvq: tvq, total: base + tps + tvq };
+}
+// Prix d'un champ modifié (coffret déjà publié). Le titre ne change plus ; les livres sont verrouillés.
+function coutChamp(f) {
+  if (!etat.d.dejaPublie || !change(f.k)) { return 0; }
+  if (f.k === 'titre' || f.t === 'livre' || f.t === 'info') { return 0; }
+  if (f.k === 'prix') { return PRIX.prix; }
+  if (f.k === 'description') { return tauxDescription() < SEUIL_DESCRIPTION ? PRIX.descPetit : PRIX.descGrand; }
+  if (f.k === 'presentation1' || f.k === 'section2') { return PRIX.choix; }
+  if (f.k === 'accroche') { return PRIX.message; }
+  if (f.t === 'image') { return demandeDe(f.k) ? 0 : PRIX.image; }
+  if (f.t === 'demande') { return etat.c[f.k] ? PRIX.imageTbl : 0; }
+  if (f.t === 'vedette') { return PRIX.place; }
+  return PRIX.texte;
+}
+function coutGroupe(nom) {
+  return GROUPES[nom].reduce(function (s, k) { var f = CHAMPS.filter(function (x) { return x.k === k; })[0]; return s + (f ? coutChamp(f) : 0); }, 0);
+}
+// Part des mots de la description changés (ajoutés ou retirés) par rapport à la version publiée : sous 20 %, 5 $ ;
+// sinon 10 $ (même principe que les textes de l'EDL).
+function motsDe(html) { var d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').toLowerCase().split(/[^0-9a-zà-öø-ÿœæ'’-]+/i).filter(Boolean); }
+function tauxDescription() {
+  var a = motsDe(etat.ref.description), b = motsDe(etat.c.description);
+  if (!a.length && !b.length) { return 0; }
+  var n = a.length, m = b.length, ligne = new Array(m + 1).fill(0);
+  for (var i = 1; i <= n; i += 1) {
+    var precedent = 0;
+    for (var j = 1; j <= m; j += 1) {
+      var tmp = ligne[j];
+      ligne[j] = a[i - 1] === b[j - 1] ? precedent + 1 : Math.max(ligne[j], ligne[j - 1]);
+      precedent = tmp;
+    }
+  }
+  var communs = ligne[m];
+  return Math.min(1, ((n - communs) + (m - communs)) / Math.max(n, m, 1));
+}
+// Pastille dorée du prix d'une section modifiée (mise à jour sans redessiner la page : la saisie garde le focus).
+function pastillePrix(groupe) {
+  var p = el('span', 'chip-prix'); p.setAttribute('data-groupe', groupe); p.hidden = true;
+  return p;
+}
+function majPastillesPrix() {
+  document.querySelectorAll('.chip-prix[data-groupe]').forEach(function (p) {
+    var m = coutGroupe(p.getAttribute('data-groupe'));
+    p.hidden = !m; p.textContent = m ? 'Modifié : ' + argent(m) : '';
+  });
 }
 // L'image 1 (ordinateur ou mobile) compte comme « demandée à TBL » si la case est cochée : pas de frais d'image téléversée.
 function demandeDe(k) { return (k === 'image1Ord' || k === 'image1Mob') ? etat.c.demande1 : (k === 'image2' ? etat.c.demande2 : false); }
@@ -624,6 +695,7 @@ function majOutils() {
   $('aide-appr').textContent = admin && etat.dirty ? 'Enregistrez vos corrections avant d’approuver ou de refuser.' : (raison || '');
   $('t-diff').setAttribute('aria-pressed', etat.diff ? 'true' : 'false');
   $('legende').hidden = !etat.diff;
+  majPastillesPrix();
 }
 function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
 function raisonRefusApprobation() {
@@ -639,7 +711,7 @@ function manques(c) {
   var m = [];
   if (!c.titre.trim()) { m.push('le titre du coffret'); }
   if (!(prixCents(c.prix) > 0)) { m.push('le prix du coffret'); }
-  if (!c.description.trim()) { m.push('la description'); }
+  if (!motsDe(c.description).length) { m.push('la description'); }
   if (!c.imageBoutique) { m.push('l’image du coffret'); }
   if (!livresChoisis(c).length) { m.push('au moins un livre'); }
   if (c.presentation1 === 'image' && !c.image1Ord && !c.demande1) { m.push('l’image publicitaire (ou la demande à TBL)'); }
@@ -658,7 +730,8 @@ function majChamp(k, v, redessiner) {
 function rendreFiche() {
   var f = $('fiche'), c = etat.c, actif = editable();
   f.textContent = '';
-  var h = el('h2', null, 'Fiche du coffret dans la boutique'); h.id = 'titre-fiche';
+  var h = el('h2', null, 'Fiche du coffret dans la boutique '); h.id = 'titre-fiche';
+  h.appendChild(pastillePrix('fiche'));
   f.appendChild(h);
   f.appendChild(el('p', 'sub', 'Elle n’apparaît pas sur la page du coffret : elle sert au produit de la boutique, mis à jour automatiquement à la publication.'));
   var g = el('div', 'grille-fiche');
@@ -667,16 +740,74 @@ function rendreFiche() {
   colImg.appendChild(blocImage('imageBoutique', { ratio: '1/1', max: [1200, 1200], vide: 'Image carrée du coffret (boutique)' }));
   g.appendChild(colImg);
   var col = el('div');
-  col.appendChild(champSaisie('titre', 'Titre du coffret', 'input', 'Ex. : True Crime Québec, les 3 tomes numériques', 120));
+  var lt = champSaisie('titre', 'Titre du coffret', 'input', 'Ex. : True Crime Québec, les 3 tomes numériques', 120);
+  // Titre en lecture seule une fois le coffret publié (décision de Marcel du 25 octobre 2026) : c'est le nom du produit.
+  if (etat.d.dejaPublie) { lt.querySelector('input').readOnly = true; lt.appendChild(el('span', null, 'Le titre ne change plus après la publication du coffret.')); }
+  col.appendChild(lt);
   var lp = champSaisie('prix', 'Prix du coffret ($)', 'input', 'Ex. : 14,99', 8);
   var somme = livresChoisis(c).reduce(function (s, id) { var l = livre(id); return s + (l ? l.prix : 0); }, 0);
   if (somme) { lp.appendChild(el('span', null, 'Total des livres achetés un par un : ' + somme.toFixed(2).replace('.', ',') + ' $. Le prix du coffret doit être plus bas.')); }
   col.appendChild(lp);
-  col.appendChild(champSaisie('description', 'Description', 'textarea', 'Ce que contient le coffret, pour la fiche de la boutique', 2000));
+  col.appendChild(editeurDescription(actif));
   g.appendChild(col);
   f.appendChild(g);
   f.querySelectorAll('input,textarea').forEach(function (x) { x.disabled = !actif; });
+  majPastillesPrix();
   if (etat.diff) { ['titre', 'prix', 'description', 'imageBoutique'].forEach(function (k) { var n = f.querySelector('[data-k="' + k + '"]'); if (n && change(k)) { n.classList.add('chg'); } }); }
+}
+// Description de la boutique : éditeur enrichi (gras, italique, listes), comme les textes de l'EDL. Le HTML est
+// nettoyé : seules quelques balises sans attribut sont gardées (le serveur refait le même nettoyage).
+var BALISES_DESCRIPTION = { P: 'p', BR: 'br', STRONG: 'strong', B: 'strong', EM: 'em', I: 'em', U: 'u', UL: 'ul', OL: 'ol', LI: 'li', DIV: 'p' };
+function nettoyerHtml(html) {
+  var source = document.createElement('div'); source.innerHTML = html || '';
+  function copier(noeud, vers) {
+    Array.prototype.forEach.call(noeud.childNodes, function (n) {
+      if (n.nodeType === 3) { vers.appendChild(document.createTextNode(n.nodeValue)); return; }
+      if (n.nodeType !== 1) { return; }
+      var tag = BALISES_DESCRIPTION[n.tagName];
+      if (!tag) { copier(n, vers); return; }
+      var e = document.createElement(tag); vers.appendChild(e);
+      if (tag !== 'br') { copier(n, e); }
+    });
+  }
+  var cible = document.createElement('div'); copier(source, cible);
+  return motsDe(cible.innerHTML).length ? cible.innerHTML : '';
+}
+// Ancienne description en texte simple : un paragraphe par ligne.
+function htmlDescription(v) {
+  if (!v) { return ''; }
+  if (/<[a-z][\s\S]*>/i.test(v)) { return nettoyerHtml(v); }
+  var d = document.createElement('div');
+  v.split(/\n+/).forEach(function (ligne) { var p = document.createElement('p'); p.textContent = ligne; d.appendChild(p); });
+  return d.innerHTML;
+}
+function editeurDescription(actif) {
+  var bloc = el('div', 'champ-f');
+  bloc.appendChild(document.createTextNode('Description'));
+  var zone = el('div', 'desc-riche'); zone.setAttribute('data-k', 'description'); zone.setAttribute('role', 'textbox'); zone.setAttribute('aria-multiline', 'true'); zone.setAttribute('aria-label', 'Description du coffret');
+  zone.innerHTML = htmlDescription(etat.c.description);
+  if (actif) {
+    var barre = el('div', 'outils-desc'); barre.setAttribute('role', 'toolbar'); barre.setAttribute('aria-label', 'Mise en forme de la description');
+    [['bold', 'G', 'Gras'], ['italic', 'I', 'Italique'], ['insertUnorderedList', '• Liste', 'Liste à puces'], ['insertOrderedList', '1. Liste', 'Liste numérotée']].forEach(function (x) {
+      var b = el('button', 'tb', x[1]); b.type = 'button'; b.title = x[2]; b.setAttribute('aria-label', x[2]);
+      if (x[0] === 'bold') { b.style.fontWeight = 'bold'; }
+      if (x[0] === 'italic') { b.style.fontStyle = 'italic'; }
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { zone.focus(); document.execCommand(x[0], false, null); lire(); });
+      barre.appendChild(b);
+    });
+    bloc.appendChild(barre);
+    zone.contentEditable = 'true';
+    zone.setAttribute('data-vide', 'Ce que contient le coffret, pour la fiche de la boutique');
+    var lire = function () { majChamp('description', nettoyerHtml(zone.innerHTML), false); };
+    zone.addEventListener('input', lire);
+    // Collage : texte seulement (pas de styles d'un autre logiciel)
+    zone.addEventListener('paste', function (e) { e.preventDefault(); var txt = (e.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, txt); });
+  } else {
+    zone.classList.add('lecture');
+  }
+  bloc.appendChild(zone);
+  return bloc;
 }
 function champSaisie(k, libelle, tag, aide, max) {
   var lab = el('label', 'champ-f');
@@ -797,6 +928,7 @@ function rendrePage(c, mode, appareil) {
     });
     ctl.appendChild(choix);
     ctl.appendChild(el('span', 'info-l', c.presentation1 === 'gabarit' ? 'Les couvertures et les prix se mettent à jour avec les livres choisis.' : 'Votre image, ou celle que TBL crée pour vous.'));
+    ctl.appendChild(pastillePrix('s1'));
     if (etat.diff && change('presentation1')) { ctl.classList.add('chg'); }
     s1.appendChild(ctl);
   }
@@ -842,6 +974,7 @@ function rendrePage(c, mode, appareil) {
       choixAcc.appendChild(b);
     });
     ctlAcc.appendChild(choixAcc);
+    ctlAcc.appendChild(pastillePrix('message'));
     if (etat.diff && change('accroche')) { ctlAcc.classList.add('chg'); acc.classList.add('chg'); }
     sMsg.appendChild(ctlAcc);
   }
@@ -861,6 +994,7 @@ function rendrePage(c, mode, appareil) {
     cb.addEventListener('change', function () { majChamp('section2', cb.checked, true); });
     lab.appendChild(cb); lab.appendChild(el('span', 'piste')); lab.appendChild(document.createTextNode('Section 2 : image supplémentaire'));
     ctl2.appendChild(lab); ctl2.appendChild(el('span', 'info-l', 'Facultative : une image de plus, à votre choix (le prix, une ambiance, un extrait…).'));
+    ctl2.appendChild(pastillePrix('s2'));
     if (etat.diff && change('section2')) { ctl2.classList.add('chg'); }
     page.appendChild(ctl2);
   }
@@ -883,11 +1017,16 @@ function rendrePage(c, mode, appareil) {
   page.appendChild(titreS3);
   var s3 = el('section', 'pg s3'); s3.setAttribute('data-section', '3'); s3.id = ed ? 's3-edition' : '';
   if (ed && !livresModifiables()) {
-    s3.appendChild(el('p', 'verrou-livres', '🔒 Les livres d’un coffret créé ne peuvent plus être changés, ajoutés ni retirés. Leurs cartes restent modifiables.'));
+    var verrouLivres = el('p', 'verrou-livres', '🔒 Les livres d’un coffret créé ne peuvent plus être changés, ajoutés ni retirés. Leurs cartes restent modifiables. ');
+    verrouLivres.appendChild(pastillePrix('s3'));
+    s3.appendChild(verrouLivres);
   }
-  var places = ed && livresModifiables() ? MAX_LIVRES : Math.max(choisis.length, 1);
+  // Coffret créé : autant de cartes que de livres enregistrés, même si un livre n'est plus trouvé (ex. ancienne
+  // version d'un livre republié) ; sa carte le dit au lieu de disparaître.
+  var nbLivres = livresChoisis(c).length;
+  var places = ed && livresModifiables() ? MAX_LIVRES : Math.max(nbLivres, 1);
   var grille = el('div', 'livres-coffret');
-  var colonnes = ed && livresModifiables() ? 4 : Math.max(choisis.length, 1);
+  var colonnes = ed && livresModifiables() ? 4 : Math.max(nbLivres, 1);
   grille.style.setProperty('--n', String(colonnes));
   // 4 colonnes : cartes plus étroites, boutons un peu plus petits pour garder des marges égales (classe n4)
   grille.classList.toggle('n4', colonnes >= 4);
@@ -902,6 +1041,7 @@ function rendrePage(c, mode, appareil) {
   titreVed.alt = 'En vedette';
   page.appendChild(titreVed);
   var ved = el('section', 'pg ved');
+  if (ed) { var prixVed = el('div', 'centre'); prixVed.appendChild(pastillePrix('vedettes')); ved.appendChild(prixVed); }
   var gv = el('div', 'vedettes');
   for (var v = 1; v <= 4; v += 1) { gv.appendChild(placeVedette(c, v, mode)); }
   ved.appendChild(gv);
@@ -954,6 +1094,12 @@ function carteLivre(c, i, mode) {
     sel.addEventListener('change', function () { choisirLivre(i, sel.value); });
     carte.appendChild(sel);
     if (etat.diff && change('livre' + i)) { carte.classList.add('chg'); }
+  }
+  if (!l && id && !choisir) {
+    var perdu = el('div', 'image-vide'); perdu.style.aspectRatio = '2/3'; perdu.style.maxWidth = '200px';
+    perdu.appendChild(el('strong', null, 'Livre du coffret')); perdu.appendChild(el('span', null, 'Ce livre n’est plus publié dans cette version. L’équipe TBL le vérifiera.'));
+    carte.appendChild(perdu);
+    return carte;
   }
   if (!l) {
     if (choisir) { var vd = el('div', 'image-vide'); vd.appendChild(el('strong', null, sel.disabled ? 'Choisissez d’abord le livre ' + (i - 1) : 'Place libre')); vd.appendChild(el('span', null, 'Un coffret contient de 1 à 4 livres.')); carte.appendChild(vd); }
@@ -1210,6 +1356,7 @@ function celluleRapport(f, x) {
   if (f.t === 'image' && urlSure(x)) { var im = el('img'); im.src = x; im.alt = f.nom; td.appendChild(im); return td; }
   if (f.t === 'livre' || f.t === 'vedette') { var l = livre(x); td.textContent = l ? l.titre : (x ? x : '(libre)'); return td; }
   if (f.t === 'demande' || f.t === 'autre') { td.textContent = x === true ? 'Oui' : (x === false ? 'Non' : ({ image: 'Image publicitaire', gabarit: 'Présentation des livres' }[x] || String(x))); return td; }
+  if (f.k === 'description') { var d = el('div', 'desc-riche lecture'); d.innerHTML = htmlDescription(x); td.appendChild(d); return td; }
   td.textContent = f.k === 'prix' ? prixTexte(x) : String(x);
   return td;
 }
