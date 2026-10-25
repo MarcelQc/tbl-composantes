@@ -26,11 +26,12 @@ body{padding:4px}
 .tbl-bundle{background:var(--tbl-paper);color:var(--tbl-ink);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);border:1px solid var(--tbl-line);
   padding:clamp(14px,3vh,32px) clamp(14px,3vw,32px);font-family:var(--tbl-font-body);width:100%;height:100%;text-align:center;
   display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+.tbl-bundle .titre-coffret{display:block;width:min(max(34vw,190px),60vh);max-width:90%;height:auto;margin-bottom:clamp(10px,2.5vh,24px)}
 .tbl-bundle .label{font-family:var(--tbl-font-heading);font-size:clamp(.85rem,.4rem + 1.4vw,1.5rem);text-transform:uppercase;letter-spacing:.1em;color:var(--tbl-accent);margin-bottom:clamp(12px,3vh,28px)}
-.tbl-bundle .covers{--cw:min(max(20vw,90px),34vh);display:flex;justify-content:center;align-items:center;margin-bottom:clamp(16px,5vh,36px)}
-.tbl-bundle .covers.n1{--cw:min(max(26vw,110px),40vh)}
-.tbl-bundle .covers.n3{--cw:min(max(17vw,80px),32vh)}
-.tbl-bundle .covers.n4{--cw:min(max(14vw,70px),30vh)}
+.tbl-bundle .covers{--cw:min(max(20vw,90px),30vh);display:flex;justify-content:center;align-items:center;margin-bottom:clamp(16px,5vh,36px)}
+.tbl-bundle .covers.n1{--cw:min(max(26vw,110px),36vh)}
+.tbl-bundle .covers.n3{--cw:min(max(17vw,80px),28vh)}
+.tbl-bundle .covers.n4{--cw:min(max(14vw,70px),26vh)}
 .tbl-bundle .covers img,.chargement .covers span{width:var(--cw);height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 calc(var(--cw) * -.14)}
 .tbl-bundle .covers.n1 img{margin:0}
 .tbl-bundle .titles{font-size:clamp(.9rem,.45rem + 1.2vw,1.35rem);color:var(--tbl-muted);margin-bottom:clamp(8px,1.8vh,16px)}
@@ -48,13 +49,14 @@ body{padding:4px}
 </head>
 <body>
 <div class="tbl-bundle chargement" id="coffret" aria-busy="true">
-  <div class="label">Coffret numérique</div>
+  <img class="titre-coffret" src="https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png" alt="Coffret">
   <div class="covers n2"><span></span><span></span></div>
   <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
 </div>
 <script>
 (function () {
   var boite = document.getElementById('coffret');
+  var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png';
   var DEMO = {
     titre: 'Coffret de démonstration', prix: 12.99,
     livres: [
@@ -70,7 +72,9 @@ body{padding:4px}
     boite.classList.remove('chargement'); boite.removeAttribute('aria-busy');
     if (!c || c.vide || !c.livres || !c.livres.length) { boite.hidden = true; return; } // rien à montrer : boîte vide
     var livres = c.livres.slice(0, 4), n = livres.length;
-    boite.appendChild(el('div', 'label', 'Coffret numérique' + (n >= 3 ? ' · ' + n + ' livres' : '')));
+    // Titre en image « Coffret » (coffret.png de la médiathèque), comme dans l'EDC.
+    var titre = el('img', 'titre-coffret'); titre.src = IMAGE_TITRE; titre.alt = 'Coffret';
+    boite.appendChild(titre);
     var covers = el('div', 'covers n' + n), centre = (n - 1) / 2;
     livres.forEach(function (l, i) {
       var img = el('img'); img.src = l.couverture; img.alt = l.titre;

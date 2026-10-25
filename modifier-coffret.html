@@ -197,6 +197,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Gabarit bundle-block.html (Templates\) : couvertures en éventail et prix groupé */
 .tbl-bundle{background:var(--tbl-paper);color:var(--tbl-ink);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);border:1px solid var(--tbl-line);padding:var(--tbl-space-md);max-width:460px;margin:0 auto;text-align:center}
 .tbl-bundle .label{font-family:var(--tbl-font-heading);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tbl-accent);margin-bottom:20px}
+.tbl-bundle .titre-coffret{display:block;width:min(260px,80%);height:auto;margin:0 auto 18px}
 .tbl-bundle .covers{display:flex;justify-content:center;align-items:center;margin-bottom:16px;min-height:160px}
 .tbl-bundle .covers img{width:100px;height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 -14px}
 .tbl-bundle .covers.n4 img{width:86px;margin:0 -16px}
@@ -543,7 +544,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = 'ae64190 · 2026-10-25 09:01';
+var VERSION_TBL = 'f0150d4 · 2026-10-25 09:04';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1166,11 +1167,15 @@ function rendrePage(c, mode, appareil) {
   return page;
 }
 
-// Gabarit Templates\bundle-block.html : étiquette, couvertures en éventail, titres, ancien prix barré et prix du coffret.
+var IMAGE_TITRE_COFFRET = 'https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png';
+// Gabarit Templates\bundle-block.html : titre en image, couvertures en éventail, titres, ancien prix barré et prix du coffret.
 function gabaritCoffret(c, choisis) {
   var b = el('div', 'tbl-bundle');
   var n = choisis.length;
-  b.appendChild(el('div', 'label', 'Coffret numérique' + (n >= 3 ? ' · ' + n + ' livres' : '')));
+  // Titre en image « Coffret » (coffret.png de la médiathèque) au lieu du texte rouge « Coffret numérique »
+  // (demande de Marcel du 25 octobre 2026).
+  var titre = el('img', 'titre-coffret'); titre.src = IMAGE_TITRE_COFFRET; titre.alt = 'Coffret';
+  b.appendChild(titre);
   var covers = el('div', 'covers n' + Math.max(n, 1));
   var centre = (n - 1) / 2;
   choisis.forEach(function (l, i) {
