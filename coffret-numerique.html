@@ -18,19 +18,25 @@
   --tbl-space-md:24px;--tbl-radius:14px;--tbl-shadow:0 6px 18px rgba(0,0,0,.5);--vide:#20232a
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:transparent}
-body{display:flex;justify-content:center;padding:4px}
+html,body{margin:0;height:100%;background:transparent}
+body{padding:4px}
+/* La boîte remplit toute la composante Wix (largeur et hauteur) ; couvertures et textes grandissent avec elle
+   (demande de Marcel du 25 octobre 2026). La couverture prend la plus petite des deux mesures : une part de la
+   largeur ou une part de la hauteur, pour toujours tenir dans la boîte. */
 .tbl-bundle{background:var(--tbl-paper);color:var(--tbl-ink);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);border:1px solid var(--tbl-line);
-  padding:var(--tbl-space-md);font-family:var(--tbl-font-body);width:100%;max-width:520px;text-align:center}
-.tbl-bundle .label{font-family:var(--tbl-font-heading);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tbl-accent);margin-bottom:20px}
-.tbl-bundle .covers{display:flex;justify-content:center;align-items:center;margin-bottom:16px;min-height:160px}
-.tbl-bundle .covers img{width:100px;height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 -14px}
-.tbl-bundle .covers.n4 img{width:86px;margin:0 -16px}
-.tbl-bundle .covers.n1 img{width:130px;margin:0}
-.tbl-bundle .titles{font-size:.9rem;color:var(--tbl-muted);margin-bottom:12px}
-.tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:1.3rem;margin-bottom:4px}
-.tbl-bundle .price .old{text-decoration:line-through;color:var(--tbl-muted);font-size:.95rem;margin-right:8px}
-.chargement .covers span{display:block;width:100px;aspect-ratio:2/3;border-radius:4px;background:var(--vide);margin:0 -14px;animation:pulse 1.2s ease-in-out infinite}
+  padding:clamp(14px,3vh,32px) clamp(14px,3vw,32px);font-family:var(--tbl-font-body);width:100%;height:100%;text-align:center;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+.tbl-bundle .label{font-family:var(--tbl-font-heading);font-size:clamp(.85rem,.4rem + 1.4vw,1.5rem);text-transform:uppercase;letter-spacing:.1em;color:var(--tbl-accent);margin-bottom:clamp(12px,3vh,28px)}
+.tbl-bundle .covers{--cw:min(max(20vw,90px),34vh);display:flex;justify-content:center;align-items:center;margin-bottom:clamp(16px,5vh,36px)}
+.tbl-bundle .covers.n1{--cw:min(max(26vw,110px),40vh)}
+.tbl-bundle .covers.n3{--cw:min(max(17vw,80px),32vh)}
+.tbl-bundle .covers.n4{--cw:min(max(14vw,70px),30vh)}
+.tbl-bundle .covers img,.chargement .covers span{width:var(--cw);height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 calc(var(--cw) * -.14)}
+.tbl-bundle .covers.n1 img{margin:0}
+.tbl-bundle .titles{font-size:clamp(.9rem,.45rem + 1.2vw,1.35rem);color:var(--tbl-muted);margin-bottom:clamp(8px,1.8vh,16px)}
+.tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:clamp(1.3rem,.6rem + 2.2vw,2.4rem)}
+.tbl-bundle .price .old{text-decoration:line-through;color:var(--tbl-muted);font-size:.7em;margin-right:.5em}
+.chargement .covers span{display:block;aspect-ratio:2/3;background:var(--vide);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.chargement .covers span{animation:none}}
 </style>
@@ -77,12 +83,27 @@ body{display:flex;justify-content:center;padding:4px}
     boite.appendChild(price);
   }
 
+  var recu = false;
   window.addEventListener('message', function (ev) {
     var d = ev.data;
-    if (d && d.type === 'tbl-coffret') { afficher(d.coffret); }
+    if (d && d.type === 'tbl-coffret') { recu = true; afficher(d.coffret); }
   });
   if (window.parent === window) { afficher(DEMO); return; }
   window.parent.postMessage({ type: 'tbl-coffret:pret' }, '*');
+
+  // Éditeur Wix (Design) : le code de la page ne tourne pas, rien n'arrive du dataset. La composante lit alors
+  // elle-même un coffret publié : celui de ?apercu=<cle> dans son adresse (ex. ?apercu=epdl), sinon le plus
+  // récent. Sur le site (et dans l'Aperçu), c'est toujours le coffret du dataset envoyé par la page.
+  function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
+  if (/editionstbl\.ca/i.test(originesParent())) { return; }
+  setTimeout(function () {
+    if (recu) { return; }
+    var cle = new URLSearchParams(location.search).get('apercu') || '';
+    fetch('https://www.editionstbl.ca/_functions/coffretPublic?cle=' + encodeURIComponent(cle))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) { if (!recu) { afficher(c || DEMO); } })
+      .catch(function () { if (!recu) { afficher(DEMO); } });
+  }, 1500);
 })();
 </script>
 </body>
