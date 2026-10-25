@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Coffret, section 2 | Éditions TBL</title>
+<style>
+/* Section 2 de la page dynamique Coffrets (/coffrets/{cle}) : l'image supplémentaire choisie par l'auteur, en
+   paysage sur ordinateur et en portrait sur mobile (sans portrait : la version paysage). Même allure que l'aperçu
+   de l'éditeur de coffret (EDC, Web\modifier-coffret.html, section 2). Demande de Marcel du 25 octobre 2026.
+   Données : envoyées par la page (public/coffret-page.js du dépôt editionstbl, brancherCoffret), message
+   { type: 'tbl-coffret', coffret }. Section masquée par l'auteur : la page replie la composante.
+   Ouverte seule dans un navigateur (hors Wix) : image de démonstration. Dans l'éditeur Wix : coffret de
+   ?apercu=<cle>, sinon le plus récent publié (comme coffret-numerique.html). */
+:root{--tbl-paper:#16181c;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-radius:14px}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:Arial,Helvetica,sans-serif}
+/* Boîte grise comme les autres sections (EDC) */
+.pg{max-width:1000px;margin:0 auto;background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:20px}
+/* L'image tient toujours dans la composante Wix, quelle que soit sa hauteur (jamais coupée) */
+.pg img{display:block;max-width:100%;max-height:calc(100vh - 40px);width:auto;height:auto;margin:0 auto;border-radius:6px}
+.chargement{min-height:180px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
+.roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.roue{animation:none}}
+@media (max-width:600px){.pg{padding:12px}.pg img{max-height:calc(100vh - 24px)}}
+</style>
+</head>
+<body>
+<section class="pg chargement" id="s2" aria-busy="true"><span class="roue" aria-hidden="true"></span>Chargement de l’image…</section>
+<script>
+(function () {
+  var s2 = document.getElementById('s2');
+  var DEMO = { titre: 'Coffret de démonstration', section2: true,
+    image2: 'https://via.placeholder.com/1500x500/2b2f6b/ffffff?text=Section+2+paysage',
+    image2Mob: 'https://via.placeholder.com/800x1000/6b2b2b/ffffff?text=Section+2+portrait' };
+  function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
+  var donnees = null;
+
+  function afficher(c) {
+    donnees = c;
+    s2.textContent = '';
+    s2.className = 'pg'; s2.removeAttribute('aria-busy');
+    var mobile = window.matchMedia('(max-width:600px)').matches;
+    var src = c && c.section2 ? urlSure(mobile ? (c.image2Mob || c.image2) : (c.image2 || c.image2Mob)) : '';
+    if (!src) { s2.hidden = true; return; } // section masquée ou sans image : la page replie la composante
+    s2.hidden = false;
+    var img = document.createElement('img'); img.src = src; img.alt = c.titre ? 'Image du coffret ' + c.titre : 'Image du coffret';
+    s2.appendChild(img);
+  }
+  // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image
+  window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
+
+  var recu = false;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.type === 'tbl-coffret') { recu = true; afficher(d.coffret); }
+  });
+  if (window.parent === window) { afficher(DEMO); return; }
+  window.parent.postMessage({ type: 'tbl-coffret:pret' }, '*');
+
+  // Éditeur Wix (Design) : le code de la page ne tourne pas. La composante lit elle-même un coffret publié, comme
+  // coffret-numerique.html. Seuls les noms de serveurs comptent ; l'éditeur a priorité sur le site.
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  if (surLeSite) { return; }
+  setTimeout(function () {
+    if (recu) { return; }
+    var cle = new URLSearchParams(location.search).get('apercu') || '';
+    fetch('https://www.editionstbl.ca/_functions/coffretPublic?cle=' + encodeURIComponent(cle))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      // Dans l'éditeur, une section 2 masquée montre quand même l'image de démonstration (pour placer la boîte)
+      .then(function (c) { if (!recu) { afficher(c && c.section2 && (c.image2 || c.image2Mob) ? c : DEMO); } })
+      .catch(function () { if (!recu) { afficher(DEMO); } });
+  }, 1500);
+})();
+</script>
+</body>
+</html>
