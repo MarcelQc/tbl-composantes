@@ -37,6 +37,11 @@ body{padding:4px}
 .tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:clamp(1.3rem,.6rem + 2.2vw,2.4rem)}
 .tbl-bundle .price .old{text-decoration:line-through;color:var(--tbl-muted);font-size:.7em;margin-right:.5em}
 .chargement .covers span{display:block;aspect-ratio:2/3;background:var(--vide);animation:pulse 1.2s ease-in-out infinite}
+/* Petit message pendant le chargement (demande de Marcel du 25 octobre 2026) */
+.chargement .msg{display:flex;align-items:center;gap:10px;color:var(--tbl-muted);font-size:clamp(.9rem,.45rem + 1.2vw,1.2rem)}
+.chargement .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.chargement .roue{animation:none}}
 @keyframes pulse{50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.chargement .covers span{animation:none}}
 </style>
@@ -45,6 +50,7 @@ body{padding:4px}
 <div class="tbl-bundle chargement" id="coffret" aria-busy="true">
   <div class="label">Coffret numérique</div>
   <div class="covers n2"><span></span><span></span></div>
+  <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
 </div>
 <script>
 (function () {
