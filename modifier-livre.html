@@ -331,6 +331,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 #modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto}
 #modal h2{font-family:var(--tbl-font-heading);margin:0 0 10px;font-size:1.15rem}
 #modal .corps{color:var(--muted);font-size:.95rem}
+/* Case « Envoyer le courriel à l'auteur » des fenêtres de publication */
+#modal .case-courriel{display:block;margin:12px 0 2px;color:var(--txt);font-weight:600;cursor:pointer}
+#modal .case-courriel input{accent-color:var(--tbl-green,#4cc38a);width:16px;height:16px;vertical-align:-2px;margin-right:4px}
+#modal .case-courriel .aide-case{display:block;font-weight:400;color:var(--muted);font-size:.85rem;margin:2px 0 0 24px}
 #modal .corps p{margin:0 0 10px}
 #modal .corps table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.95rem}
 #modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
@@ -567,10 +571,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// af61b92 · 2026-10-25 11:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0fcbeef · 2026-10-25 11:30 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'af61b92 · 2026-10-25 11:12';
+var VERSION_TBL = '0fcbeef · 2026-10-25 11:30';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2481,6 +2485,17 @@ function autresModifications() {
   if (C.vedettes) { o.push('En vedette'); }
   return o;
 }
+// Case à cocher « Envoyer le courriel à l'auteur » des fenêtres de publication (cochée au départ).
+function caseCourrielAuteur() {
+  var label = document.createElement('label'); label.className = 'case-courriel';
+  var input = document.createElement('input'); input.type = 'checkbox'; input.checked = true;
+  label.appendChild(input);
+  label.appendChild(document.createTextNode(' Envoyer le courriel à l’auteur'));
+  var aide = document.createElement('span'); aide.className = 'aide-case';
+  aide.textContent = 'Courriel de publication et, s’il y a lieu, facture en PDF dans ses documents.';
+  label.appendChild(aide);
+  return { label: label, input: input };
+}
 // Approuver et envoyer (une demande En approbation) et Publier (édition directe par un administrateur, sans
 // demande préalable) déclenchent la même action côté serveur : publication immédiate et courriel d'approbation.
 async function valider() {
@@ -2498,14 +2513,18 @@ async function valider() {
   corps.appendChild(t);
   var p = document.createElement('p');
   p.textContent = etat.nouveau
-    ? 'La page sera publiée et visible sur le site. Un courriel de confirmation sera envoyé à l’auteur.'
-    : 'La version actuellement publiée passera au statut Archiver et la copie deviendra la version publiée, visible sur le site. Les livres en vedette seront redirigés vers la nouvelle version. Un courriel de confirmation sera envoyé à l’auteur.';
+    ? 'La page sera publiée et visible sur le site.'
+    : 'La version actuellement publiée passera au statut Archiver et la copie deviendra la version publiée, visible sur le site. Les livres en vedette seront redirigés vers la nouvelle version.';
   corps.appendChild(p);
+  // Case « Envoyer le courriel à l'auteur », toujours cochée au départ (demande de Marcel du 25 octobre 2026).
+  // Décochée : ni courriel de publication ni facture à l'auteur, et aucun PDF dans ses documents.
+  var caseAvertir = caseCourrielAuteur();
+  corps.appendChild(caseAvertir.label);
   var res = null;
   var r = await modale({
     titre: revue ? 'Approuver et publier les modifications ?' : 'Publier les modifications ?', corps: corps,
     boutons: [{ id: 'ok', libelle: revue ? 'Approuver et envoyer' : 'Publier', principal: true, action: async function () {
-      res = await appeler('approuver', { livreId: LIVRE_ID });
+      res = await appeler('approuver', { livreId: LIVRE_ID, avertirAuteur: caseAvertir.input.checked });
       if (!res.ok) { throw new Error(res.message || 'La publication a échoué.'); }
     } }, { id: 'non', libelle: 'Annuler' }]
   });
@@ -2521,7 +2540,7 @@ async function valider() {
   var texteExtrait = !ex ? '' : (extraitOk
     ? ' Extrait PDF copié dans le dossier Extrait' + (ex.formulaire.ajoute ? ' et livre ajouté au formulaire.' : ' (livre déjà dans le formulaire).')
     : ' Attention : ' + (ex.raison || '') + (ex.formulaire && !ex.formulaire.ok ? ' Le livre n’a pas pu être ajouté au formulaire Extrait.' : ''));
-  toast('Page publiée. ' + (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.') + boutique + texteExtrait,
+  toast('Page publiée. ' + (res.sansCourriel ? 'Aucun courriel envoyé à l’auteur.' : (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.')) + boutique + texteExtrait,
     (res.imageCatalogue && !res.imageCatalogue.ok) || !extraitOk ? 'mal' : 'ok');
   await demarrer();
 }

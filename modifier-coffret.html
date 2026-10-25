@@ -287,6 +287,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 #modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto}
 #modal h2{font-family:var(--tbl-font-heading);margin:0 0 10px;font-size:1.15rem}
 #modal .corps{color:var(--muted);font-size:.95rem}
+/* Case « Envoyer le courriel à l'auteur » de la fenêtre de publication (comme l'EDL) */
+#modal .case-courriel{display:block;margin:12px 0 2px;color:var(--txt);font-weight:600;cursor:pointer}
+#modal .case-courriel input{accent-color:var(--tbl-green,#4cc38a);width:16px;height:16px;vertical-align:-2px;margin-right:4px}
+#modal .case-courriel .aide-case{display:block;font-weight:400;color:var(--muted);font-size:.85rem;margin:2px 0 0 24px}
 #modal .corps p{margin:0 0 10px}
 #modal .corps table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:.95rem}
 #modal .corps td{padding:6px 0;border-bottom:1px solid var(--line)}
@@ -550,7 +554,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = 'af61b92 · 2026-10-25 11:12';
+var VERSION_TBL = '0fcbeef · 2026-10-25 11:30';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1381,15 +1385,22 @@ async function valider() {
   corps.appendChild(el('p', null, etat.d.produitBoutique
     ? 'Le coffret sera publié. Il est déjà relié à son produit de la boutique, qui n’est pas modifié.'
     : 'Le coffret sera publié et un NOUVEAU produit sera ajouté à la boutique (nom, prix, description et image du coffret). Il sera caché tant que son fichier numérique n’y est pas ajouté. Les autres produits ne sont pas touchés.'));
-  if (revueAdmin()) { corps.appendChild(el('p', null, 'Un courriel d’approbation sera envoyé à l’auteur.')); }
+  // Case « Envoyer le courriel à l'auteur », toujours cochée au départ (demande de Marcel du 25 octobre 2026).
+  // Décochée : ni courriel de publication ni facture à l'auteur, et aucun PDF dans ses documents.
+  var caseAvertir = el('label', 'case-courriel');
+  var cocheAvertir = el('input'); cocheAvertir.type = 'checkbox'; cocheAvertir.checked = true;
+  caseAvertir.appendChild(cocheAvertir);
+  caseAvertir.appendChild(document.createTextNode(' Envoyer le courriel à l’auteur'));
+  caseAvertir.appendChild(el('span', 'aide-case', 'Courriel de publication et, s’il y a lieu, facture en PDF dans ses documents.'));
+  corps.appendChild(caseAvertir);
   var r = await modale({ titre: 'Approuver et publier', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Publier', principal: true, cls: 'valider' }] });
   if (r !== 'ok') { return; }
   etat.occupe = true; majOutils();
-  var rep = await appeler('approuver', { coffretId: etat.d.coffretId });
+  var rep = await appeler('approuver', { coffretId: etat.d.coffretId, avertirAuteur: cocheAvertir.checked });
   etat.occupe = false;
   if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'La publication a échoué.', 'mal'); return; }
   if (rep.raisonProduit) { toast('Coffret publié, mais le produit n’a pas été ajouté à la boutique : ' + rep.raisonProduit, 'mal'); }
-  else { toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Nouveau produit ajouté à la boutique, caché : ajoutez-y le fichier numérique, puis affichez-le.' : 'Produit de la boutique inchangé.'), 'ok'); }
+  else { toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Nouveau produit ajouté à la boutique, caché : ajoutez-y le fichier numérique, puis affichez-le.' : 'Produit de la boutique inchangé.') + (rep.sansCourriel ? ' Aucun courriel envoyé à l’auteur.' : ''), 'ok'); }
   demarrer();
 }
 async function refuser() {
