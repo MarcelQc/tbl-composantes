@@ -139,9 +139,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chip-prix{display:inline-block;border:1px solid var(--gold);color:var(--gold);background:var(--card2);border-radius:99px;padding:2px 10px;font:600 12px var(--tbl-font-body);white-space:nowrap;vertical-align:middle}
 .chip-prix[hidden]{display:none!important}
 /* Description : éditeur enrichi (barre de mise en forme comme l'EDL) */
-.outils-desc{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}
-.tb{min-width:34px;height:32px;border:1px solid var(--line);background:transparent;color:var(--txt);border-radius:var(--tbl-radius-btn);cursor:pointer;padding:0 10px;font-size:.85rem}
-.tb:hover{border-color:var(--accent)}
+.grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
+.grp:last-child{border-right:0}
+.tb{min-width:34px;height:34px;border:1px solid var(--line);background:transparent;color:var(--txt);border-radius:var(--tbl-radius-btn);cursor:pointer;padding:0 8px;font-size:.88rem}
+.tb:hover:not(:disabled){border-color:var(--accent)}
+.tb:disabled{opacity:.38;cursor:not-allowed}
+.tb[aria-pressed="true"]{background:var(--redsoft);border-color:var(--accent);color:#fff}
+.outils-champ{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:6px 8px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn)}
+.outils-champ .tb{min-width:30px;height:30px;font-size:.82rem}
+.outils-champ .grp{padding-right:6px}
+.desc-riche h1,.desc-riche h2,.desc-riche h3,.desc-riche h4,.desc-riche h5,.desc-riche h6{margin:6px 0;line-height:1.25}
+.desc-riche blockquote{margin:6px 0;padding:4px 12px;border-left:3px solid var(--accent);color:var(--muted)}
+/* ↻ Actualiser et ↺ Annuler les modifications de chaque section (comme l'EDL) */
+.tete-section{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;vertical-align:middle;margin-left:6px}
+.tete-section [hidden]{display:none!important}
+.s3 > .centre,.ved > .centre{margin-bottom:12px}
 .desc-riche{min-height:140px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:15px/1.55 var(--tbl-font-body);color:var(--txt);overflow-wrap:anywhere}
 .desc-riche:focus{outline:none;border-color:var(--edit)}
 .desc-riche p{margin:0 0 6px}
@@ -404,10 +416,10 @@ var SEUIL_DESCRIPTION = 0.2;
 // Groupes de champs : chaque section modifiée affiche son prix (pastille dorée), comme l'EDL.
 var GROUPES = {
   fiche: ['titre', 'prix', 'description', 'imageBoutique'],
-  s1: ['presentation1', 'image1Ord', 'image1Mob', 'demande1', 'texteAchat', 'texteDecouvrir'],
+  s1: ['presentation1', 'image1Ord', 'image1Mob', 'demande1', 'indic1', 'texteAchat', 'texteDecouvrir'],
   message: ['accroche', 'texteAcheter'],
-  s2: ['section2', 'image2', 'demande2'],
-  s3: ['carte1Titre', 'carte1Accroche', 'carte1Mots', 'carte2Titre', 'carte2Accroche', 'carte2Mots', 'carte3Titre', 'carte3Accroche', 'carte3Mots', 'carte4Titre', 'carte4Accroche', 'carte4Mots'],
+  s2: ['section2', 'image2', 'demande2', 'indic2'],
+  s3: ['livre1', 'livre2', 'livre3', 'livre4', 'carte1Titre', 'carte1Accroche', 'carte1Mots', 'carte2Titre', 'carte2Accroche', 'carte2Mots', 'carte3Titre', 'carte3Accroche', 'carte3Mots', 'carte4Titre', 'carte4Accroche', 'carte4Mots'],
   vedettes: ['vedette1', 'vedette2', 'vedette3', 'vedette4']
 };
 var FRAIS = 0.05, TPS = 0.05, TVQ = 0.09975;
@@ -531,7 +543,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '0924186 · 2026-10-25 07:06';
+var VERSION_TBL = 'f17d9f9 · 2026-10-25 07:36';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -571,6 +583,7 @@ async function demarrer() {
   etat.ref = Object.assign(vierge(), d.publie || {});
   etat.c = Object.assign(vierge(), d.copie || d.publie || {});
   if (!d.publie && !d.copie) { etat.c = remplirParDefaut(vierge()); }
+  etat.saved = JSON.parse(JSON.stringify(etat.c));
   etat.dirty = false;
   $('version-tbl').textContent = texteVersion(!!d.admin); $('version-tbl').hidden = false;
   montrer('vue-edition');
@@ -649,6 +662,69 @@ function majPastillesPrix() {
     var m = coutGroupe(p.getAttribute('data-groupe'));
     p.hidden = !m; p.textContent = m ? 'Modifié : ' + argent(m) : '';
   });
+  // « Annuler les modifications » : seulement s'il y en a (comme l'EDL).
+  document.querySelectorAll('[data-role="retablir-section"]').forEach(function (b) {
+    b.hidden = !groupeModifie(b.getAttribute('data-groupe'));
+    b.disabled = !editable();
+  });
+  document.querySelectorAll('[data-role="actualiser-section"]').forEach(function (b) { b.disabled = !editable(); });
+}
+
+/* ---------- ↻ Actualiser et ↺ Annuler les modifications, sur chaque section (comme l'EDL) ---------- */
+var NOMS_GROUPES = { fiche: 'Fiche du coffret dans la boutique', s1: 'Section 1', message: 'Message et bouton d’achat', s2: 'Section 2', s3: 'Livres du coffret', vedettes: 'En vedette' };
+// Référence de « Annuler » : la version publiée, ou la dernière version enregistrée d'un coffret jamais publié.
+function referenceAnnuler() { return etat.d.dejaPublie ? etat.ref : etat.saved; }
+function clesGroupe(groupe) {
+  // Livres verrouillés une fois le coffret créé : jamais remis ni rechargés.
+  return GROUPES[groupe].filter(function (k) { return !/^livre\d$/.test(k) || livresModifiables(); });
+}
+function groupeModifie(groupe) {
+  var ref = referenceAnnuler();
+  return clesGroupe(groupe).some(function (k) { return String(valeur(etat.c, k)) !== String(valeur(ref, k)); });
+}
+// Pastille du prix, ↻ (recharger la section enregistrée) et « ↺ Annuler les modifications » d'une section.
+function teteSection(groupe) {
+  var s = el('span', 'tete-section');
+  s.appendChild(pastillePrix(groupe));
+  var ra = el('button', 'mini', '↻'); ra.type = 'button'; ra.setAttribute('data-role', 'actualiser-section'); ra.setAttribute('data-groupe', groupe);
+  ra.title = 'Actualiser : recharger la section enregistrée'; ra.setAttribute('aria-label', 'Actualiser : ' + NOMS_GROUPES[groupe]);
+  ra.addEventListener('click', function () { actualiserSection(groupe); });
+  s.appendChild(ra);
+  var b = el('button', 'mini', '↺ Annuler les modifications'); b.type = 'button'; b.setAttribute('data-role', 'retablir-section'); b.setAttribute('data-groupe', groupe); b.hidden = true;
+  b.addEventListener('click', function () { annulerSection(groupe); });
+  s.appendChild(b);
+  return s;
+}
+async function annulerSection(groupe) {
+  if (!editable()) { return; }
+  var r = await modale({
+    titre: 'Annuler les modifications ?',
+    corps: etat.d.dejaPublie
+      ? 'Toutes vos modifications de la section « ' + NOMS_GROUPES[groupe] + ' » seront annulées. La version publiée sera remise à la place.'
+      : 'Vos modifications non enregistrées de la section « ' + NOMS_GROUPES[groupe] + ' » seront perdues. La dernière version enregistrée sera remise.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mes modifications' }]
+  });
+  if (r !== 'ok') { return; }
+  var ref = referenceAnnuler();
+  clesGroupe(groupe).forEach(function (k) { etat.c[k] = ref[k] === undefined ? vierge()[k] : ref[k]; });
+  modifie(); rendreTout();
+  toast(etat.d.dejaPublie ? 'Version publiée remise. Enregistrez pour conserver ce changement.' : 'Dernière version enregistrée remise.');
+}
+async function actualiserSection(groupe) {
+  if (!editable()) { return; }
+  var r = await modale({
+    titre: 'Actualiser cette section ?',
+    corps: 'La section « ' + NOMS_GROUPES[groupe] + ' » sera rechargée telle qu’elle est enregistrée. Ses modifications non enregistrées seront perdues.',
+    boutons: [{ id: 'ok', libelle: 'Actualiser', principal: true }, { id: 'non', libelle: 'Annuler' }]
+  });
+  if (r !== 'ok') { return; }
+  var d = await appeler('obtenir', { coffretId: etat.d.coffretId || COFFRET_ID });
+  if (!d || d.statut !== 'ok') { toast('La section ne peut pas être rechargée pour le moment.', 'err'); return; }
+  var src = Object.assign(vierge(), d.copie || d.publie || {});
+  var pub = Object.assign(vierge(), d.publie || {});
+  clesGroupe(groupe).forEach(function (k) { etat.c[k] = src[k]; etat.saved[k] = src[k]; etat.ref[k] = pub[k]; });
+  rendreTout(); majOutils();
+  toast('Section actualisée.', 'ok');
 }
 // L'image 1 (ordinateur ou mobile) compte comme « demandée à TBL » si la case est cochée : pas de frais d'image téléversée.
 function demandeDe(k) { return (k === 'image1Ord' || k === 'image1Mob') ? etat.c.demande1 : (k === 'image2' ? etat.c.demande2 : false); }
@@ -731,7 +807,7 @@ function rendreFiche() {
   var f = $('fiche'), c = etat.c, actif = editable();
   f.textContent = '';
   var h = el('h2', null, 'Fiche du coffret dans la boutique '); h.id = 'titre-fiche';
-  h.appendChild(pastillePrix('fiche'));
+  h.appendChild(teteSection('fiche'));
   f.appendChild(h);
   f.appendChild(el('p', 'sub', 'Elle n’apparaît pas sur la page du coffret : elle sert au produit de la boutique, mis à jour automatiquement à la publication.'));
   var g = el('div', 'grille-fiche');
@@ -757,7 +833,26 @@ function rendreFiche() {
 }
 // Description de la boutique : éditeur enrichi (gras, italique, listes), comme les textes de l'EDL. Le HTML est
 // nettoyé : seules quelques balises sans attribut sont gardées (le serveur refait le même nettoyage).
-var BALISES_DESCRIPTION = { P: 'p', BR: 'br', STRONG: 'strong', B: 'strong', EM: 'em', I: 'em', U: 'u', UL: 'ul', OL: 'ol', LI: 'li', DIV: 'p' };
+var BALISES_DESCRIPTION = { P: 'p', BR: 'br', STRONG: 'strong', B: 'strong', EM: 'em', I: 'em', U: 'u', UL: 'ul', OL: 'ol', LI: 'li', DIV: 'p',
+  H1: 'h1', H2: 'h2', H3: 'h3', H4: 'h4', H5: 'h5', H6: 'h6', BLOCKQUOTE: 'blockquote' };
+// Barre de mise en forme : la même que les textes enrichis de l'EDL (gras, italique, souligné ; Texte, T1 à T6,
+// Citation ; annuler et refaire la frappe).
+var OUTILS_DESCRIPTION = [
+  [['cmd', 'bold', '<b>G</b>', 'Gras (Ctrl+B)', 'Gras'], ['cmd', 'italic', '<i>I</i>', 'Italique (Ctrl+I)', 'Italique'], ['cmd', 'underline', '<u>S</u>', 'Souligné (Ctrl+U)', 'Souligné']],
+  [['bloc', 'p', 'Texte', 'Paragraphe'], ['bloc', 'h1', 'T1', 'Titre 1'], ['bloc', 'h2', 'T2', 'Titre 2'], ['bloc', 'h3', 'T3', 'Titre 3'],
+   ['bloc', 'h4', 'T4', 'Titre 4'], ['bloc', 'h5', 'T5', 'Titre 5'], ['bloc', 'h6', 'T6', 'Titre 6'], ['bloc', 'blockquote', 'Citation', 'Citation']],
+  [['cmd', 'undo', '↶', 'Annuler (Ctrl+Z)', 'Annuler'], ['cmd', 'redo', '↷', 'Rétablir la frappe (Ctrl+Y)', 'Refaire']]
+];
+function blocCourantDescription(zone) {
+  var sel = window.getSelection(), n = sel.anchorNode, res = 'p', trouve = false;
+  if (!n || !zone.contains(n)) { return ''; }
+  while (n && n !== zone) {
+    if (n.nodeType === 1 && n.tagName === 'BLOCKQUOTE') { return 'blockquote'; }
+    if (n.nodeType === 1 && !trouve && /^(P|DIV|H[1-6])$/.test(n.tagName)) { res = /^H/.test(n.tagName) ? n.tagName.toLowerCase() : 'p'; trouve = true; }
+    n = n.parentNode;
+  }
+  return res;
+}
 function nettoyerHtml(html) {
   var source = document.createElement('div'); source.innerHTML = html || '';
   function copier(noeud, vers) {
@@ -787,16 +882,38 @@ function editeurDescription(actif) {
   var zone = el('div', 'desc-riche'); zone.setAttribute('data-k', 'description'); zone.setAttribute('role', 'textbox'); zone.setAttribute('aria-multiline', 'true'); zone.setAttribute('aria-label', 'Description du coffret');
   zone.innerHTML = htmlDescription(etat.c.description);
   if (actif) {
-    var barre = el('div', 'outils-desc'); barre.setAttribute('role', 'toolbar'); barre.setAttribute('aria-label', 'Mise en forme de la description');
-    [['bold', 'G', 'Gras'], ['italic', 'I', 'Italique'], ['insertUnorderedList', '• Liste', 'Liste à puces'], ['insertOrderedList', '1. Liste', 'Liste numérotée']].forEach(function (x) {
-      var b = el('button', 'tb', x[1]); b.type = 'button'; b.title = x[2]; b.setAttribute('aria-label', x[2]);
-      if (x[0] === 'bold') { b.style.fontWeight = 'bold'; }
-      if (x[0] === 'italic') { b.style.fontStyle = 'italic'; }
-      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-      b.addEventListener('click', function () { zone.focus(); document.execCommand(x[0], false, null); lire(); });
-      barre.appendChild(b);
+    var barre = el('div', 'outils-champ'); barre.setAttribute('role', 'toolbar'); barre.setAttribute('aria-label', 'Mise en forme de la description');
+    OUTILS_DESCRIPTION.forEach(function (groupe) {
+      var g = el('div', 'grp');
+      groupe.forEach(function (x) {
+        var b = el('button', 'tb'); b.type = 'button'; b.innerHTML = x[2]; b.title = x[3]; b.setAttribute('aria-label', x[4] || x[3]);
+        b.setAttribute('data-' + x[0], x[1]);
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); }); // garde la sélection dans le texte
+        b.addEventListener('click', function () {
+          zone.focus();
+          if (x[0] === 'cmd') { document.execCommand(x[1]); } else {
+            document.execCommand('formatBlock', false, '<' + x[1] + '>');
+            var garde = 0;
+            while (x[1] !== 'blockquote' && blocCourantDescription(zone) === 'blockquote' && garde++ < 4) { document.execCommand('outdent'); }
+          }
+          lire(); etatBarre();
+        });
+        g.appendChild(b);
+      });
+      barre.appendChild(g);
     });
     bloc.appendChild(barre);
+    var etatBarre = function () {
+      var dedans = document.activeElement === zone;
+      ['bold', 'italic', 'underline'].forEach(function (c) {
+        var on = false; if (dedans) { try { on = document.queryCommandState(c); } catch (e) { /* ignore */ } }
+        barre.querySelector('[data-cmd="' + c + '"]').setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      var courant = dedans ? blocCourantDescription(zone) : '';
+      barre.querySelectorAll('[data-bloc]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-bloc') === courant ? 'true' : 'false'); });
+    };
+    zone.addEventListener('focus', function () { try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) { /* ignore */ } etatBarre(); });
+    zone.addEventListener('keyup', etatBarre); zone.addEventListener('mouseup', etatBarre); zone.addEventListener('blur', etatBarre);
     zone.contentEditable = 'true';
     zone.setAttribute('data-vide', 'Ce que contient le coffret, pour la fiche de la boutique');
     var lire = function () { majChamp('description', nettoyerHtml(zone.innerHTML), false); };
@@ -928,7 +1045,7 @@ function rendrePage(c, mode, appareil) {
     });
     ctl.appendChild(choix);
     ctl.appendChild(el('span', 'info-l', c.presentation1 === 'gabarit' ? 'Les couvertures et les prix se mettent à jour avec les livres choisis.' : 'Votre image, ou celle que TBL crée pour vous.'));
-    ctl.appendChild(pastillePrix('s1'));
+    ctl.appendChild(teteSection('s1'));
     if (etat.diff && change('presentation1')) { ctl.classList.add('chg'); }
     s1.appendChild(ctl);
   }
@@ -974,7 +1091,7 @@ function rendrePage(c, mode, appareil) {
       choixAcc.appendChild(b);
     });
     ctlAcc.appendChild(choixAcc);
-    ctlAcc.appendChild(pastillePrix('message'));
+    ctlAcc.appendChild(teteSection('message'));
     if (etat.diff && change('accroche')) { ctlAcc.classList.add('chg'); acc.classList.add('chg'); }
     sMsg.appendChild(ctlAcc);
   }
@@ -994,7 +1111,7 @@ function rendrePage(c, mode, appareil) {
     cb.addEventListener('change', function () { majChamp('section2', cb.checked, true); });
     lab.appendChild(cb); lab.appendChild(el('span', 'piste')); lab.appendChild(document.createTextNode('Section 2 : image supplémentaire'));
     ctl2.appendChild(lab); ctl2.appendChild(el('span', 'info-l', 'Facultative : une image de plus, à votre choix (le prix, une ambiance, un extrait…).'));
-    ctl2.appendChild(pastillePrix('s2'));
+    ctl2.appendChild(teteSection('s2'));
     if (etat.diff && change('section2')) { ctl2.classList.add('chg'); }
     page.appendChild(ctl2);
   }
@@ -1017,10 +1134,10 @@ function rendrePage(c, mode, appareil) {
   page.appendChild(titreS3);
   var s3 = el('section', 'pg s3'); s3.setAttribute('data-section', '3'); s3.id = ed ? 's3-edition' : '';
   if (ed && !livresModifiables()) {
-    var verrouLivres = el('p', 'verrou-livres', '🔒 Les livres d’un coffret créé ne peuvent plus être changés, ajoutés ni retirés. Leurs cartes restent modifiables. ');
-    verrouLivres.appendChild(pastillePrix('s3'));
+    var verrouLivres = el('p', 'verrou-livres', '🔒 Les livres d’un coffret créé ne peuvent plus être changés, ajoutés ni retirés. Leurs cartes restent modifiables.');
     s3.appendChild(verrouLivres);
   }
+  if (ed) { var teteS3 = el('div', 'centre'); teteS3.appendChild(teteSection('s3')); s3.appendChild(teteS3); }
   // Coffret créé : autant de cartes que de livres enregistrés, même si un livre n'est plus trouvé (ex. ancienne
   // version d'un livre republié) ; sa carte le dit au lieu de disparaître.
   var nbLivres = livresChoisis(c).length;
@@ -1041,7 +1158,7 @@ function rendrePage(c, mode, appareil) {
   titreVed.alt = 'En vedette';
   page.appendChild(titreVed);
   var ved = el('section', 'pg ved');
-  if (ed) { var prixVed = el('div', 'centre'); prixVed.appendChild(pastillePrix('vedettes')); ved.appendChild(prixVed); }
+  if (ed) { var teteVed = el('div', 'centre'); teteVed.appendChild(teteSection('vedettes')); ved.appendChild(teteVed); }
   var gv = el('div', 'vedettes');
   for (var v = 1; v <= 4; v += 1) { gv.appendChild(placeVedette(c, v, mode)); }
   ved.appendChild(gv);
