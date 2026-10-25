@@ -424,7 +424,7 @@ var GROUPES = {
   fiche: ['titre', 'prix', 'description', 'imageBoutique'],
   s1: ['presentation1', 'image1Ord', 'image1Mob', 'demande1', 'indic1', 'texteAchat', 'texteDecouvrir'],
   message: ['accroche', 'texteAcheter'],
-  s2: ['section2', 'image2', 'demande2', 'indic2'],
+  s2: ['section2', 'image2', 'image2Mob', 'demande2', 'indic2'],
   s3: ['livre1', 'livre2', 'livre3', 'livre4', 'carte1Titre', 'carte1Accroche', 'carte1Mots', 'carte2Titre', 'carte2Accroche', 'carte2Mots', 'carte3Titre', 'carte3Accroche', 'carte3Mots', 'carte4Titre', 'carte4Accroche', 'carte4Mots'],
   vedettes: ['vedette1', 'vedette2', 'vedette3', 'vedette4']
 };
@@ -448,7 +448,8 @@ var CHAMPS = [
   { k: 'accroche', t: 'texte', nom: 'Message (numérique et papier, ou numérique seulement)' },
   { k: 'texteAcheter', t: 'texte', nom: 'Bouton « Acheter l’ensemble »' },
   { k: 'section2', t: 'autre', nom: 'Section 2 affichée' },
-  { k: 'image2', t: 'image', nom: 'Image supplémentaire (section 2)' },
+  { k: 'image2', t: 'image', nom: 'Image supplémentaire, ordinateur (section 2)' },
+  { k: 'image2Mob', t: 'image', nom: 'Image supplémentaire, mobile (section 2)' },
   { k: 'demande2', t: 'demande', nom: 'Image supplémentaire créée par TBL' },
   { k: 'indic2', t: 'info', nom: 'Indications pour l’image supplémentaire' }
 ];
@@ -467,7 +468,7 @@ function vierge() {
     titre: '', prix: '', description: '', imageBoutique: '', presentation1: 'gabarit', image1Ord: '', image1Mob: '',
     demande1: false, indic1: '', texteAchat: '', texteDecouvrir: 'Découvrir les livres', accroche: ACCROCHES[0],
     texteAcheter: 'Acheter l’ensemble numérique',
-    section2: false, image2: '', demande2: false, indic2: '',
+    section2: false, image2: '', image2Mob: '', demande2: false, indic2: '',
     livre1: '', livre2: '', livre3: '', livre4: '',
     carte1Titre: '', carte1Accroche: '', carte1Mots: '', carte2Titre: '', carte2Accroche: '', carte2Mots: '',
     carte3Titre: '', carte3Accroche: '', carte3Mots: '', carte4Titre: '', carte4Accroche: '', carte4Mots: '',
@@ -549,7 +550,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '503ac24 · 2026-10-25 10:12';
+var VERSION_TBL = '370a3a0 · 2026-10-25 10:32';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -733,7 +734,7 @@ async function actualiserSection(groupe) {
   toast('Section actualisée.', 'ok');
 }
 // L'image 1 (ordinateur ou mobile) compte comme « demandée à TBL » si la case est cochée : pas de frais d'image téléversée.
-function demandeDe(k) { return (k === 'image1Ord' || k === 'image1Mob') ? etat.c.demande1 : (k === 'image2' ? etat.c.demande2 : false); }
+function demandeDe(k) { return (k === 'image1Ord' || k === 'image1Mob') ? etat.c.demande1 : ((k === 'image2' || k === 'image2Mob') ? etat.c.demande2 : false); }
 
 /* ---------- Rendu général ---------- */
 function rendreTout() {
@@ -1131,8 +1132,16 @@ function rendrePage(c, mode, appareil) {
   }
   if (c.section2) {
     var s2 = el('section', 'pg s2'); s2.setAttribute('data-section', '2');
-    if (ed) { s2.appendChild(blocImage('image2', { ratio: '3/1', max: [1600, 600], vide: 'Image supplémentaire', demande: 'demande2', indic: 'indic2' })); }
-    else if (urlSure(c.image2)) { var i2 = el('img'); i2.src = c.image2; i2.alt = c.titre ? 'Image du coffret ' + c.titre : 'Image du coffret'; s2.appendChild(i2); }
+    // Deux versions, comme la section 1 (demande de Marcel du 25 octobre 2026) : paysage pour l'ordinateur, portrait
+    // pour le mobile (facultative : sans elle, le mobile montre la version paysage).
+    var src2 = urlSure(appareil === 'mobile' ? (c.image2Mob || c.image2) : c.image2);
+    if (ed) {
+      var deux2 = el('div'); deux2.style.display = 'grid'; deux2.style.gridTemplateColumns = 'minmax(0,2fr) minmax(0,1fr)'; deux2.style.gap = '16px';
+      var p1 = el('div'); p1.appendChild(el('span', 'etiquette-ed', 'Ordinateur (paysage)')); p1.appendChild(blocImage('image2', { ratio: '3/1', max: [1600, 600], vide: 'Image supplémentaire : ordinateur', demande: 'demande2', indic: 'indic2' }));
+      var p2 = el('div'); p2.appendChild(el('span', 'etiquette-ed', 'Mobile (portrait)')); p2.appendChild(blocImage('image2Mob', { ratio: '4/5', max: [800, 1000], vide: 'Image supplémentaire : mobile', suitDemande: 'demande2' }));
+      deux2.appendChild(p1); deux2.appendChild(p2); s2.appendChild(deux2);
+    }
+    else if (src2) { var i2 = el('img'); i2.src = src2; i2.alt = c.titre ? 'Image du coffret ' + c.titre : 'Image du coffret'; s2.appendChild(i2); }
     else { var v2 = el('div', 'image-vide' + (c.demande2 ? ' tbl' : '')); v2.appendChild(el('strong', null, c.demande2 ? 'Image supplémentaire créée par TBL (en préparation)' : 'Image supplémentaire')); s2.appendChild(v2); }
     page.appendChild(s2);
   } else if (ed) {
