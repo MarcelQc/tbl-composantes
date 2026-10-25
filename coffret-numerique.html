@@ -5,60 +5,82 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Coffret numérique | Éditions TBL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Boîte « Coffret numérique » de la page dynamique Coffrets (/coffrets/{cle}), demande de Marcel du 25 octobre 2026.
-   Gabarit Templates\bundle-block.html, le même que la section 1 de l'éditeur de coffret (EDC) : étiquette,
-   couvertures en éventail, titres des livres, ancien prix barré et prix du coffret.
-   Données : envoyées par la page (public/coffret-page.js du dépôt editionstbl, brancherCoffret) à partir du
-   dataset de la page : message { type: 'tbl-coffret', coffret: { titre, prix, livres: [{ titre, couverture, prix }] } }.
-   Ouverte seule dans un navigateur (hors Wix) : coffret de démonstration. */
+/* Haut de la page dynamique Coffrets (/coffrets/{cle}) : titre « Coffret », section 1 (présentation des livres ou
+   image publicitaire, bouton d'achat avec prix, « Découvrir les livres ») et boîte du message (« Disponible en
+   numérique… », « Acheter l'ensemble numérique »). Même allure que l'aperçu de l'éditeur de coffret (EDC,
+   Web\modifier-coffret.html, rendrePage) : demande de Marcel du 25 octobre 2026.
+   Données : envoyées par la page (public/coffret-page.js du dépôt editionstbl, brancherCoffret), message
+   { type: 'tbl-coffret', coffret }. Boutons : la composante demande à la page d'agir (messages
+   'tbl-coffret:acheter' et 'tbl-coffret:decouvrir').
+   Ouverte seule dans un navigateur (hors Wix) : coffret de démonstration. Dans l'éditeur Wix : coffret de
+   ?apercu=<cle>, sinon le plus récent publié. */
 :root{
-  --tbl-paper:#16181c;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;
+  --tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;
   --tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;
   --tbl-space-md:24px;--tbl-radius:14px;--tbl-shadow:0 6px 18px rgba(0,0,0,.5);--vide:#20232a
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:transparent}
-body{padding:4px;display:flex;flex-direction:column;align-items:center}
-/* Titre en image « Coffret » (coffret.png) au-dessus de la boîte, comme « Livres du coffret » dans l'EDC */
-.titre-coffret{display:block;flex:none;width:min(max(34vw,190px),60vh);max-width:90%;height:auto;margin:0 auto clamp(4px,1vh,10px)}
-/* La boîte remplit toute la composante Wix (largeur et hauteur) ; couvertures et textes grandissent avec elle
-   (demande de Marcel du 25 octobre 2026). La couverture prend la plus petite des deux mesures : une part de la
-   largeur ou une part de la hauteur, pour toujours tenir dans la boîte. */
-.tbl-bundle{background:var(--tbl-paper);color:var(--tbl-ink);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);border:1px solid var(--tbl-line);
-  padding:clamp(14px,3vh,32px) clamp(14px,3vw,32px);font-family:var(--tbl-font-body);width:100%;text-align:center;flex:1 1 auto;min-height:0;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
-.tbl-bundle .label{font-family:var(--tbl-font-heading);font-size:clamp(.85rem,.4rem + 1.4vw,1.5rem);text-transform:uppercase;letter-spacing:.1em;color:var(--tbl-accent);margin-bottom:clamp(12px,3vh,28px)}
-.tbl-bundle .covers{--cw:min(max(20vw,90px),30vh);display:flex;justify-content:center;align-items:center;margin-bottom:clamp(16px,5vh,36px)}
-.tbl-bundle .covers.n1{--cw:min(max(26vw,110px),36vh)}
-.tbl-bundle .covers.n3{--cw:min(max(17vw,80px),28vh)}
-.tbl-bundle .covers.n4{--cw:min(max(14vw,70px),26vh)}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
+.page{width:min(1160px,100%);margin:0 auto;padding:0 0 4px}
+.pg{max-width:1000px;margin:0 auto;padding:0 14px}
+/* Chaque section dans une boîte grise ; ses éléments intérieurs un ton plus foncé (comme l'EDC) */
+.pg.s1,.pg.s-message{background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px;margin:0 auto 22px}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+.s1{text-align:center}
+.s1 .image-pub{width:100%;display:block;border-radius:6px}
+.boutons-s1{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:22px 0 6px}
+.btn-achat{display:inline-block;background:#8b0000;color:#fff;border:2px solid #8b0000;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer}
+.btn-achat:hover,.btn-achat:focus-visible{filter:brightness(1.15)}
+.btn-decouvrir{display:inline-block;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
+/* Bouton noir (Templates\bouton-noir.html) : au survol, texte noir sur fond blanc */
+.btn-decouvrir:hover,.btn-decouvrir:focus-visible{background:#fff;color:#000}
+.s-message{text-align:center}
+.accroche{font:500 26px/1.3 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:18px 0;letter-spacing:.02em}
+/* Gabarit bundle-block.html (Templates\) : pleine largeur de la section, couvertures et textes à la mesure de la boîte */
+.tbl-bundle{background:var(--tbl-paper-2);color:var(--tbl-ink);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);border:1px solid var(--tbl-line);
+  padding:clamp(18px,4cqw,36px) var(--tbl-space-md);margin:0 auto;text-align:center;container-type:inline-size}
+.tbl-bundle .covers{--cw:clamp(90px,20cqw,190px);display:flex;justify-content:center;align-items:center;margin-bottom:clamp(16px,4cqw,32px);min-height:160px}
+.tbl-bundle .covers.n1{--cw:clamp(110px,24cqw,220px)}
+.tbl-bundle .covers.n3{--cw:clamp(80px,17cqw,170px)}
+.tbl-bundle .covers.n4{--cw:clamp(70px,14cqw,150px)}
 .tbl-bundle .covers img,.chargement .covers span{width:var(--cw);height:auto;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);margin:0 calc(var(--cw) * -.14)}
 .tbl-bundle .covers.n1 img{margin:0}
-.tbl-bundle .titles{font-size:clamp(.9rem,.45rem + 1.2vw,1.35rem);color:var(--tbl-muted);margin-bottom:clamp(8px,1.8vh,16px)}
-.tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:clamp(1.3rem,.6rem + 2.2vw,2.4rem)}
+.tbl-bundle .titles{font-size:clamp(.9rem,.5rem + 1.2cqw,1.25rem);color:var(--tbl-muted);margin-bottom:clamp(8px,1.6cqw,16px)}
+.tbl-bundle .price{font-family:var(--tbl-font-heading);font-size:clamp(1.3rem,.6rem + 2.2cqw,2.2rem);margin-bottom:4px}
 .tbl-bundle .price .old{text-decoration:line-through;color:var(--tbl-muted);font-size:.7em;margin-right:.5em}
+/* Chargement : couvertures grises et petit message */
 .chargement .covers span{display:block;aspect-ratio:2/3;background:var(--vide);animation:pulse 1.2s ease-in-out infinite}
-/* Petit message pendant le chargement (demande de Marcel du 25 octobre 2026) */
-.chargement .msg{display:flex;align-items:center;gap:10px;color:var(--tbl-muted);font-size:clamp(.9rem,.45rem + 1.2vw,1.2rem)}
+.chargement .msg{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted);font-size:1rem}
 .chargement .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
 @keyframes tourne{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.chargement .roue{animation:none}}
 @keyframes pulse{50%{opacity:.5}}
-@media (prefers-reduced-motion:reduce){.chargement .covers span{animation:none}}
+@media (prefers-reduced-motion:reduce){.chargement .roue,.chargement .covers span{animation:none}}
+@media (max-width:520px){.btn-achat,.btn-decouvrir{padding:11px 20px;font-size:15px}.accroche{font-size:22px}}
 </style>
 </head>
 <body>
-<img class="titre-coffret" id="titre" src="https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png" alt="Coffret">
-<div class="tbl-bundle chargement" id="coffret" aria-busy="true">
-  <div class="covers n2"><span></span><span></span></div>
-  <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
+<div class="page" id="page">
+  <img class="titre-img" src="https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png" alt="Coffret">
+  <section class="pg s1">
+    <div class="tbl-bundle chargement" aria-busy="true">
+      <div class="covers n2"><span></span><span></span></div>
+      <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</div>
+    </div>
+  </section>
 </div>
 <script>
 (function () {
-  var boite = document.getElementById('coffret');
+  var page = document.getElementById('page');
+  var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_842870b77bb644ea9b65693c3b2d0b01~mv2.png';
+  var ACCROCHES = ['Disponible en numérique et en papier', 'Disponible en numérique seulement'];
   var DEMO = {
-    titre: 'Coffret de démonstration', prix: 12.99,
+    titre: 'Coffret de démonstration', prix: 12.99, presentation1: 'gabarit',
+    texteAchat: 'Les 2 tomes numériques', texteDecouvrir: 'Découvrir les livres', accroche: ACCROCHES[0], texteAcheter: 'Acheter l’ensemble numérique',
     livres: [
       { titre: 'Mon premier livre démo', couverture: 'https://via.placeholder.com/220x330/1d3b6e/ffffff?text=Livre+1', prix: 8.99 },
       { titre: 'Mon deuxième livre démo', couverture: 'https://via.placeholder.com/220x330/1b5e3a/ffffff?text=Livre+2', prix: 8.98 }
@@ -66,12 +88,12 @@ body{padding:4px;display:flex;flex-direction:column;align-items:center}
   };
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
   function argent(n) { return n.toFixed(2).replace('.', ',') + ' $'; }
+  function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
+  function demander(type) { if (window.parent !== window) { window.parent.postMessage({ type: type }, '*'); } }
 
-  function afficher(c) {
-    boite.textContent = '';
-    boite.classList.remove('chargement'); boite.removeAttribute('aria-busy');
-    if (!c || c.vide || !c.livres || !c.livres.length) { boite.hidden = true; document.getElementById('titre').hidden = true; return; } // rien à montrer : boîte vide
-    var livres = c.livres.slice(0, 4), n = livres.length;
+  // Gabarit Templates\bundle-block.html : couvertures en éventail, titres, ancien prix barré et prix du coffret.
+  function gabarit(c, livres) {
+    var b = el('div', 'tbl-bundle'), n = livres.length;
     var covers = el('div', 'covers n' + n), centre = (n - 1) / 2;
     livres.forEach(function (l, i) {
       var img = el('img'); img.src = l.couverture; img.alt = l.titre;
@@ -80,14 +102,43 @@ body{padding:4px;display:flex;flex-direction:column;align-items:center}
       img.style.zIndex = String(100 - Math.abs(dec * 10));
       covers.appendChild(img);
     });
-    boite.appendChild(covers);
-    boite.appendChild(el('div', 'titles', livres.map(function (l) { return l.titre; }).join(' + ')));
+    b.appendChild(covers);
+    b.appendChild(el('div', 'titles', livres.map(function (l) { return l.titre; }).join(' + ')));
     var price = el('div', 'price');
     var somme = livres.reduce(function (s, l) { return s + (Number(l.prix) || 0); }, 0);
     // Ancien prix barré seulement s'il est plus élevé que le prix du coffret (comme dans l'EDC).
     if (c.prix > 0 && somme > c.prix) { price.appendChild(el('span', 'old', argent(somme))); }
     price.appendChild(el('span', null, c.prix > 0 ? argent(c.prix) : 'Prix à venir'));
-    boite.appendChild(price);
+    b.appendChild(price);
+    return b;
+  }
+
+  function afficher(c) {
+    page.textContent = '';
+    if (!c || c.vide || !c.livres || !c.livres.length) { page.hidden = true; return; } // rien à montrer : composante vide
+    page.hidden = false;
+    var livres = c.livres.slice(0, 4);
+    var mobile = window.matchMedia('(max-width:600px)').matches;
+    var imagePub = c.presentation1 === 'image' ? urlSure(mobile ? (c.image1Mob || c.image1Ord) : c.image1Ord) : '';
+    // Section 1 : image publicitaire, ou titre « Coffret » au-dessus de la boîte et présentation des livres
+    if (!imagePub) { var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Coffret'; page.appendChild(t); }
+    var s1 = el('section', 'pg s1');
+    if (imagePub) { var im = el('img', 'image-pub'); im.src = imagePub; im.alt = c.titre || 'Coffret'; s1.appendChild(im); }
+    else { s1.appendChild(gabarit(c, livres)); }
+    var bs = el('div', 'boutons-s1');
+    var achat = el('button', 'btn-achat', (c.texteAchat || 'Les tomes numériques') + (c.prix > 0 ? ' - ' + argent(c.prix) : '')); achat.type = 'button';
+    achat.addEventListener('click', function () { demander('tbl-coffret:acheter'); });
+    var dec = el('button', 'btn-decouvrir', c.texteDecouvrir || 'Découvrir les livres'); dec.type = 'button';
+    dec.addEventListener('click', function () { demander('tbl-coffret:decouvrir'); });
+    bs.appendChild(achat); bs.appendChild(dec); s1.appendChild(bs);
+    page.appendChild(s1);
+    // Boîte du message : un des deux textes fixes et « Acheter l'ensemble numérique »
+    var sMsg = el('section', 'pg s-message');
+    sMsg.appendChild(el('p', 'accroche', ACCROCHES.indexOf(c.accroche) >= 0 ? c.accroche : ACCROCHES[0]));
+    var acheter = el('button', 'btn-achat', c.texteAcheter || 'Acheter l’ensemble numérique'); acheter.type = 'button';
+    acheter.addEventListener('click', function () { demander('tbl-coffret:acheter'); });
+    sMsg.appendChild(acheter);
+    page.appendChild(sMsg);
   }
 
   var recu = false;
@@ -100,7 +151,7 @@ body{padding:4px;display:flex;flex-direction:column;align-items:center}
 
   // Éditeur Wix (Design) : le code de la page ne tourne pas, rien n'arrive du dataset. La composante lit alors
   // elle-même un coffret publié : celui de ?apercu=<cle> dans son adresse (ex. ?apercu=epdl), sinon le plus
-  // récent. Sur le site (et dans l'Aperçu), c'est toujours le coffret du dataset envoyé par la page.
+  // récent. Sur le site (et dans l'Aperçu), c'est toujours le coffret envoyé par la page.
   // Seuls les noms de serveurs comptent (l'adresse de l'éditeur Wix contient elle aussi « editionstbl.ca » dans
   // ses paramètres) ; l'éditeur a priorité sur le site.
   function hotesParents() {
