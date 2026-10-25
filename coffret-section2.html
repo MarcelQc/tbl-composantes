@@ -25,6 +25,7 @@ body{color:#fff;font-family:Arial,Helvetica,sans-serif}
 .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
 @keyframes tourne{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.roue{animation:none}}
+.note-masquee{margin:12px auto;max-width:1000px;text-align:center;color:var(--tbl-muted);font-size:13px;border:1px dashed var(--tbl-line);border-radius:9px;padding:8px 12px}
 @media (max-width:600px){.pg{padding:12px}.pg img{max-height:calc(100vh - 24px)}}
 </style>
 </head>
@@ -49,6 +50,11 @@ body{color:#fff;font-family:Arial,Helvetica,sans-serif}
     s2.hidden = false;
     var img = document.createElement('img'); img.src = src; img.alt = c.titre ? 'Image du coffret ' + c.titre : 'Image du coffret';
     s2.appendChild(img);
+  }
+  function noteMasquee() {
+    var n = document.createElement('p'); n.className = 'note-masquee';
+    n.textContent = 'Section 2 décochée dans l’éditeur de coffret : elle ne s’affiche pas sur le site.';
+    document.body.appendChild(n);
   }
   // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image
   window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
@@ -78,8 +84,14 @@ body{color:#fff;font-family:Arial,Helvetica,sans-serif}
     var cle = new URLSearchParams(location.search).get('apercu') || '';
     fetch('https://www.editionstbl.ca/_functions/coffretPublic?cle=' + encodeURIComponent(cle))
       .then(function (r) { return r.ok ? r.json() : null; })
-      // Dans l'éditeur, une section 2 masquée montre quand même l'image de démonstration (pour placer la boîte)
-      .then(function (c) { if (!recu) { afficher(c && c.section2 && (c.image2 || c.image2Mob) ? c : DEMO); } })
+      // Section 2 décochée dans l'EDC : rien n'est affiché, comme sur le site ; une petite note seulement dans
+      // l'éditeur Wix, pour qu'on sache pourquoi la boîte est vide (demande de Marcel du 25 octobre 2026).
+      .then(function (c) {
+        if (recu) { return; }
+        if (!c) { afficher(DEMO); return; }
+        afficher(c);
+        if (!c.section2 || !(c.image2 || c.image2Mob)) { noteMasquee(); }
+      })
       .catch(function () { if (!recu) { afficher(DEMO); } });
   }, 1500);
 })();
