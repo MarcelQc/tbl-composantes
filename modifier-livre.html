@@ -74,6 +74,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .pastille.corr{background:var(--redsoft);color:var(--rouge-texte)}
 .pastille.admin{background:transparent;border:1px solid var(--line);color:var(--txt)}
 .pastille.admin::before{display:none}
+/* Pastille rouge du bouton Commentaire : nombre de réponses de l'équipe pas encore vues (comme l'EDA) */
+.badge-commentaires{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:.72rem;font-weight:700;line-height:18px;vertical-align:middle}
 /* Résumé : taux par texte (ou services d'un livre Nouveau) et date de la dernière modification */
 .resume{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px}
 .resume .aide{width:auto;margin-left:auto}
@@ -482,7 +484,7 @@ body.v-rapport{background:#fff;color:#111}
         <button type="button" class="btn sec" id="t-ap-ord" title="Voir la page telle qu’elle paraîtra sur un ordinateur">Aperçu ordinateur</button>
         <button type="button" class="btn sec" id="t-ap-mob" title="Voir la page telle qu’elle paraîtra sur un téléphone">Aperçu mobile</button>
         <button type="button" class="btn sec" id="t-rapport" title="Comparer la page publiée et vos modifications, texte par texte">Rapport Avant / Après</button>
-        <button type="button" class="btn sec" id="b-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
+        <button type="button" class="btn sec" id="b-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire<span class="badge-commentaires" id="badge-commentaires" aria-hidden="true" hidden>0</span></button>
         <button type="button" class="btn sec" id="b-actualiser" title="Recharger la page du livre depuis le serveur">↻ Actualiser</button>
       </span>
     </div>
@@ -669,10 +671,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 90c0f2b · 2026-10-26 08:08 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 09fcfec · 2026-10-26 15:10 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '90c0f2b · 2026-10-26 08:08';
+var VERSION_TBL = '09fcfec · 2026-10-26 15:10';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1603,6 +1605,23 @@ function montrerEdition(d) {
   $('legende').hidden = true;
   montrerVue('vue-edition');
   recalculer();
+  chargerBadgeCommentaires();
+}
+
+// Pastille rouge sur le bouton Commentaire : nombre de réponses de l'équipe pas encore vues par l'auteur
+// (même compteur que l'onglet Commentaires de l'Espace Auteurs). Se vide seulement en ouvrant cet onglet-là,
+// pas depuis ce bouton (il sert à écrire un nouveau commentaire, pas à lire les réponses).
+function majBadgeCommentaires(n) {
+  var b = $('badge-commentaires');
+  if (!b) { return; }
+  if (n > 0) { b.textContent = n > 99 ? '99+' : String(n); b.hidden = false; }
+  else { b.hidden = true; }
+}
+async function chargerBadgeCommentaires() {
+  try {
+    var r = await appeler('commentairesNonVus', {});
+    if (r && r.statut === 'ok') { majBadgeCommentaires(r.nonVues || 0); }
+  } catch (e) { /* silencieux : la pastille reste cachée */ }
 }
 
 function monterChamp(cle) {
