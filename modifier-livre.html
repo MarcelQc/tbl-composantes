@@ -91,8 +91,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .recap .lig.total{border-color:var(--gold);color:var(--txt)}
 .recap .lig.total b{color:var(--gold)}
 .recap .lig.controle{border-style:dashed;opacity:.8}
-/* Barre d'actions collante : comparaison, état de l'enregistrement et boutons Enregistrer / Approuver */
-#outils{position:sticky;top:0;z-index:30;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+/* Barre d'actions collante : comparaison, état de l'enregistrement et boutons Enregistrer / Approuver. Une boîte à
+   la largeur standard (1000 px), alignée sur la fiche et les sections, comme l'EDC (demande de Marcel du 26 octobre 2026). */
+#outils{position:sticky;top:0;z-index:30;background:transparent;padding:8px 0}
+#outils .bloc{background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:8px 14px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .rang-outils{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 .rang-outils .ecart{flex:1}
 .rang-outils .aide{width:auto}
@@ -606,10 +608,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 1cc311d · 2026-10-26 07:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 57d34a7 · 2026-10-26 07:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '1cc311d · 2026-10-26 07:12';
+var VERSION_TBL = '57d34a7 · 2026-10-26 07:22';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
