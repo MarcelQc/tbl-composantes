@@ -165,10 +165,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .sec{max-width:1000px;margin:0 auto 22px;background:var(--card);border:0;border-radius:var(--tbl-radius);padding:22px 20px}
 .sec .controle-image,.sec .hero-carte,.sec .carte-epub{background:var(--card2)}
 .oswald{font-family:'Oswald','Arial Narrow',Arial,sans-serif}
-.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:start}
+/* align-items:stretch (au lieu de start, demande de Marcel du 26 octobre 2026) : la carte de texte s'étire en
+   hauteur pour s'aligner avec l'image de la couverture, plutôt que de rester plus courte qu'elle. */
+.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:stretch}
 .couv img{width:100%;max-width:330px;display:block;margin:0 auto}
 /* Boîtes de la page : fond gris des cartes des gabarits, sans contour (demande de Marcel du 19 octobre 2026) */
-.hero-carte{border:0;border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:var(--card)}
+.hero-carte{border:0;border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;background:var(--card)}
 .hero-titre{font:500 30px/1.2 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:0 0 14px;letter-spacing:.02em}
 /* Titre du livre centré sous l'image « Livre », comme le titre du coffret dans l'EDC */
 .titre-livre{font:600 clamp(22px,3.2cqw,30px)/1.25 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;letter-spacing:.03em;margin:14px auto 16px;padding:0 14px;max-width:1000px;color:#fff}
@@ -667,10 +669,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 99e8962 · 2026-10-26 07:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// c1e1187 · 2026-10-26 07:53 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '99e8962 · 2026-10-26 07:40';
+var VERSION_TBL = 'c1e1187 · 2026-10-26 07:53';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
