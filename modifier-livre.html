@@ -170,6 +170,46 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Boîtes de la page : fond gris des cartes des gabarits, sans contour (demande de Marcel du 19 octobre 2026) */
 .hero-carte{border:0;border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:var(--card)}
 .hero-titre{font:500 30px/1.2 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;margin:0 0 14px;letter-spacing:.02em}
+/* Titre du livre centré sous l'image « Livre », comme le titre du coffret dans l'EDC */
+.titre-livre{font:600 clamp(22px,3.2cqw,30px)/1.25 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;letter-spacing:.03em;margin:14px auto 16px;padding:0 14px;max-width:1000px;color:#fff}
+/* Section 1 : présentation choisie (classe pres-image ou pres-gabarit sur la section) */
+.s-hero.pres-image [data-pres="gabarit"],.s-hero.pres-gabarit [data-pres="image"]{display:none}
+.pub-grille{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.pub-img{position:relative}
+.image-pub{width:100%;display:block;border-radius:6px}
+.pub-ord .image-vide{aspect-ratio:2/1;width:100%}
+.pub-mob .image-vide{aspect-ratio:4/5;width:100%}
+.image-vide.tbl{border-color:var(--tbl-blue);color:var(--tbl-blue)}
+.etiquette-ed{display:block;font:600 11px var(--tbl-font-body);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin:0 0 6px}
+.v-apercu .etiquette-ed{display:none}
+.v-apercu .pub-grille{display:block}
+.v-apercu .pub-mob{display:none}
+@container page (max-width:760px){
+  .v-edition .pub-grille{grid-template-columns:1fr}
+  .v-apercu .pub-ord{display:none}
+  .v-apercu .pub-mob{display:block}
+  .v-apercu .sans-mob .pub-ord{display:block}
+  .v-apercu .sans-mob .pub-mob{display:none}
+}
+/* Contrôle de la section 1 (comme l'EDC) : choix de la présentation */
+.controle-section{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;margin:0 auto 18px;padding:8px 14px;border-radius:var(--tbl-radius);background:var(--card2);font:13px var(--tbl-font-body);color:var(--txt);max-width:760px}
+.controle-section .info-l{color:var(--muted);font-size:12px}
+.choix-pres{display:inline-flex;border:1px solid var(--line);border-radius:var(--tbl-radius-btn);overflow:hidden}
+.choix-pres button{border:0;background:transparent;color:var(--txt);padding:7px 14px;font:600 13px var(--tbl-font-body);cursor:pointer}
+.choix-pres button[aria-pressed="true"]{background:var(--redsoft);color:#fff}
+.choix-pres button:disabled{opacity:.45;cursor:not-allowed}
+.v-apercu .controle-section,.v-apercu [data-zone-demande]{display:none}
+.controle-section.chg{outline:2px solid var(--gold);outline-offset:3px}
+/* Demande d'image à TBL (comme l'EDC) */
+.demande-tbl{display:flex;flex-direction:column;gap:6px;max-width:420px;margin:10px auto 0;text-align:left;font:12px var(--tbl-font-body);color:var(--muted)}
+.demande-tbl label.case{display:flex;gap:8px;align-items:center;color:var(--txt);font-weight:600;cursor:pointer}
+.demande-tbl textarea{width:100%;min-height:60px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);color:var(--txt);padding:8px;font:13px var(--tbl-font-body);resize:vertical}
+/* Boutons de la section 1 : « Numérique - prix » (rouge) et « Extrait » (bouton noir, Templates\bouton-noir.html) */
+.boutons-s1{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:22px 0 4px}
+.btn-achat{display:inline-block;box-sizing:border-box;background:#8b0000;color:#fff;border:2px solid #8b0000;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer}
+.btn-noir{display:inline-block;box-sizing:border-box;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
+.btn-noir:hover,.btn-noir:focus-visible{background:#fff;color:#000}
+.v-edition .btn-achat{cursor:default}
 .prix{margin-top:auto;padding-top:18px;text-align:center;font:700 24px Georgia,'Times New Roman',serif;color:#F28901}
 /* Boutons de la page (Commande numérique, Contacter l'auteur, Demande d'extrait) : bouton principal des gabarits (.btn) */
 .btn-page{display:block;width:max-content;max-width:100%;margin:22px auto 0}
@@ -540,20 +580,39 @@ body.v-rapport{background:#fff;color:#111}
   <!-- Chaque section dans une boîte grise de la largeur standard (1000 px), comme l'EDC (demande de Marcel du
        26 octobre 2026) : plus d'image de fond derrière la section 1. -->
   <div class="pg">
-    <section class="sec s-hero">
-      <div class="grille-hero">
+    <!-- Titre en image « Livre » (livre.png) puis le titre du livre, au-dessus de la section 1, comme l'EDC -->
+    <img class="titre-img fige" alt="Livre" src="https://static.wixstatic.com/media/26b968_ab62db9254e946639886c21de127b26e~mv2.png">
+    <h1 class="titre-livre" data-titre></h1>
+    <!-- Section 1, comme l'EDC (demande de Marcel du 26 octobre 2026) : image publicitaire (paysage pour l'ordinateur,
+         portrait pour le mobile) ou présentation du livre (image du livre et description). Dans les deux cas, le
+         bouton « Numérique » avec le prix et le bouton noir « Extrait », raccourci vers la section Extrait. -->
+    <section class="sec s-hero" data-s1>
+      <div data-zone-s1></div>
+      <div class="pub-s1" data-pres="image">
+        <div class="pub-grille">
+          <div class="pub-ord"><span class="etiquette-ed">Ordinateur (paysage)</span>
+            <div class="pub-img"><img class="image-pub" data-affiche="image1Ord" alt="Image publicitaire du livre"></div>
+            <div data-zone-controle="image1Ord"></div><div data-zone-demande></div></div>
+          <div class="pub-mob"><span class="etiquette-ed">Mobile (portrait)</span>
+            <div class="pub-img"><img class="image-pub" data-affiche="image1Mob" alt="Image publicitaire du livre (mobile)"></div>
+            <div data-zone-controle="image1Mob"></div></div>
+        </div>
+      </div>
+      <div class="grille-hero" data-pres="gabarit">
         <div class="couv">
           <div data-zone-img><img data-img="couverture3d" alt="Couverture du livre"></div>
           <div data-zone-controle="image"></div>
         </div>
         <div>
           <div class="hero-carte">
-            <h1 class="hero-titre fige" data-titre></h1>
             <div class="champ" data-champ="desc_plan"><div class="champ-tete"></div><div class="rt rt-hero"></div><div class="msg-url" hidden></div></div>
             <div class="prix fige" data-prix></div>
           </div>
-          <button type="button" class="btn btn-page fige" data-action="commande" tabindex="-1">Commande numérique</button>
         </div>
+      </div>
+      <div class="boutons-s1">
+        <button type="button" class="btn-achat" data-action="achat" data-role="btn-num">Numérique</button>
+        <button type="button" class="btn-noir" data-role="aller-extrait" title="Aller à l’extrait du livre">Extrait</button>
       </div>
     </section>
     <section class="sec s-achat">
@@ -608,10 +667,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 57d34a7 · 2026-10-26 07:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 99e8962 · 2026-10-26 07:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '57d34a7 · 2026-10-26 07:22';
+var VERSION_TBL = '99e8962 · 2026-10-26 07:40';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1460,6 +1519,13 @@ function fabriquerPage(hote, d) {
   var L = d.livre;
   page.querySelector('[data-titre]').textContent = L.titre;
   page.querySelector('[data-prix]').textContent = L.prix || '';
+  // Section 1 : bouton « Numérique - prix » (prix de la fiche de la boutique) et raccourci vers l'extrait
+  var prixNum = d.prixNumerique !== undefined ? d.prixNumerique : versFiche(d.boutique && (d.boutique.copie || d.boutique.publie)).prix;
+  page.querySelector('[data-role="btn-num"]').textContent = texteNumerique(prixNum);
+  page.querySelector('[data-role="aller-extrait"]').addEventListener('click', function () {
+    var x = page.querySelector('[data-champ="extrait"]');
+    if (x) { x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
   var numPapier = L.afficheNumPapier === true; // même règle que la page publique (Page de livres, Item)
   page.querySelector('[data-epub="numpapier"]').classList.toggle('cache', !numPapier);
   page.querySelector('[data-epub="seul"]').classList.toggle('cache', numPapier);
@@ -1680,11 +1746,15 @@ function imageSure(u) {
 // vide aux proportions du gabarit invite à téléverser. L'image choisie est ajustée automatiquement au gabarit
 // (recadrage centré, puis redimensionnement), puis envoyée au serveur à l'enregistrement : elle va dans un champ
 // tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
-var CLES_IMAGES = ['image', 'photoAuteur'];
-var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf', 'vedettes'];
+// image1Ord et image1Mob : images publicitaires de la section 1 (paysage et portrait), propres à la page.
+var CLES_IMAGES = ['image', 'photoAuteur', 'image1Ord', 'image1Mob'];
+var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf', 'vedettes', 'image1Ord', 'image1Mob', 'presentation1', 'demande1', 'indic1'];
 function valL(v, k) {
   if (k === 'extraitPdf') { return clePdf(v); }
   if (k === 'vedettes') { return JSON.stringify(placesVed(v)); }
+  if (k === 'presentation1') { return v === 'image' ? 'image' : 'gabarit'; }
+  if (k === 'demande1') { return !!v; }
+  if (k === 'indic1') { return String(v || '').trim(); }
   return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || ''));
 }
 // Extrait en PDF : { url, nom } (fichier enregistré, venu du serveur), { data, nom } (fichier choisi, pas encore
@@ -1695,7 +1765,11 @@ var IMAGE_CONF = {
   image: { nom: 'Image du livre', bouton: 'Téléverser l’image du livre', changer: 'Changer l’image du livre', retablir: '↺ Annuler les modifications', gabarit: [600, 900],
     vide: 'Aucune image du livre', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajustée automatiquement à 600 × 900 px (2:3). Idéal : couverture 3D sur fond transparent.' },
   photoAuteur: { nom: 'Portrait de l’auteur', bouton: 'Téléverser le portrait', changer: 'Changer le portrait', retablir: '↺ Annuler les modifications', gabarit: [400, 454],
-    vide: 'Aucun portrait', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajusté automatiquement à 400 × 454 px.' }
+    vide: 'Aucun portrait', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajusté automatiquement à 400 × 454 px.' },
+  image1Ord: { nom: 'Image publicitaire (ordinateur)', bouton: 'Téléverser l’image', changer: 'Changer l’image', retablir: '↺ Annuler les modifications', gabarit: [1600, 800],
+    vide: 'Image publicitaire : ordinateur', aide: 'PNG, JPEG ou WebP, 5 Mo au plus. Ajustée automatiquement à 1600 × 800 px (paysage).' },
+  image1Mob: { nom: 'Image publicitaire (mobile)', bouton: 'Téléverser l’image', changer: 'Changer l’image', retablir: '↺ Annuler les modifications', gabarit: [800, 1000],
+    vide: 'Image publicitaire : mobile', aide: 'Facultative. 800 × 1000 px (portrait) ; sans elle, le mobile montre l’image paysage.' }
 };
 function ctl(cle) { return $('hote-edition').querySelector('[data-controle-image="' + cle + '"]'); }
 function creerControles() {
@@ -1948,6 +2022,23 @@ function majControleVedettes() {
 function appliquerLivre(page, L) {
   remplirImage(page.querySelector('[data-img="couverture3d"]'), L.image, 'image');
   remplirImage(page.querySelector('[data-affiche="photoAuteur"]'), L.photoAuteur, 'photoAuteur');
+  // Section 1 : présentation choisie et images publicitaires. Sans image, une demande à TBL montre l'image à venir.
+  var s1 = page.querySelector('[data-s1]'), pres = valL(L.presentation1, 'presentation1');
+  s1.classList.toggle('pres-image', pres === 'image');
+  s1.classList.toggle('pres-gabarit', pres !== 'image');
+  s1.classList.toggle('sans-mob', !imageSure(L.image1Mob));
+  ['image1Ord', 'image1Mob'].forEach(function (k) {
+    var img = page.querySelector('[data-affiche="' + k + '"]');
+    remplirImage(img, L[k], k);
+    var vide = img.parentNode.querySelector('.image-vide');
+    if (vide) {
+      vide.classList.toggle('tbl', !!L.demande1);
+      vide.firstChild.textContent = L.demande1 ? 'Image créée par TBL' : IMAGE_CONF[k].vide;
+      vide.lastChild.textContent = L.demande1 ? 'L’équipe la prépare d’après vos indications.'
+        : (k === 'image1Mob' ? 'Facultative : sans elle, le mobile montre l’image paysage.'
+          : (document.body.classList.contains('v-edition') ? 'Utilisez le bouton ci-dessous pour en téléverser une.' : 'À venir'));
+    }
+  });
   page.querySelector('[data-section="auteur"]').classList.toggle('masque', !L.afficheauteur);
   // En vedette : boutons de choix seulement dans l'édition, page déverrouillée et hors « Voir les changements »
   var edition = page.id === 'hote-edition';
@@ -1981,8 +2072,45 @@ function preparerImage(fichier, conf) {
   });
 }
 function zoneLivre(role) { return $('hote-edition').querySelector('[data-role="' + role + '"]'); }
+// Section 1, comme l'EDC : choix entre l'image publicitaire et la présentation du livre, et demande à TBL de créer
+// l'image publicitaire (avec des indications). Les deux images restent en mémoire quand on change de présentation.
+var PRES_S1 = [['image', 'Image publicitaire'], ['gabarit', 'Présentation du livre']];
+function creerControleS1() {
+  var zone = $('hote-edition').querySelector('[data-zone-s1]');
+  zone.innerHTML = '<div class="controle-section" data-role="ctl-s1"><strong>Section 1 :</strong>' +
+    '<div class="choix-pres" role="group" aria-label="Présentation de la section 1"></div><span class="info-l" data-role="info-s1"></span></div>';
+  var choix = zone.querySelector('.choix-pres');
+  PRES_S1.forEach(function (x) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = x[1]; b.setAttribute('data-pres-choix', x[0]);
+    b.addEventListener('click', function () { if (valL(etat.L.work.presentation1, 'presentation1') !== x[0]) { etat.L.work.presentation1 = x[0]; rendreLivre(); recalculer(); } });
+    choix.appendChild(b);
+  });
+  var dz = $('hote-edition').querySelector('[data-zone-demande]');
+  dz.innerHTML = '<div class="demande-tbl"><label class="case"><input type="checkbox" data-role="demande1"><span data-role="lib-demande1"></span></label>' +
+    '<textarea data-role="indic1" maxlength="1000" placeholder="Vos indications : ambiance, couleurs, textes à mettre sur l’image…"></textarea></div>';
+  var cb = dz.querySelector('[data-role="demande1"]'), ta = dz.querySelector('[data-role="indic1"]');
+  cb.addEventListener('change', function () { etat.L.work.demande1 = cb.checked; rendreLivre(); recalculer(); });
+  ta.addEventListener('input', function () { etat.L.work.indic1 = ta.value; recalculer(); });
+}
+function majControleS1(bloque) {
+  var W = etat.L.work, pres = valL(W.presentation1, 'presentation1'), z = $('hote-edition');
+  Array.prototype.forEach.call(z.querySelectorAll('[data-pres-choix]'), function (b) {
+    b.setAttribute('aria-pressed', b.getAttribute('data-pres-choix') === pres ? 'true' : 'false');
+    b.disabled = bloque;
+  });
+  z.querySelector('[data-role="info-s1"]').textContent = pres === 'image'
+    ? 'Votre image, ou celle que TBL crée pour vous.' : 'L’image du livre et la description de l’en-tête.';
+  z.querySelector('[data-role="ctl-s1"]').classList.toggle('chg', !!etat.diff && !!etat.chgL.presentation1);
+  var cb = zoneLivre('demande1'), ta = zoneLivre('indic1');
+  cb.checked = !!W.demande1; cb.disabled = bloque;
+  zoneLivre('lib-demande1').textContent = 'Je demande à TBL de créer cette image' + (etat.nouveau ? ' (comprise dans le prix de la page)' : ' (' + argent(PRIX_IMAGE_TBL) + ')');
+  ta.hidden = !W.demande1; ta.disabled = bloque;
+  if (document.activeElement !== ta) { ta.value = W.indic1 || ''; }
+  z.querySelector('[data-zone-demande]').hidden = bloque && !W.demande1;
+}
 function monterLivre() {
   creerControles();
+  creerControleS1();
   CLES_IMAGES.forEach(function (cle) {
     var c = ctl(cle), fichier = c.querySelector('[data-role="fichier-img"]');
     fichier.addEventListener('change', function () { var fic = fichier.files && fichier.files[0]; fichier.value = ''; if (fic) { choisirImage(cle, fic); } });
@@ -2016,6 +2144,7 @@ function rendreLivre() {
     ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
   });
   rendrePdf(bloque);
+  majControleS1(bloque);
   var cv = $('hote-edition').querySelector('[data-controle-ved]');
   if (cv) { cv.hidden = bloque; }
 }
@@ -2098,6 +2227,7 @@ async function retablirImage(cle) {
 function versFiche(x) {
   return { prix: x && x.prix > 0 ? x.prix.toFixed(2).replace('.', ',') : '', description: (x && x.description) || '' };
 }
+function texteNumerique(prix) { return 'Numérique' + (prixCentsFiche(prix) ? ' - ' + String(prix).trim() + NBSP + '$' : ''); }
 function prixCentsFiche(v) {
   var n = Number(String(v || '').replace(',', '.').replace(/\s|\$/g, ''));
   return Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 100) : 0;
@@ -2224,7 +2354,8 @@ function editeurDescription(actif) {
 }
 // États de la fiche : image du livre (suit la section 1), erreur de prix, ce qui a changé par rapport au produit.
 function majFiche() {
-  var f = $('fiche');
+  var f = $('fiche'), bn = $('hote-edition').querySelector('[data-role="btn-num"]');
+  if (bn) { bn.textContent = texteNumerique(etat.B.work.prix); }
   if (!etat.boutique || !f.querySelector('.grille-fiche')) { return; }
   var src = imageSure(etat.L.work.image), img = f.querySelector('[data-role="image-fiche"]');
   img.hidden = !src; if (src && img.src !== src) { img.src = src; }
@@ -2255,6 +2386,7 @@ function raisonRefusApprobation() {
 function elementsIncomplets() {
   var manque = CHAMPS.filter(function (c) { return texteBrut(norm(etat.work[c.cle] || [])).trim() === ''; }).map(function (c) { return c.court; });
   if (!imageSure(etat.L.work.image)) { manque.push('Image du livre'); }
+  if (valL(etat.L.work.presentation1, 'presentation1') === 'image' && !imageSure(etat.L.work.image1Ord) && !etat.L.work.demande1) { manque.push('Image publicitaire (ou la demande à TBL)'); }
   if (!imageSure(etat.L.work.photoAuteur)) { manque.push('Portrait de l’auteur'); }
   return manque;
 }
@@ -2295,12 +2427,22 @@ var PRIX_TEXTE_PETIT = 500;   // moins de 20 % des mots modifiés (ou mise en fo
 var PRIX_TEXTE_GRAND = 1000;  // 20 % ou plus des mots modifiés
 var SEUIL_TEXTE_GRAND = 20;
 var PRIX_IMAGE = 1000;        // image modifiée ou remplacée, retouches incluses
-var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de l’auteur']];
+var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de l’auteur'],
+  ['image1Ord', 'Image publicitaire (ordinateur)'], ['image1Mob', 'Image publicitaire (mobile)']];
+// Section 1, mêmes tarifs que l'EDC : changer de présentation 5 $, image publicitaire créée par TBL 20 $.
+var PRIX_CHOIX_S1 = 500;
+var PRIX_IMAGE_TBL = 2000;
+function lignesS1(P, W) {
+  var l = [];
+  if (valL(P.presentation1, 'presentation1') !== valL(W.presentation1, 'presentation1')) { l.push({ nom: 'Présentation de la section 1', montant: PRIX_CHOIX_S1, cle: 'ctl-s1' }); }
+  if (W.demande1 && !P.demande1) { l.push({ nom: 'Image publicitaire créée par TBL', montant: PRIX_IMAGE_TBL, cle: 'demande1' }); }
+  return l;
+}
 function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
 // textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }] ; nbVedettes : places « En vedette » changées
-// (10 $ chacune, décision du 21 octobre 2026).
-function factureCorrections(textes, images, gratuit, nbVedettes) {
-  var lignes = [];
+// (10 $ chacune, décision du 21 octobre 2026) ; autres : lignes déjà chiffrées (section 1).
+function factureCorrections(textes, images, gratuit, nbVedettes, autres) {
+  var lignes = (autres || []).slice();
   textes.forEach(function (t) { var m = prixTexte(t.chg, t.taux); if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle }); } });
   images.forEach(function (i) { if (i.chg) { lignes.push({ nom: i.nom, montant: PRIX_IMAGE, cle: i.cle }); } });
   if (nbVedettes) { lignes.push({ nom: 'En vedette (' + nbVedettes + (nbVedettes > 1 ? ' places)' : ' place)'), montant: nbVedettes * PRIX_PLACE_VEDETTE, cle: 'vedettes' }); }
@@ -2315,7 +2457,8 @@ function factureCourante() {
     CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: champModifie(c.cle), taux: etat.t[c.cle] || 0 }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] }; }),
     etat.d.gratuit,
-    vedettesModifiables() ? placesChangees(etat.L.pub.vedettes, etat.L.work.vedettes) : 0);
+    vedettesModifiables() ? placesChangees(etat.L.pub.vedettes, etat.L.work.vedettes) : 0,
+    lignesS1(etat.L.pub, etat.L.work));
 }
 // Un texte compte comme modifié si son contenu a changé. L'extrait PDF fait partie de la composante Extrait
 // (décision de Marcel du 19 octobre 2026) : un nouveau PDF seul coûte 5 $, 10 $ si le texte change de 20 % ou plus.
@@ -2641,7 +2784,8 @@ async function enregistrer() {
     var champs = {};
     CHAMPS.forEach(function (c) { if (!estLecture(c.cle)) { champs[c.cle] = norm(etat.work[c.cle]); } });
     var W = etat.L.work, S = etat.L.saved, P = etat.L.pub;
-    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email), images: {} };
+    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email), images: {},
+      presentation1: valL(W.presentation1, 'presentation1'), demande1: !!W.demande1, indic1: valL(W.indic1, 'indic1') };
     // Seules les images changées depuis le dernier enregistrement partent au serveur ; revenir à l'image
     // publiée retire le tampon.
     CLES_IMAGES.forEach(function (k) { if (W[k] !== S[k]) { livre.images[k] = W[k] === P[k] ? { retablir: true } : { data: W[k] }; } });
@@ -2692,6 +2836,9 @@ function autresModifications() {
   if (C.email) { o.push('Courriel de contact'); }
   if (C.extraitPdf) { o.push('Extrait PDF'); }
   if (C.vedettes) { o.push('En vedette'); }
+  if (C.presentation1) { o.push('Section 1 : ' + (valL(W.presentation1, 'presentation1') === 'image' ? 'image publicitaire' : 'présentation du livre')); }
+  if (C.image1Ord || C.image1Mob) { o.push('Image publicitaire'); }
+  if (C.demande1 && W.demande1) { o.push('Image publicitaire demandée à TBL'); }
   if (etat.chgB.prix) { o.push('Prix (boutique) : ' + etat.B.work.prix + ' $'); }
   if (etat.chgB.description) { o.push('Description (boutique)'); }
   return o;
@@ -2915,7 +3062,8 @@ function donneesCourantes() {
   return {
     livre: d.livre, etat: d.etat, dateCopie: d.dateCopie, gratuit: d.gratuit, enPlace: true, nonEnregistre: etat.dirty,
     publie: etat.pub, copie: etat.work,
-    champsLivre: { publie: etat.L.pub, copie: etat.L.work }
+    champsLivre: { publie: etat.L.pub, copie: etat.L.work },
+    boutique: etat.boutique, prixNumerique: etat.B.work.prix
   };
 }
 function ouvrirVue(vue, appareil) {
@@ -3095,8 +3243,8 @@ function montrerRapport(d) {
   // Montants de la grille (même calcul que l'éditeur) ; renvoi après un refus : déjà payé
   var fac = d.etat === 'corriger' ? null : factureCorrections(
     CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i] || (c.cle === 'extrait' && pdfChg), taux: taux[i] }; }),
-    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: LPr[x[0]] !== LCr[x[0]] }; }),
-    d.gratuit, nbVed);
+    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: (LPr[x[0]] || '') !== (LCr[x[0]] || '') }; }),
+    d.gratuit, nbVed, lignesS1(LPr, LCr));
   var racine = $('vue-rapport');
   racine.textContent = '';
   var rap = document.createElement('div');
