@@ -126,13 +126,44 @@ button,input,select,textarea{font:inherit;color:inherit}
 #bandeau-refus{background:var(--redsoft);border:1px solid var(--accent);color:var(--txt);white-space:pre-wrap}
 #msg-global{background:var(--redsoft);border:1px solid var(--accent);color:var(--txt)}
 
+/* Fiche du livre dans la boutique (n'apparaît pas sur la page), comme l'EDC (Web\modifier-coffret.html) */
+.fiche{max-width:1000px;margin:14px auto 0;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:18px 20px}
+.fiche h2{font-size:1.1rem;margin:0 0 4px}
+.fiche .grille-fiche{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;margin-top:12px}
+.fiche .img-fiche{width:100%;display:block;border-radius:6px}
+.fiche .img-fiche-vide{aspect-ratio:2/3;width:100%}
+.fiche .note-img{font:12px var(--tbl-font-body);color:var(--muted);margin-top:6px}
+.champ-f{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font:600 12px var(--tbl-font-body);color:var(--muted)}
+.champ-f input{background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:15px var(--tbl-font-body);color:var(--txt);width:100%}
+.champ-f input:focus{outline:none;border-color:var(--edit)}
+.champ-f input:disabled,.champ-f input[readonly]{opacity:.7;cursor:not-allowed}
+.champ-f.err input{border-color:var(--accent)}
+.champ-f .msg{color:var(--rouge-texte);font-weight:600}
+.champ-f .info-pub{font-weight:400}
+.champ-f .info-pub .ancien{color:var(--red);text-decoration:line-through}
+.champ-f .info-pub .nouveau{color:var(--gold)}
+.champ-f.prix-f input{max-width:140px}
+.desc-riche{min-height:140px;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:15px/1.55 var(--tbl-font-body);color:var(--txt);overflow-wrap:anywhere}
+.desc-riche:focus{outline:none;border-color:var(--edit)}
+.desc-riche.chg{border-color:var(--gold)}
+.desc-riche p{margin:0 0 6px}
+.desc-riche ul,.desc-riche ol{margin:0 0 6px;padding-left:22px}
+.desc-riche h1,.desc-riche h2,.desc-riche h3,.desc-riche h4,.desc-riche h5,.desc-riche h6{margin:6px 0;line-height:1.25}
+.desc-riche blockquote{margin:6px 0;padding:4px 12px;border-left:3px solid var(--accent);color:var(--muted)}
+.desc-riche.lecture{opacity:.75}
+.desc-riche[contenteditable="true"]:empty::before{content:attr(data-vide);color:var(--muted);font-style:italic}
+@media (max-width:720px){.fiche .grille-fiche{grid-template-columns:1fr}.fiche .grille-fiche>div:first-child{max-width:200px}}
+
 /* ---------- Page du livre (replique de /livres/xxx) ---------- */
 #zone-page{padding:14px 0 60px}
 #page{width:min(1160px,100%);margin:0 auto;container-type:inline-size;container-name:page;background:#000;color:#fff}
-.pg{max-width:1000px;margin:0 auto;padding:0 14px}
+.pg{max-width:1000px;margin:0 auto;padding:22px 0 0}
+/* Chaque section dans une boîte grise de la largeur standard (1000 px), comme l'EDC (demande de Marcel du
+   26 octobre 2026) ; ses éléments intérieurs un ton plus foncé. */
+.sec{max-width:1000px;margin:0 auto 22px;background:var(--card);border:0;border-radius:var(--tbl-radius);padding:22px 20px}
+.sec .controle-image,.sec .hero-carte,.sec .carte-epub{background:var(--card2)}
 .oswald{font-family:'Oswald','Arial Narrow',Arial,sans-serif}
-.fond-hero{background:#000 center bottom/cover no-repeat}
-.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:start;padding:30px 0 34px}
+.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:start}
 .couv img{width:100%;max-width:330px;display:block;margin:0 auto}
 /* Boîtes de la page : fond gris des cartes des gabarits, sans contour (demande de Marcel du 19 octobre 2026) */
 .hero-carte{border:0;border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;display:flex;flex-direction:column;background:var(--card)}
@@ -142,7 +173,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn-page{display:block;width:max-content;max-width:100%;margin:22px auto 0}
 /* L'icône ePUB du site a un fond noir : « lighten » le fond dans le gris de la carte */
 .carte-epub img.ico{mix-blend-mode:lighten}
-.carte-epub{border:0;background:var(--card);border-radius:var(--tbl-radius);margin:26px auto 4px;padding:14px 20px 18px;display:flex;justify-content:center;gap:70px;text-align:center;font-size:12px;line-height:1.4;width:92%}
+.carte-epub{border:0;background:var(--card);border-radius:var(--tbl-radius);margin:0 auto;padding:14px 20px 18px;display:flex;justify-content:center;gap:70px;text-align:center;font-size:12px;line-height:1.4;width:100%}
 .col-epub{width:250px;display:flex;flex-direction:column;align-items:center}
 .col-epub h3{font:700 15px Georgia,'Times New Roman',serif;margin:0 0 6px}
 .col-epub img.ico{height:98px;width:auto;margin:2px 0 6px}
@@ -159,7 +190,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .carte-epub-seul .texte-epub ul{margin:4px 0 0;padding-left:18px;text-align:left}
 .carte-epub-seul .achat{width:212px}
 .titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto}
-.carte{border:0;background:var(--card);border-radius:var(--tbl-radius);padding:18px 18px;margin:0 auto 4px}
 .carte-auteur{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;padding:26px 30px}
 .portrait{width:210px;border:6px solid #C7C7C7;display:block;height:auto}
 .col-photo{width:210px}
@@ -225,7 +255,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   .v-apercu .duo-ord{display:none}
   .v-apercu .duo-mob{display:block}
 }
-.vedettes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:6px 0 30px}
+.vedettes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 0 8px}
 .vedettes img{width:100%;height:auto;display:block;border-radius:4px}
 .vedettes figcaption{font-size:12px;text-align:center;padding-top:6px;color:#ddd}
 .vedettes figure{margin:0}
@@ -240,7 +270,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   .col-photo{width:210px;max-width:100%}
   .col-note{min-height:0;width:100%}
   .vedettes{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .carte{padding:14px 12px}
+  .sec{padding:16px 12px}
 }
 
 /* Texte riche : meme rendu que le site (Ricos) */
@@ -441,6 +471,7 @@ body.v-rapport{background:#fff;color:#111}
     <div id="bandeau-appr" hidden></div>
     <div id="bandeau-refus" role="status" hidden></div>
     <div id="msg-global" role="alert" hidden></div>
+    <section class="fiche" id="fiche" aria-labelledby="titre-fiche"></section>
   </div>
   <main id="zone-page"><div class="wrap" id="hote-edition"></div></main>
 </div>
@@ -504,8 +535,10 @@ body.v-rapport{background:#fff;color:#111}
 
 <!-- Modele de la page du livre (clone pour l'edition et les apercus) -->
 <template id="tpl-page">
-  <div class="fond-hero" data-fond>
-    <div class="pg">
+  <!-- Chaque section dans une boîte grise de la largeur standard (1000 px), comme l'EDC (demande de Marcel du
+       26 octobre 2026) : plus d'image de fond derrière la section 1. -->
+  <div class="pg">
+    <section class="sec s-hero">
       <div class="grille-hero">
         <div class="couv">
           <div data-zone-img><img data-img="couverture3d" alt="Couverture du livre"></div>
@@ -520,9 +553,8 @@ body.v-rapport{background:#fff;color:#111}
           <button type="button" class="btn btn-page fige" data-action="commande" tabindex="-1">Commande numérique</button>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="pg">
+    </section>
+    <section class="sec s-achat">
       <!-- Livres.afficheNumPapier vrai : numérique et papier ; faux : bannière « numérique seulement » (comme la page publique) -->
       <div class="carte-epub fige" data-epub="numpapier">
         <div class="col-epub"><h3>NUMÉRIQUE ePUB</h3><img class="ico" alt="" src="https://static.wixstatic.com/media/26b968_0f5c0d25bd8a48d1be561bd40673f91c~mv2.png">
@@ -537,8 +569,9 @@ body.v-rapport{background:#fff;color:#111}
         <div class="texte-epub"><div>Disponible dès maintenant</div><ul><li>Compatible avec tous les appareils numériques et liseuse (Kobo, Kindle, Apple Books, etc.)</li></ul></div>
         <img class="achat" data-action="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png">
       </div>
+    </section>
     <img class="titre-img fige" alt="Synopsis" src="https://static.wixstatic.com/media/26b968_9256b8eb5fa24de8b9eb4456a760783e~mv2.png">
-    <div class="carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
+    <div class="sec carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
     <section data-section="auteur">
     <div class="controle-auteur">
       <label class="interrupteur"><input type="checkbox" role="switch" data-role="afficheauteur"><span class="piste" aria-hidden="true"></span><span data-role="lib-auteur">Afficher la section Auteur sur la page</span></label>
@@ -546,7 +579,7 @@ body.v-rapport{background:#fff;color:#111}
     </div>
     <div class="section-masquee">La section Auteur est masquée sur la page publiée. Votre texte est conservé : réactivez l’interrupteur pour le modifier.</div>
     <img class="titre-img fige" alt="Auteur" src="https://static.wixstatic.com/media/26b968_114e6bb5852148aa8f30705393fa9ca8~mv2.png">
-    <div class="carte carte-auteur">
+    <div class="sec carte carte-auteur">
       <div class="col-photo"><div><img class="portrait" data-affiche="photoAuteur" alt="Photo de l'auteur"></div><div data-zone-controle="photoAuteur"></div></div>
       <div class="col-note champ" data-champ="bioAuteur"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
         <div class="ligne-contact">
@@ -559,22 +592,24 @@ body.v-rapport{background:#fff;color:#111}
     </div>
     </section>
     <img class="titre-img fige" alt="Extrait du livre" src="https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png">
-    <div class="carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
+    <div class="sec carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
       <div data-zone-controle="extraitPdf"></div>
       <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
     <!-- Section « En vedette » (tâches 138 et 143) : livres choisis par l'auteur parmi ses autres livres publiés et
          actifs ; les places libres montrent les vedettes de la semaine, comme sur le site. -->
     <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
-    <div class="vedettes" data-vedettes></div>
-    <div data-zone-controle="vedettes"></div>
+    <section class="sec s-ved">
+      <div class="vedettes" data-vedettes></div>
+      <div data-zone-controle="vedettes"></div>
+    </section>
   </div>
 </template>
 <script>
 // ===== Version publiée =====
-// b1783c1 · 2026-10-25 11:34 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1cc311d · 2026-10-26 07:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'b1783c1 · 2026-10-25 11:34';
+var VERSION_TBL = '1cc311d · 2026-10-26 07:12';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1267,6 +1302,7 @@ var LIVRE_ID = PARAMS.get('livre') || '';
 var etat = {
   d: null,            // réponse du serveur
   L: { pub: {}, saved: {}, work: {} }, chgL: {}, probL: {},   // champs du livre : image, section Auteur, courriel
+  boutique: null, B: { pub: {}, saved: {}, work: {} }, chgB: {}, probB: '',   // fiche du livre dans la boutique
   pub: {}, saved: {}, work: {},   // blocs par champ : publié, dernière copie enregistrée, en cours d'édition
   t: {}, chg: {}, fmt: {}, prob: {}, global: 0, dirty: false,
   copie: false, verrou: false, appr: false, revue: false, refus: null, actif: null, diff: false, occupe: false, lecture: []
@@ -1420,7 +1456,6 @@ function fabriquerPage(hote, d) {
   page.id = 'page';
   page.appendChild(document.getElementById('tpl-page').content.cloneNode(true));
   var L = d.livre;
-  page.querySelector('[data-fond]').style.backgroundImage = 'linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.1)),url("' + L.images.fond + '")';
   page.querySelector('[data-titre]').textContent = L.titre;
   page.querySelector('[data-prix]').textContent = L.prix || '';
   var numPapier = L.afficheNumPapier === true; // même règle que la page publique (Page de livres, Item)
@@ -1455,6 +1490,11 @@ function montrerEdition(d) {
   var LS = d.champsLivre.copie || d.champsLivre.publie;
   etat.L = { pub: clone(d.champsLivre.publie), saved: clone(LS), work: clone(LS) };
   etat.probL = {};
+  // Fiche du livre dans la boutique : version du produit (ou tampons d'un livre jamais publié) et copie en cours
+  etat.boutique = d.boutique || null;
+  var BS = versFiche(d.boutique && (d.boutique.copie || d.boutique.publie));
+  etat.B = { pub: versFiche(d.boutique && d.boutique.publie), saved: clone(BS), work: clone(BS) };
+  etat.chgB = {}; etat.probB = '';
   // etat : 'aucune' (livre publié sans copie), 'nouveau' (élément Nouveau modifié directement, sans copie),
   // 'modifier', 'attente' (En attente de validation) ou 'corriger' (copie refusée, déjà payée).
   etat.copie = d.etat !== 'aucune';
@@ -1478,6 +1518,7 @@ function montrerEdition(d) {
   etat.barres = {};
   CHAMPS.forEach(function (c) { monterChamp(c.cle); });
   monterLivre();
+  rendreFiche();
   $('t-diff').setAttribute('aria-pressed', 'false');
   $('legende').hidden = true;
   montrerVue('vue-edition');
@@ -1541,7 +1582,7 @@ function rendreChamp(cle) {
   rt.appendChild(blocsVersDom(etat.work[cle]));
 }
 
-function rendreTout() { CHAMPS.forEach(function (c) { rendreChamp(c.cle); }); rendreLivre(); majLivre(); majOutils(); }
+function rendreTout() { CHAMPS.forEach(function (c) { rendreChamp(c.cle); }); rendreLivre(); majLivre(); rendreFiche(); majOutils(); }
 
 // Texte d'une zone de texte brut : les retours à la ligne viennent du texte (touche Entrée), des <br> ou des blocs <p> et <div>
 // (un collage peut en créer). Un bloc compte pour UNE seule fin de ligne, contrairement à innerText qui en compte deux.
@@ -1602,6 +1643,10 @@ function recalculer() {
   CLES_L.forEach(function (k) { etat.chgL[k] = valL(W[k], k) !== valL(P[k], k); });
   etat.probL.email = validerCourriel(W.email);
   var dirtyL = CLES_L.some(function (k) { return valL(W[k], k) !== valL(S[k], k); });
+  var BW = etat.B.work;
+  CLES_B.forEach(function (k) { etat.chgB[k] = !!etat.boutique && valB(BW[k], k) !== valB(etat.B.pub[k], k); });
+  etat.probB = etat.boutique && !prixCentsFiche(BW.prix) ? 'Entrez le prix du livre numérique, par exemple 8,99.' : '';
+  if (etat.boutique && CLES_B.some(function (k) { return valB(BW[k], k) !== valB(etat.B.saved[k], k); })) { dirtyL = true; }
   etat.dirty = dirtyL || CHAMPS.some(function (c) { return signature(etat.work[c.cle]) !== signature(etat.saved[c.cle]); });
   majUI();
 }
@@ -1609,10 +1654,12 @@ function recalculer() {
 function premierProbleme() {
   for (var i = 0; i < CHAMPS.length; i++) { if (etat.prob[CHAMPS[i].cle]) { return { cle: CHAMPS[i].cle, msg: etat.prob[CHAMPS[i].cle] }; } }
   if (etat.probL.email) { return { cle: 'email', msg: etat.probL.email }; }
+  if (etat.probB) { return { cle: 'fiche', msg: etat.probB }; }
   return null;
 }
 function auMoinsUnChangement() {
-  return CHAMPS.some(function (c) { return etat.chg[c.cle]; }) || CLES_L.some(function (k) { return etat.chgL[k]; });
+  return CHAMPS.some(function (c) { return etat.chg[c.cle]; }) || CLES_L.some(function (k) { return etat.chgL[k]; })
+    || CLES_B.some(function (k) { return etat.chgB[k]; });
 }
 
 // ---------- Champs du livre : image, section Auteur, courriel de contact ----------
@@ -2042,6 +2089,156 @@ async function retablirImage(cle) {
   rendreLivre(); recalculer();
   toast(etat.nouveau ? 'Dernière image enregistrée remise.' : 'Image publiée remise. Enregistrez pour conserver ce changement.');
 }
+// ---------- Fiche du livre dans la boutique (première boîte, comme l'EDC) ----------
+// Prix et description du produit de la boutique (d.boutique, lu par le serveur). Ils n'apparaissent pas sur la page :
+// le produit est mis à jour à la publication. Le nom du produit est le titre du livre ; son image est l'image du
+// livre de la section 1. Sans produit relié (d.boutique null), la boîte l'explique seulement.
+function versFiche(x) {
+  return { prix: x && x.prix > 0 ? x.prix.toFixed(2).replace('.', ',') : '', description: (x && x.description) || '' };
+}
+function prixCentsFiche(v) {
+  var n = Number(String(v || '').replace(',', '.').replace(/\s|\$/g, ''));
+  return Number.isFinite(n) && n > 0 && n < 1000 ? Math.round(n * 100) : 0;
+}
+function valB(v, k) { return k === 'prix' ? String(prixCentsFiche(v)) : nettoyerDescription(v); }
+var CLES_B = ['prix', 'description'];
+function ficheModifiable() { return !!etat.boutique && !etat.verrou && !etat.diff; }
+var BALISES_DESCRIPTION = { P: 'p', BR: 'br', STRONG: 'strong', B: 'strong', EM: 'em', I: 'em', U: 'u', UL: 'ul', OL: 'ol', LI: 'li', DIV: 'p',
+  H1: 'h1', H2: 'h2', H3: 'h3', H4: 'h4', H5: 'h5', H6: 'h6', BLOCKQUOTE: 'blockquote' };
+// Même nettoyage que le serveur (catalogue.js) : seules quelques balises sans attribut sont gardées.
+function nettoyerDescription(html) {
+  var source = document.createElement('div'); source.innerHTML = html || '';
+  function copier(noeud, vers) {
+    Array.prototype.forEach.call(noeud.childNodes, function (n) {
+      if (n.nodeType === 3) { vers.appendChild(document.createTextNode(n.nodeValue)); return; }
+      if (n.nodeType !== 1) { return; }
+      var tag = BALISES_DESCRIPTION[n.tagName];
+      if (!tag) { copier(n, vers); return; }
+      var e = document.createElement(tag); vers.appendChild(e);
+      if (tag !== 'br') { copier(n, e); }
+    });
+  }
+  var cible = document.createElement('div'); copier(source, cible);
+  return cible.textContent.split(NBSP).join(' ').trim() ? cible.innerHTML : '';
+}
+function blocCourantDescription(zone) {
+  var sel = window.getSelection(), n = sel.anchorNode, res = 'p', trouve = false;
+  if (!n || !zone.contains(n)) { return ''; }
+  while (n && n !== zone) {
+    if (n.nodeType === 1 && n.tagName === 'BLOCKQUOTE') { return 'blockquote'; }
+    if (n.nodeType === 1 && !trouve && /^(P|DIV|H[1-6])$/.test(n.tagName)) { res = /^H/.test(n.tagName) ? n.tagName.toLowerCase() : 'p'; trouve = true; }
+    n = n.parentNode;
+  }
+  return res;
+}
+function rendreFiche() {
+  var f = $('fiche'), B = etat.boutique, actif = ficheModifiable();
+  f.textContent = '';
+  var h = document.createElement('h2'); h.id = 'titre-fiche'; h.textContent = 'Fiche du livre dans la boutique'; f.appendChild(h);
+  var sub = document.createElement('p'); sub.className = 'sub';
+  sub.textContent = B ? 'Elle n’apparaît pas sur la page du livre : elle sert au produit de la boutique, mis à jour automatiquement à la publication.'
+    : 'Ce livre n’est pas encore relié à un produit de la boutique. L’équipe des Éditions TBL s’en occupe.';
+  f.appendChild(sub);
+  if (!B) { return; }
+  var g = document.createElement('div'); g.className = 'grille-fiche';
+  var colImg = document.createElement('div');
+  var img = document.createElement('img'); img.className = 'img-fiche'; img.alt = 'Image du livre dans la boutique'; img.setAttribute('data-role', 'image-fiche');
+  var vide = document.createElement('div'); vide.className = 'image-vide img-fiche-vide'; vide.setAttribute('data-role', 'image-fiche-vide');
+  vide.appendChild(document.createElement('strong')).textContent = 'Image du livre';
+  colImg.appendChild(img); colImg.appendChild(vide);
+  var ni = document.createElement('div'); ni.className = 'note-img'; ni.textContent = 'L’image du livre de la section 1 sert aussi au produit de la boutique.';
+  colImg.appendChild(ni);
+  g.appendChild(colImg);
+  var col = document.createElement('div');
+  // Titre : le nom du produit, en lecture seule (comme le titre de la page)
+  var lt = document.createElement('label'); lt.className = 'champ-f';
+  lt.appendChild(document.createTextNode('Titre du livre'));
+  var it = document.createElement('input'); it.type = 'text'; it.readOnly = true; it.value = B.nom || etat.d.livre.titre; lt.appendChild(it);
+  col.appendChild(lt);
+  // Prix numérique
+  var lp = document.createElement('label'); lp.className = 'champ-f prix-f'; lp.setAttribute('data-fiche', 'prix');
+  lp.appendChild(document.createTextNode('Prix du livre numérique ($)'));
+  var ip = document.createElement('input'); ip.type = 'text'; ip.inputMode = 'decimal'; ip.maxLength = 8; ip.placeholder = 'Ex. : 8,99'; ip.value = etat.B.work.prix;
+  ip.readOnly = !B.prixModifiable; ip.disabled = !actif;
+  ip.addEventListener('input', function () { etat.B.work.prix = ip.value; recalculer(); });
+  lp.appendChild(ip);
+  var mp = document.createElement('span'); mp.className = 'msg'; mp.setAttribute('data-role', 'msg'); mp.hidden = true; lp.appendChild(mp);
+  if (!B.prixModifiable) { lp.appendChild(document.createTextNode('Ce produit a plusieurs variantes : son prix se change dans la boutique.')); }
+  var ipp = document.createElement('span'); ipp.className = 'info-pub'; ipp.setAttribute('data-role', 'info-pub'); ipp.hidden = true; lp.appendChild(ipp);
+  col.appendChild(lp);
+  col.appendChild(editeurDescription(actif));
+  g.appendChild(col);
+  f.appendChild(g);
+  majFiche();
+}
+// Description de la boutique : éditeur enrichi avec la même barre que les textes de la page (Templates : commandes
+// standard des éditeurs).
+function editeurDescription(actif) {
+  var bloc = document.createElement('div'); bloc.className = 'champ-f'; bloc.setAttribute('data-fiche', 'description');
+  bloc.appendChild(document.createTextNode('Description (boutique)'));
+  var zone = document.createElement('div'); zone.className = 'desc-riche'; zone.setAttribute('role', 'textbox'); zone.setAttribute('aria-multiline', 'true'); zone.setAttribute('aria-label', 'Description du livre dans la boutique');
+  zone.innerHTML = nettoyerDescription(etat.B.work.description);
+  if (actif) {
+    var barre = document.getElementById('tpl-outils').content.firstElementChild.cloneNode(true);
+    barre.setAttribute('aria-label', 'Mise en forme de la description');
+    var lire = function () { etat.B.work.description = nettoyerDescription(zone.innerHTML); recalculer(); };
+    var etatBarre = function () {
+      var dedans = document.activeElement === zone;
+      ['bold', 'italic', 'underline'].forEach(function (c) {
+        var on = false; if (dedans) { try { on = document.queryCommandState(c); } catch (e) { /* ignore */ } }
+        barre.querySelector('[data-cmd="' + c + '"]').setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      var courant = dedans ? blocCourantDescription(zone) : '';
+      Array.prototype.forEach.call(barre.querySelectorAll('[data-bloc]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-bloc') === courant ? 'true' : 'false'); });
+    };
+    Array.prototype.forEach.call(barre.querySelectorAll('button'), function (b) {
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); }); // garde la sélection dans le texte
+      b.addEventListener('click', function () {
+        zone.focus();
+        if (b.hasAttribute('data-cmd')) { document.execCommand(b.getAttribute('data-cmd')); } else {
+          var tag = b.getAttribute('data-bloc');
+          document.execCommand('formatBlock', false, '<' + tag + '>');
+          var garde = 0;
+          while (tag !== 'blockquote' && blocCourantDescription(zone) === 'blockquote' && garde++ < 4) { document.execCommand('outdent'); }
+        }
+        lire(); etatBarre();
+      });
+    });
+    bloc.appendChild(barre);
+    zone.contentEditable = 'true';
+    zone.setAttribute('data-vide', 'Ce que le lecteur doit savoir du livre, pour la fiche de la boutique');
+    zone.addEventListener('focus', function () { try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) { /* ignore */ } etatBarre(); });
+    zone.addEventListener('keyup', etatBarre); zone.addEventListener('mouseup', etatBarre); zone.addEventListener('blur', etatBarre);
+    zone.addEventListener('input', lire);
+    // Collage : texte seulement (pas de styles d'un autre logiciel)
+    zone.addEventListener('paste', function (e) { e.preventDefault(); insererTexte((e.clipboardData || window.clipboardData).getData('text/plain')); lire(); });
+    zone.addEventListener('drop', function (e) { e.preventDefault(); });
+  } else {
+    zone.classList.add('lecture');
+  }
+  bloc.appendChild(zone);
+  var ipd = document.createElement('span'); ipd.className = 'info-pub'; ipd.setAttribute('data-role', 'info-pub'); ipd.hidden = true; bloc.appendChild(ipd);
+  return bloc;
+}
+// États de la fiche : image du livre (suit la section 1), erreur de prix, ce qui a changé par rapport au produit.
+function majFiche() {
+  var f = $('fiche');
+  if (!etat.boutique || !f.querySelector('.grille-fiche')) { return; }
+  var src = imageSure(etat.L.work.image), img = f.querySelector('[data-role="image-fiche"]');
+  img.hidden = !src; if (src && img.src !== src) { img.src = src; }
+  f.querySelector('[data-role="image-fiche-vide"]').hidden = !!src;
+  var lp = f.querySelector('[data-fiche="prix"]');
+  lp.classList.toggle('err', !!etat.probB);
+  lp.querySelector('[data-role="msg"]').hidden = !etat.probB;
+  lp.querySelector('[data-role="msg"]').textContent = etat.probB || '';
+  var P = etat.B.pub, W = etat.B.work;
+  remplirInfo(lp.querySelector('[data-role="info-pub"]'), !etat.nouveau && etat.chgB.prix, (P.prix || '(aucun)') + ' $', (W.prix || '(aucun)') + ' $');
+  var ld = f.querySelector('[data-fiche="description"]');
+  ld.querySelector('.desc-riche').classList.toggle('chg', !etat.nouveau && etat.chgB.description);
+  var ipd = ld.querySelector('[data-role="info-pub"]');
+  ipd.textContent = !etat.nouveau && etat.chgB.description ? 'Description modifiée : elle remplacera celle du produit à la publication.' : '';
+  ipd.hidden = !ipd.textContent;
+}
 function raisonRefusApprobation() {
   if (etat.verrou) { return 'Votre demande est déjà envoyée à TBL.'; }
   if (premierProbleme()) { return 'Corrigez le problème signalé dans le texte avant d’approuver.'; }
@@ -2220,6 +2417,7 @@ function majUI() {
       : (deborde ? 'Le texte est plus long que la zone de l’en-tête, qui a une hauteur fixe : une barre de défilement apparaîtra sur la page. Un texte plus court se lit mieux.' : '');
   });
   majLivre();
+  majFiche();
   // Un administrateur (Auteurs.admin) peut modifier n'importe quel livre, en tout temps :
   // - « revue » : il examine une demande En attente de validation envoyée par un auteur (peut approuver ou refuser).
   // - « adminEdition » : il modifie directement un livre sans demande en cours (aucune demande à refuser,
@@ -2434,7 +2632,7 @@ async function enregistrer() {
   if (etat.occupe || etat.verrou) { return false; }
   recalculer();
   var p = premierProbleme();
-  if (p) { toast(p.msg, 'mal'); (p.cle === 'email' ? zoneLivre('email') : etat.champs[p.cle]).scrollIntoView({ behavior: 'smooth', block: 'center' }); return false; }
+  if (p) { toast(p.msg, 'mal'); (p.cle === 'email' ? zoneLivre('email') : (p.cle === 'fiche' ? $('fiche') : etat.champs[p.cle])).scrollIntoView({ behavior: 'smooth', block: 'center' }); return false; }
   if (!etat.dirty) { return true; }
   etat.occupe = true; majUI();
   try {
@@ -2451,6 +2649,14 @@ async function enregistrer() {
     }
     // En vedette : les 4 places partent quand elles ont changé depuis le dernier enregistrement
     if (valL(W.vedettes, 'vedettes') !== valL(S.vedettes, 'vedettes')) { livre.vedettes = placesVed(W.vedettes); }
+    // Fiche de la boutique : prix et description, quand ils ont changé depuis le dernier enregistrement
+    var BW = etat.B.work, BS = etat.B.saved;
+    if (etat.boutique) {
+      var bq = {};
+      if (valB(BW.prix, 'prix') !== valB(BS.prix, 'prix')) { bq.prix = BW.prix; }
+      if (valB(BW.description, 'description') !== valB(BS.description, 'description')) { bq.description = nettoyerDescription(BW.description); }
+      if (Object.keys(bq).length) { livre.boutique = bq; }
+    }
     var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
     if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
     CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
@@ -2460,6 +2666,7 @@ async function enregistrer() {
     if (livre.vedettes) { etat.L.work.vedettes = placesVed(livre.vedettes); }
     etat.L.work.email = livre.email;
     etat.L.saved = clone(etat.L.work);
+    etat.B.saved = clone(etat.B.work);
     etat.copie = true;
     if (etat.d.etat === 'aucune') { etat.d.etat = 'modifier'; } // le premier enregistrement crée la copie
     etat.d.dateCopie = r.dateCopie;
@@ -2483,6 +2690,8 @@ function autresModifications() {
   if (C.email) { o.push('Courriel de contact'); }
   if (C.extraitPdf) { o.push('Extrait PDF'); }
   if (C.vedettes) { o.push('En vedette'); }
+  if (etat.chgB.prix) { o.push('Prix (boutique) : ' + etat.B.work.prix + ' $'); }
+  if (etat.chgB.description) { o.push('Description (boutique)'); }
   return o;
 }
 // Case à cocher « Envoyer le courriel à l'auteur » des fenêtres de publication (cochée au départ).
@@ -2535,13 +2744,16 @@ async function valider() {
   }
   // imageCatalogue : null (pas de nouvelle image), { ok: true } ou { ok: false } (image de la boutique à refaire)
   var boutique = !res.imageCatalogue ? '' : (res.imageCatalogue.ok ? ' Image du produit mise à jour dans la boutique.' : ' Attention : l’image du produit dans la boutique n’a pas été mise à jour.');
+  // ficheBoutique : null (ni prix ni description changés), { ok: true } ou { ok: false, raison }
+  var fb = res.ficheBoutique;
+  if (fb) { boutique += fb.ok ? ' Prix et description du produit mis à jour dans la boutique.' : ' Attention : ' + (fb.raison || 'la fiche du produit n’a pas été mise à jour.'); }
   // extrait : null (pas de nouveau PDF), sinon { copie, formulaire: { ok, ajoute } | { ok: false }, raison }
   var ex = res.extrait, extraitOk = !ex || (ex.copie && !ex.raison && ex.formulaire && ex.formulaire.ok);
   var texteExtrait = !ex ? '' : (extraitOk
     ? ' Extrait PDF copié dans le dossier Extrait' + (ex.formulaire.ajoute ? ' et livre ajouté au formulaire.' : ' (livre déjà dans le formulaire).')
     : ' Attention : ' + (ex.raison || '') + (ex.formulaire && !ex.formulaire.ok ? ' Le livre n’a pas pu être ajouté au formulaire Extrait.' : ''));
   toast('Page publiée. ' + (res.sansCourriel ? 'Aucun courriel envoyé à l’auteur.' : (res.courrielEnvoye ? 'Courriel de confirmation envoyé à l’auteur.' : 'Le courriel de confirmation n’a pas pu être envoyé.')) + boutique + texteExtrait,
-    (res.imageCatalogue && !res.imageCatalogue.ok) || !extraitOk ? 'mal' : 'ok');
+    (res.imageCatalogue && !res.imageCatalogue.ok) || (fb && !fb.ok) || !extraitOk ? 'mal' : 'ok');
   await demarrer();
 }
 // Refus : l'administrateur écrit un commentaire (obligatoire), l'auteur le reçoit par courriel et sa demande redevient Modifié
