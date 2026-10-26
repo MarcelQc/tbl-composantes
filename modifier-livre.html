@@ -669,10 +669,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// c1e1187 · 2026-10-26 07:53 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 90c0f2b · 2026-10-26 08:08 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'c1e1187 · 2026-10-26 07:53';
+var VERSION_TBL = '90c0f2b · 2026-10-26 08:08';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1361,6 +1361,12 @@ var PARAMS = new URLSearchParams(location.search);
 var VUE = ['apercu', 'rapport'].indexOf(PARAMS.get('vue')) >= 0 ? PARAMS.get('vue') : 'edition';
 var APPAREIL = PARAMS.get('appareil') === 'mobile' ? 'mobile' : 'ordinateur';
 var LIVRE_ID = PARAMS.get('livre') || '';
+// Ouverte dans l'éditeur Wix (mode design ou aperçu) : si la page ne répond pas vite (ou qu'aucun ?livre= n'a
+// été fourni, comme en mode design), on passe en démonstration — comme l'EDC (demande de Marcel du 26 octobre 2026).
+function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
+var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.test(originesParent());
+var SUR_LE_SITE = /editionstbl\.ca/i.test(originesParent());
+var DELAI_EDITEUR_MS = 3000;
 
 var etat = {
   d: null,            // réponse du serveur
@@ -1373,13 +1379,17 @@ var etat = {
 
 // ---------- Communication (postMessage avec la page Wix, ou faux serveur en local) ----------
 var attentes = {}, seqAppel = 0;
-function appeler(action, params) {
+function appeler(action, params, delai) {
+  // Démonstration dans l'éditeur Wix : rien n'est jamais réellement envoyé au serveur.
+  if (etat.d && etat.d.demo && action !== 'obtenir') {
+    return Promise.resolve({ ok: false, statut: 'erreur', message: 'Aperçu de démonstration dans l’éditeur Wix : rien n’est enregistré.' });
+  }
   if (EN_WIX) {
     return new Promise(function (resolve, reject) {
       var id = ++seqAppel;
       attentes[id] = { resolve: resolve, reject: reject };
       window.parent.postMessage({ type: 'modifierLivre', action: action, params: params, id: id }, '*');
-      setTimeout(function () { if (attentes[id]) { delete attentes[id]; reject(new Error('delai')); } }, 40000);
+      setTimeout(function () { if (attentes[id]) { delete attentes[id]; reject(new Error('delai')); } }, delai || 40000);
     });
   }
 
@@ -3327,16 +3337,20 @@ function montrerRapport(d) {
 // ===== Démarrage =====
 async function demarrer() {
   montrerVue('chargement');
-  // Sans livre dans l'adresse : dans Wix, le code de la page recharge aussitôt la composante avec
-  // ?livre=… ; on attend un peu avant d'afficher le message, pour ne pas le faire clignoter.
+  // Sans livre dans l'adresse : dans l'éditeur Wix en mode design, la composante n'a pas encore reçu le
+  // ?livre=… que la page ajoute normalement au chargement réel ; on montre alors la démonstration (Les Ombres
+  // du temps) pour que la boîte HTML ait sa vraie hauteur pendant qu'on la positionne, comme l'EDC.
   if (!LIVRE_ID) {
+    if (DANS_EDITEUR && !SUR_LE_SITE) { montrerEdition(donneesDemo()); return; }
+    // Sinon, dans Wix, le code de la page recharge aussitôt la composante avec ?livre=… ; on attend un peu
+    // avant d'afficher le message, pour ne pas le faire clignoter.
     setTimeout(function () {
       montrerEtat(ICO_CADENAS, 'Aucun livre choisi', 'Ouvrez cet éditeur depuis l’onglet Livres de votre Espace Auteurs, avec le bouton « Modifier la page » de votre livre.', 'Retour à l’Espace Auteurs', fermerPage);
     }, 2500);
     return;
   }
   try {
-    var d = await appeler('obtenir', { livreId: LIVRE_ID });
+    var d = await appeler('obtenir', { livreId: LIVRE_ID }, DANS_EDITEUR ? DELAI_EDITEUR_MS : undefined);
     if (traiterStatut(d)) { return; }
     // Lien périmé (après une validation, l'ancienne ligne est archivée) : on suit la ligne Publier actuelle
     if (d.livre && d.livre.id && d.livre.id !== LIVRE_ID) {
@@ -3347,8 +3361,63 @@ async function demarrer() {
     else if (VUE === 'rapport') { montrerRapport(d); }
     else { montrerEdition(d); }
   } catch (e) {
+    // Éditeur Wix, aperçu de design : le serveur ne répond pas (code de la page pas en service) — démonstration.
+    if (DANS_EDITEUR && !SUR_LE_SITE && e && e.message === 'delai') { montrerEdition(donneesDemo()); return; }
     erreurChargement(e);
   }
+}
+
+/* ---------- Démonstration dans l'éditeur Wix ---------- */
+// En mode design, Wix affiche la composante sans faire tourner le code de la page : aucune donnée n'arrive.
+// On montre alors les vraies données du livre « lodt » (Les Ombres du temps), comme on l'a fait pour l'EDC,
+// pour que la boîte HTML ait sa vraie hauteur pendant qu'on la positionne, avec un contenu réaliste à l'œil.
+function blocPara(texte) { return { type: 'paragraphe', runs: texte ? [{ texte: texte }] : [] }; }
+function donneesDemo() {
+  var L = {
+    image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
+    photoAuteur: 'https://static.wixstatic.com/media/26b968_53a195ac1d504d2d814a7acc27120fd0~mv2.png',
+    afficheauteur: true, email: 'marcelturgeon.qc@gmail.com', extraitPdf: '',
+    vedettes: [], presentation1: '', image1Ord: '', image1Mob: '', demande1: '', indic1: ''
+  };
+  var livresProposes = [];
+  var vedettesSemaine = [
+    { id: '796f045a-ce6b-4c59-afe7-38c404356751', titre: 'Les grandes énigmes du monde',
+      miniature: 'https://static.wixstatic.com/media/26b968_cfc6b50fee2442efa19157e1989e0a96~mv2.jpg' },
+    { id: '6e4b6c98-b691-4115-bcf9-84debc3048bd', titre: 'Guide de survie aux Techniques policières (Numérique)',
+      miniature: 'https://static.wixstatic.com/media/26b968_5b6f2ec792e041a087828ff183afd5e4~mv2.jpg' }
+  ];
+  var publie = {
+    desc_plan: [blocPara('Livre numérique: Les Ombres du temps est un recueil de contes sans rimes, portés par le rythme naturel des phrases et la force des images. À travers l’enfance, l’absence, l’attente et la tendresse, il offre au lecteur l’espace de reconnaître ses propres émotions, dans une écriture simple, sensible et libre.')],
+    synopsis: [
+      blocPara('Les Ombres du temps est née du désir de mettre des mots sur ce qui demeure souvent caché en nous.'), blocPara(''),
+      blocPara('Certaines pages reviennent vers l’enfance et les souvenirs. D’autres s’approchent de l’absence, de l’attente, de la tendresse, de la peur ou de ces émotions que l’on porte longtemps sans savoir les nommer. Chaque conte cherche à éclairer une part de notre monde intérieur, même la plus discrète.'), blocPara(''),
+      blocPara('Dans ces pages, les rimes ne sont pas à l’honneur. J’ai préféré le rythme naturel des phrases, la force des images et les silences entre les mots, une écriture proche du conte, dans l’esprit de Félix Leclerc pour sa simplicité et son humanité, et de Jacques Prévert pour sa liberté et sa poésie du quotidien.'), blocPara(''),
+      blocPara('Ces textes ne cherchent pas à donner des réponses. Ils racontent, observent et laissent au lecteur l’espace nécessaire pour reconnaître quelque chose de lui-même.'), blocPara(''),
+      blocPara('Car nos ombres sont en même temps faites de ce que nous avons perdu. Elles portent aussi nos espoirs, nos blessures, nos désirs, nos transformations et tout ce que nous devenons encore.'), blocPara(''),
+      blocPara('Peut-être qu’au fil de ces pages, un souvenir reviendra, une émotion trouvera enfin son nom ou une lumière apparaîtra là où elle semblait absente.'), blocPara(''),
+      blocPara('Alors, ces ombres auront fait leur chemin.')
+    ],
+    bioAuteur: [
+      { type: 'titre', niveau: 4, runs: [{ texte: 'Note de l’auteur' }] },
+      blocPara('J’écris pour explorer ce qui se cache derrière les apparences : les silences, les émotions, les souvenirs et ces vérités que l’on découvre parfois trop tard. Avec Les Ombres du temps, je vous invite à entrer dans un univers où chaque histoire laisse une trace et où, derrière chaque ombre, quelque chose attend d’être révélé.'), blocPara(''),
+      blocPara('Je vous conte pleins de mes souvenirs')
+    ],
+    extrait: [
+      blocPara('Extrait Conte 1 : Quand la maison dormait encore'), blocPara(''),
+      blocPara('Le matin entrait doucement dans la maison, sans brusquer le silence.'), blocPara(''),
+      blocPara('Chaque pièce gardait encore un peu de la nuit, comme si les souvenirs avaient besoin de quelques instants de plus pour reprendre leur place.'), blocPara(''),
+      blocPara('Je marchais au milieu d’eux avec l’impression de retrouver une part de moi restée éveillée dans l’ombre.')
+    ]
+  };
+  return {
+    statut: 'ok', demo: true, admin: false, etat: 'aucune', premiere: false, refus: null, lectureSeule: [],
+    dateCopie: null, prixNumerique: '7,99',
+    livre: { id: 'e9235035-df55-4c28-bf9f-d8c14e7b9429', titre: 'Les Ombres du temps', prix: '7,99$ (prix de lancement)',
+      cle: 'lodt', afficheNumPapier: true, livresProposes: livresProposes, vedettesSemaine: vedettesSemaine },
+    champsLivre: { publie: L, copie: null },
+    boutique: { publie: { prix: 7.99, description: '<p>Un recueil de contes sans rimes, pour reconnaître ses propres émotions.</p>' }, copie: null },
+    publie: publie, copie: null
+  };
 }
 
 brancherEdition();
