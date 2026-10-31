@@ -250,6 +250,7 @@ function originesParent() { try { return Array.prototype.slice.call(location.anc
 var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.test(originesParent());
 var SUR_LE_SITE = /editionstbl\.ca/i.test(originesParent());
 var DELAI_EDITEUR_MS = 3000;
+console.log('[espace-lecteur] Parent : ' + (originesParent().trim() || '(inconnu)') + ' · éditeur : ' + DANS_EDITEUR + ' · site publié : ' + SUR_LE_SITE);
 
 var etat = { donnees: null, minuterie: null, relance: null, demoEditeur: false };
 
@@ -321,8 +322,9 @@ function demarrer() {
   arreterAttente();
   etat.minuterie = setTimeout(function () {
     arreterAttente();
-    // Éditeur Wix (aucune réponse, pas sur le site publié) : Espace Lecteur fictif pour voir le design.
-    if (EN_WIX && !SUR_LE_SITE) { afficherDemoEditeur(); } else { montrer('erreur'); }
+    // Éditeur Wix, ou parent inconnu qui n'est pas le site publié : Espace Lecteur fictif pour voir le design.
+    // L'éditeur a priorité, même si l'adresse du site apparaît aussi dans la chaîne des parents.
+    if (DANS_EDITEUR || (EN_WIX && !SUR_LE_SITE)) { afficherDemoEditeur(); } else { montrer('erreur'); }
   }, DANS_EDITEUR ? DELAI_EDITEUR_MS : DELAI_REPONSE_MS);
   etat.relance = setInterval(function () { envoyer({ type: 'pret' }); }, RELANCE_MS);
   envoyer({ type: 'pret' });
@@ -346,9 +348,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 24fa35b · 2026-10-31 08:45 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0f362e5 · 2026-10-31 08:55 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '24fa35b · 2026-10-31 08:45';
+var VERSION_TBL = '0f362e5 · 2026-10-31 08:55';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
