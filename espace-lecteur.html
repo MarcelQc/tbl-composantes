@@ -162,6 +162,7 @@ textarea:focus{border-color:var(--or);outline:none}
     <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="50" cy="36" r="16"/><path d="M20 84c0-17 13-30 30-30s30 13 30 30"/></svg>
     <h2>Connectez-vous pour entrer</h2>
     <p class="sub">L'Espace Lecteur est réservé aux membres du site. Connectez-vous ou créez votre compte gratuit pour y accéder.</p>
+    <button class="btn" type="button" id="btn-connexion">Se connecter</button>
   </section>
 
   <section id="espace" hidden>
@@ -348,9 +349,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 0f362e5 · 2026-10-31 08:55 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1c7c603 · 2026-10-31 09:05 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '0f362e5 · 2026-10-31 08:55';
+var VERSION_TBL = '1c7c603 · 2026-10-31 09:05';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -680,6 +681,8 @@ function surReponsesVues(msg) {
 }
 $('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); tracerOnglet('commentaires'); });
 $('btn-reessayer').addEventListener('click', demarrer);
+// La page Wix ouvre sa fenêtre de connexion ; après la connexion, elle renvoie l'espace du membre.
+$('btn-connexion').addEventListener('click', function () { envoyer({ type: 'connexion' }); });
 
 /* ---------- Démonstration ---------- */
 // Commentaires fictifs : 12 messages pour voir la liste défiler dans l'onglet Commentaires. Le premier a une
