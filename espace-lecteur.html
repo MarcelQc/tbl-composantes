@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Espace Lecteur | Éditions TBL</title>
+<style>
+/* Espace Lecteur (ELC), à l'image de l'Espace Auteurs (espace-auteurs.html, EDA) : mêmes jetons, en-tête, onglets
+   et commentaires. Ouvert à tout membre connecté (lecteur, auteur ou administrateur). Version 1 : une annonce
+   « en construction » et les commentaires (demande de Marcel du 31 octobre 2026). */
+/* Jetons des gabarits (Templates\tokens.css). Copiés ici : la composante est un fichier autonome. */
+:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:none}
+/* Couleurs de l'EDA, rattachées aux jetons. */
+:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:var(--tbl-paper-2);--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--red:var(--tbl-accent);--rouge-texte:#ffb3b8;--redsoft:var(--tbl-accent-soft);--ok:var(--tbl-ok);--or:var(--tbl-accent);--or-fonce:var(--tbl-muted)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin}
+body{margin:0;color:var(--txt);font-family:var(--tbl-font-body);line-height:1.55}
+h1,h2,h3{font-family:var(--tbl-font-heading);font-weight:bold}
+.wrap{width:min(1160px,calc(100% - 28px));margin:auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--or);outline-offset:2px}
+
+main.wrap{padding-top:8px}
+/* En-tête comme celui de l'EDA : ligne 1 les boutons, ligne 2 le titre, ligne 3 un petit texte d'introduction. */
+.entete{margin-bottom:16px}
+.barre-haut{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.actions-haut{display:flex;flex-wrap:wrap;gap:8px}
+.actions-haut .btn{padding:8px 14px;font-size:.9rem}
+.titre-espace{font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.1;margin:6px 0 8px}
+.entete .sub{margin:0}
+
+/* Version publiée (ligne grise) : voir afficherVersion(). */
+.version-tbl{margin:18px auto 12px;text-align:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
+.barre-haut .version-tbl{margin:0 auto 0 0;align-self:center;text-align:left}
+/* Cartes */
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:26px}
+.panneau .card{background:var(--card2)}
+.centre{text-align:center;max-width:640px;margin:10px auto 0}
+.centre svg{width:96px;height:96px;color:var(--or);margin-bottom:8px}
+.centre h2{margin:0 0 8px}
+.sub,.note{color:var(--muted)}
+.note{font-size:.92rem}
+h2{margin:0 0 5px;font-size:1.5rem;line-height:1.15}
+
+/* Boutons */
+.btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover:not(:disabled){filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:normal}
+.btn.sec:hover:not(:disabled){border-color:var(--red);filter:none}
+.btn.petit{padding:8px 14px;font-size:.92rem}
+.btn.mini{padding:6px 10px;font-size:.85rem;border-radius:var(--tbl-radius-btn)}
+.mail{color:var(--or);font-weight:bold;text-decoration:none}
+
+/* Chargement */
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--or);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+
+/* Onglets style « dossier » (Templates\tabs.html) : l'onglet actif se fond dans le panneau en dessous. */
+.onglets{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding:2px 2px 0;scrollbar-width:none}
+.onglets::-webkit-scrollbar{display:none}
+.onglet{flex:0 0 auto;border:1px solid var(--line);border-bottom:0;background:var(--card2);border-radius:var(--tbl-radius-btn) var(--tbl-radius-btn) 0 0;padding:10px 18px;font-family:var(--tbl-font-heading);font-size:.98rem;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--or-fonce);white-space:nowrap}
+.onglet:hover{color:var(--txt)}
+.onglet[aria-selected="true"]{background:var(--card);color:var(--txt);font-weight:bold;box-shadow:inset 0 2px 0 var(--red)}
+.pastille-nb{background:var(--redsoft);color:var(--rouge-texte);border-radius:99px;padding:0 8px;font-family:var(--tbl-font-body);font-size:.78rem;font-weight:600;min-width:22px;text-align:center}
+/* Hauteur fixe, la même pour tous les onglets : la page ne change pas de taille d'un onglet à l'autre
+   (composante HTML Wix à hauteur fixe). Le contenu trop long défile à l'intérieur du panneau. */
+:root{--h-panneau:560px}
+.panneau{background:var(--card);border:1px solid var(--line);border-radius:0 var(--tbl-radius) var(--tbl-radius) var(--tbl-radius);padding:20px;height:var(--h-panneau);display:flex;flex-direction:column}
+textarea{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-height:96px;resize:vertical}
+textarea:focus{border-color:var(--or);outline:none}
+.champ{margin-bottom:16px}
+.champ label{display:block;font-weight:bold;margin-bottom:6px}
+.aide{color:var(--muted);font-size:.85rem;margin-top:4px}
+.statut{min-height:1.4em;color:var(--muted)}
+.statut.ok{color:var(--ok)}
+.statut.err{color:var(--rouge-texte)}
+.vide{color:var(--muted);text-align:center;padding:26px 10px}
+
+/* Pastilles de statut (Templates\status-badge.html) : fond teinté et point de couleur. */
+.pastilles{display:flex;flex-wrap:wrap;gap:5px}
+.pastille{border:0;border-radius:99px;padding:2px 9px;font-size:.74rem;font-weight:600;background:#20232a;color:var(--muted);white-space:nowrap}
+.pastille::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px}
+.pastille.ok{background:rgba(76,195,138,.15);color:var(--ok)}
+.pastille.rouge{background:var(--redsoft);color:var(--rouge-texte)}
+.pastille.attente{background:var(--tbl-orange-soft);color:var(--tbl-orange)}
+.pastille.bleu{background:var(--tbl-blue-soft);color:var(--tbl-blue)}
+.etiquette-bientot{display:inline-block;border:0;background:var(--tbl-orange-soft);color:var(--tbl-orange);font-weight:600;border-radius:99px;padding:1px 10px;font-size:.8rem;margin-bottom:10px}
+
+/* Nouveautés : une annonce qui occupe tout le panneau. */
+.annonce{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 32px}
+.annonce .etiquette-bientot{margin-bottom:16px}
+.annonce h2{font-size:clamp(1.6rem,3.6vw,2.3rem);margin:0 0 20px}
+.annonce p{max-width:720px;margin:0 0 14px;font-size:1.08rem}
+.annonce .texte-annonce{color:var(--txt)}
+.annonce .btn-annonce{margin:18px 0 16px;padding:16px 28px;font-size:1.1rem}
+.annonce .note{margin:0}
+
+/* Fenêtres (commentaire, confirmation) */
+.fond-fenetre{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;padding:60px 14px;z-index:20;overflow:auto}
+.fenetre{width:min(560px,100%);padding:26px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.fenetre h2{margin-bottom:12px}
+.fenetre p{margin:0 0 12px}
+.fenetre .boutons{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* Commentaires : une carte par commentaire, la réponse de l'équipe en dessous (comme dans l'EDA). */
+.pastille-nb.nouvelles{background:var(--red);color:#fff}
+.bandeau-reponses{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin:0 0 14px;padding:12px 16px;border:1px solid var(--red);border-radius:var(--tbl-radius-btn);background:var(--redsoft);font-weight:bold}
+.intro-commentaires{margin:0 0 14px;flex:0 0 auto}
+/* La liste prend la place qui reste dans le panneau et défile s'il y a beaucoup de messages. */
+.liste-commentaires{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding-right:2px}
+.commentaire{padding:16px 18px;flex:0 0 auto}
+.commentaire.nouvelle{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+.tete-commentaire{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.infos-commentaire{display:flex;flex-direction:column;gap:2px;min-width:0}
+.date-commentaire{font-weight:bold}
+.texte-commentaire{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.modif-commentaire,.verrou-commentaire{margin:6px 0 0;font-size:.82rem}
+.actions-commentaire{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.reponse-commentaire{margin-top:12px;padding:10px 14px;border-left:3px solid var(--ok);background:var(--card);border-radius:0 var(--tbl-radius-btn) var(--tbl-radius-btn) 0}
+.reponse-commentaire .titre-reponse{margin:0 0 4px;font-weight:bold;color:var(--ok);font-size:.9rem}
+.reponse-commentaire .note{margin:6px 0 0;font-size:.82rem}
+.edition-commentaire textarea{min-height:110px}
+.edition-commentaire .statut{margin:4px 0 0}
+
+@media(max-width:800px){
+  .card{padding:21px}
+  .annonce{padding:30px 20px}
+}
+@media(max-width:520px){
+  .onglets{gap:6px}
+  .onglet{padding:10px 11px;font-size:.9rem;gap:5px}
+  .pastille-nb{padding:0 6px;min-width:18px;font-size:.75rem}
+  /* Téléphone : l'annonce est plus haute une fois le texte replié, le panneau aussi. */
+  :root{--h-panneau:760px}
+  .panneau{padding:12px}
+  .annonce{padding:26px 16px}
+  .annonce p{font-size:1rem}
+  .annonce .btn-annonce{padding:14px 18px;font-size:1rem;width:100%}
+}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <section id="etat-chargement" class="card centre" role="status" aria-live="polite">
+    <div class="spin" aria-hidden="true"></div>
+    <p class="sub" id="texte-chargement">Chargement de votre espace…</p>
+  </section>
+
+  <section id="etat-erreur" class="card centre" role="alert" hidden>
+    <h2>Un petit problème de chargement</h2>
+    <p class="sub">Nous n'arrivons pas à charger votre espace pour le moment. Vérifiez votre connexion et réessayez.</p>
+    <button class="btn" type="button" id="btn-reessayer">Réessayer</button>
+  </section>
+
+  <section id="etat-connexion" class="card centre" role="status" hidden>
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="50" cy="36" r="16"/><path d="M20 84c0-17 13-30 30-30s30 13 30 30"/></svg>
+    <h2>Connectez-vous pour entrer</h2>
+    <p class="sub">L'Espace Lecteur est réservé aux membres du site. Connectez-vous ou créez votre compte gratuit pour y accéder.</p>
+  </section>
+
+  <section id="espace" hidden>
+    <div class="entete">
+      <div class="barre-haut">
+        <p class="version-tbl" id="version-tbl" hidden></p>
+        <span class="actions-haut">
+          <button class="btn sec" type="button" id="btn-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
+          <button class="btn sec" type="button" id="btn-actualiser" title="Recharger l’Espace Lecteur depuis le serveur">↻ Actualiser</button>
+        </span>
+      </div>
+      <h1 class="titre-espace">Espace Lecteur</h1>
+      <p class="sub" id="accueil">Votre coin de lecture aux Éditions TBL.</p>
+    </div>
+    <!-- Nouvelles réponses de l'équipe TBL à des commentaires du membre -->
+    <div class="bandeau-reponses" id="bandeau-reponses" role="status" hidden>
+      <span id="texte-bandeau-reponses"></span>
+      <button class="btn petit" type="button" id="btn-voir-reponses">Voir les réponses</button>
+    </div>
+    <div class="onglets" role="tablist" aria-label="Sections de l'Espace Lecteur">
+      <button class="onglet" role="tab" id="onglet-nouveautes" aria-controls="panneau-nouveautes" aria-selected="true" tabindex="0">Nouveautés</button>
+      <button class="onglet" role="tab" id="onglet-commentaires" aria-controls="panneau-commentaires" aria-selected="false" tabindex="-1">Commentaires <span class="pastille-nb nouvelles" id="nb-commentaires" aria-hidden="true" hidden>0</span></button>
+    </div>
+
+    <!-- NOUVEAUTÉS : annonce de l'Espace Lecteur en construction -->
+    <div class="panneau" role="tabpanel" id="panneau-nouveautes" aria-labelledby="onglet-nouveautes">
+      <article class="card annonce">
+        <span class="etiquette-bientot">En construction</span>
+        <h2>Bienvenue dans votre Espace Lecteur</h2>
+        <p class="texte-annonce">Merci d'être là ! Vous faites partie des premiers lecteurs à découvrir cet espace.</p>
+        <p class="sub">L'Espace Lecteur est en construction. Notre équipe y travaille en ce moment et de nouvelles sections s'ajouteront au fil des prochaines semaines.</p>
+        <p class="sub">Nous voulons bâtir cet espace avec vous. Qu'aimeriez-vous y trouver ? Une idée, une suggestion, quelque chose qui vous manque ? Laissez-nous vos commentaires en tout temps. Notre équipe les lit tous.</p>
+        <button class="btn btn-annonce" type="button" id="btn-commentaire-annonce">Laissez-nous vos commentaires maintenant</button>
+        <p class="note">Vous retrouverez vos commentaires et nos réponses dans l'onglet Commentaires.</p>
+      </article>
+    </div>
+
+    <!-- COMMENTAIRES -->
+    <div class="panneau" role="tabpanel" id="panneau-commentaires" aria-labelledby="onglet-commentaires" hidden>
+      <p class="sub intro-commentaires">Les commentaires que vous avez envoyés à l'équipe des Éditions TBL, du plus récent au plus ancien. Vous pouvez les modifier tant que l'équipe n'y a pas répondu et les supprimer en tout temps.</p>
+      <p class="statut err" id="etat-commentaires" role="alert" hidden></p>
+      <div class="liste-commentaires" id="liste-commentaires"></div>
+      <div class="card vide" id="vide-commentaires" hidden></div>
+    </div>
+  </section>
+
+  <!-- Fenêtre de confirmation (suppression d'un commentaire) -->
+  <div class="fond-fenetre" id="fenetre-confirmer" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-confirmer">
+      <h2 id="titre-confirmer"></h2>
+      <p id="texte-confirmer"></p>
+      <div class="boutons"><button class="btn sec" type="button" id="btn-confirmer-non">Annuler</button><button class="btn" type="button" id="btn-confirmer-oui"></button></div>
+    </div>
+  </div>
+
+  <!-- Commentaire du membre à l'équipe TBL -->
+  <div class="fond-fenetre" id="fenetre-commentaire" hidden>
+    <div class="card fenetre" role="dialog" aria-modal="true" aria-labelledby="titre-commentaire">
+      <h2 id="titre-commentaire">Vos commentaires et suggestions</h2>
+      <p class="sub">Qu'aimeriez-vous trouver dans l'Espace Lecteur ? Une idée, une question ou un problème ? Écrivez-nous ici : votre message est transmis à l'équipe des Éditions TBL.</p>
+      <div class="champ">
+        <label for="champ-commentaire">Votre commentaire</label>
+        <textarea id="champ-commentaire" maxlength="2000"></textarea>
+        <div class="aide" id="compteur-commentaire">0 / 2000</div>
+      </div>
+      <p class="statut" id="statut-commentaire" role="status" aria-live="polite"></p>
+      <div class="boutons">
+        <button class="btn sec" type="button" id="btn-annuler-commentaire">Annuler</button>
+        <button class="btn" type="button" id="btn-envoyer-commentaire">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function () {
+'use strict';
+
+var EN_WIX = true;
+var DELAI_REPONSE_MS = 10000;
+var RELANCE_MS = 1500;
+// Ouverte dans l'éditeur Wix (mode design ou aperçu), le code de la page ne tourne pas : si rien ne répond vite,
+// on passe en démonstration (comme l'Éditeur de coffret, modifier-coffret.html).
+function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
+var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.test(originesParent());
+var SUR_LE_SITE = /editionstbl\.ca/i.test(originesParent());
+var DELAI_EDITEUR_MS = 3000;
+
+var etat = { donnees: null, minuterie: null, relance: null, demoEditeur: false };
+
+/* ---------- Utilitaires ---------- */
+function $(id) { return document.getElementById(id); }
+function el(tag, classe, texte) {
+  var e = document.createElement(tag);
+  if (classe) { e.className = classe; }
+  if (texte !== undefined && texte !== null) { e.textContent = texte; }
+  return e;
+}
+function vider(noeud) { while (noeud.firstChild) { noeud.removeChild(noeud.firstChild); } }
+function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); }
+
+/* ---------- Pont avec la page Wix ---------- */
+function envoyer(message) {
+  if (etat.demoEditeur) { repondreDemoEditeur(message); }
+  else if (EN_WIX) { window.parent.postMessage(message, '*'); }
+
+}
+// Trace d'engagement d'un clic (collection Events) : la page Wix la transmet au serveur. Aucune réponse attendue.
+var NOMS_ONGLETS = { nouveautes: 'Nouveautés', commentaires: 'Commentaires' };
+function tracer(action, infos) {
+  envoyer(Object.assign({ type: 'evenement', action: action }, infos || {}));
+}
+function tracerOnglet(nom) { tracer('onglet', { onglet: NOMS_ONGLETS[nom] }); }
+// La page est servie par GitHub Pages et chargée dans la composante HTML de la page Wix : on n'accepte
+// que les messages de cette page parente (site publié, ou Aperçu dans l'éditeur Wix).
+var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+function origineAutorisee(origine) {
+  return ORIGINES_PERMISES.some(function (motif) { return motif.test(origine); });
+}
+window.addEventListener('message', function (e) {
+  if (!EN_WIX || e.source !== window.parent || !origineAutorisee(e.origin)) { return; }
+  recevoir(e.data);
+});
+function recevoir(msg) {
+  if (!msg || typeof msg !== 'object') { return; }
+  if (msg.type === 'espace') { surEspace(msg); }
+  else if (msg.type === 'resultatCommentaire') { surCommentaire(msg); }
+  else if (msg.type === 'resultatCommentaires') { surCommentaires(msg); }
+  else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
+  else if (msg.type === 'resultatSupprimerCommentaire') { surSupprimerCommentaire(msg); }
+  else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
+}
+
+/* ---------- États de la page ---------- */
+// Tout membre connecté a accès à l'ELC (lecteur, auteur ou administrateur) : seul le visiteur non connecté
+// reste à la porte.
+function montrer(nom) {
+  ['chargement', 'erreur', 'connexion'].forEach(function (n) { $('etat-' + n).hidden = (n !== nom); });
+  $('espace').hidden = (nom !== 'espace');
+}
+function accesBloque(msg) {
+  if (msg.statut === 'connexion') {
+    etat.donnees = null;
+    arreterAttente();
+    montrer('connexion');
+    return true;
+  }
+  return false;
+}
+// Attente de la réponse du serveur : le message « pret » est renvoyé toutes les 1,5 s jusqu'à la réponse
+// ou jusqu'à l'abandon après DELAI_REPONSE_MS (comme dans l'EDA).
+function arreterAttente() { clearTimeout(etat.minuterie); clearInterval(etat.relance); }
+function demarrer() {
+  montrer('chargement');
+  $('texte-chargement').textContent = 'Chargement de votre espace…';
+  arreterAttente();
+  etat.minuterie = setTimeout(function () {
+    arreterAttente();
+    // Éditeur Wix (aucune réponse, pas sur le site publié) : Espace Lecteur fictif pour voir le design.
+    if (EN_WIX && !SUR_LE_SITE) { afficherDemoEditeur(); } else { montrer('erreur'); }
+  }, DANS_EDITEUR ? DELAI_EDITEUR_MS : DELAI_REPONSE_MS);
+  etat.relance = setInterval(function () { envoyer({ type: 'pret' }); }, RELANCE_MS);
+  envoyer({ type: 'pret' });
+}
+// msg.membre : { prenom, nom, role: 'lecteur' | 'auteur' | 'admin' }. Le contenu est le même pour tous ;
+// le rôle ne change que le titre de l'onglet du navigateur et la ligne de version.
+function surEspace(msg) {
+  arreterAttente();
+  if (msg.statut === 'ok' && msg.membre) {
+    etat.donnees = msg;
+    rendreEspace();
+    montrer('espace');
+    demanderCommentaires();
+  } else if (msg.statut === 'connexion') {
+    etat.donnees = null;
+    montrer('connexion');
+  } else {
+    montrer('erreur');
+  }
+}
+function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
+
+// ===== Version publiée =====
+// 24fa35b · 2026-10-31 08:45 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
+var VERSION_TBL = '24fa35b · 2026-10-31 08:45';
+function texteVersion(admin) {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
+  var morceaux = VERSION_TBL.split(' · ');
+  return 'Version ' + (admin === false && morceaux.length > 1 ? morceaux.slice(1).join(' · ') : VERSION_TBL);
+}
+console.log('[espace-lecteur] ' + texteVersion());
+function afficherVersion(admin) {
+  var p = $('version-tbl');
+  p.textContent = texteVersion(!!admin);
+  p.hidden = false;
+}
+
+/* ---------- Onglets ---------- */
+var ONGLETS = ['nouveautes', 'commentaires'];
+function choisirOnglet(nom, focus) {
+  ONGLETS.forEach(function (n) {
+    var actif = (n === nom);
+    var bouton = $('onglet-' + n);
+    bouton.setAttribute('aria-selected', actif ? 'true' : 'false');
+    bouton.tabIndex = actif ? 0 : -1;
+    $('panneau-' + n).hidden = !actif;
+    if (actif && focus) { bouton.focus(); }
+  });
+  if (nom === 'commentaires' && etat.commentaires) { reponsesVues(); }
+}
+ONGLETS.forEach(function (nom, i) {
+  var bouton = $('onglet-' + nom);
+  bouton.addEventListener('click', function () { choisirOnglet(nom, false); tracerOnglet(nom); });
+  bouton.addEventListener('keydown', function (e) {
+    var cible = null;
+    if (e.key === 'ArrowRight') { cible = ONGLETS[(i + 1) % ONGLETS.length]; }
+    else if (e.key === 'ArrowLeft') { cible = ONGLETS[(i + ONGLETS.length - 1) % ONGLETS.length]; }
+    else if (e.key === 'Home') { cible = ONGLETS[0]; }
+    else if (e.key === 'End') { cible = ONGLETS[ONGLETS.length - 1]; }
+    if (cible) { e.preventDefault(); choisirOnglet(cible, true); tracerOnglet(cible); }
+  });
+});
+
+/* ---------- Rendu général ---------- */
+function rendreEspace() {
+  var m = etat.donnees.membre;
+  $('accueil').textContent = 'Bienvenue, ' + (m.prenom || 'cher lecteur') + '. Votre coin de lecture aux Éditions TBL.';
+  document.title = (estAdmin() ? 'Espace Lecteur (Admin)' : 'Espace Lecteur') + ' | Éditions TBL';
+  afficherVersion(estAdmin());
+}
+
+/* ---------- Fenêtres ---------- */
+var dernierFocus = null;
+var actionConfirmee = null;
+function ouvrirFenetre(id, focusId) {
+  dernierFocus = document.activeElement;
+  $(id).hidden = false;
+  var cible = $(focusId);
+  if (cible) { cible.focus(); }
+}
+function fermerFenetre(id) {
+  $(id).hidden = true;
+  if (dernierFocus && dernierFocus.focus) { dernierFocus.focus(); }
+}
+function confirmer(titre, texte, libelle, action) {
+  $('titre-confirmer').textContent = titre;
+  $('texte-confirmer').textContent = texte;
+  $('btn-confirmer-oui').textContent = libelle;
+  actionConfirmee = action;
+  ouvrirFenetre('fenetre-confirmer', 'btn-confirmer-non');
+}
+$('btn-confirmer-non').addEventListener('click', function () { actionConfirmee = null; fermerFenetre('fenetre-confirmer'); });
+$('btn-confirmer-oui').addEventListener('click', function () {
+  var a = actionConfirmee; actionConfirmee = null;
+  fermerFenetre('fenetre-confirmer');
+  if (a) { a(); }
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') { return; }
+  if (!$('fenetre-confirmer').hidden) { actionConfirmee = null; fermerFenetre('fenetre-confirmer'); }
+  else if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); }
+});
+['fenetre-confirmer', 'fenetre-commentaire'].forEach(function (id) {
+  $(id).addEventListener('click', function (e) { if (e.target === $(id)) { fermerFenetre(id); } });
+});
+
+// ↻ Actualiser : recharge tout l'Espace Lecteur (l'onglet affiché reste le même).
+$('btn-actualiser').addEventListener('click', demarrer);
+
+/* ---------- Commentaire (bouton de l'en-tête et bouton de l'annonce) ---------- */
+// Le membre écrit un commentaire à l'équipe TBL ; le serveur l'enregistre dans la collection Commentaires (page ELC).
+var minuterieCommentaire = null;
+function majCompteurCommentaire() {
+  $('compteur-commentaire').textContent = $('champ-commentaire').value.length + ' / 2000';
+}
+function ouvrirCommentaire() {
+  $('champ-commentaire').value = '';
+  majCompteurCommentaire();
+  $('statut-commentaire').className = 'statut';
+  $('statut-commentaire').textContent = '';
+  $('btn-envoyer-commentaire').disabled = false;
+  ouvrirFenetre('fenetre-commentaire', 'champ-commentaire');
+}
+function envoyerCommentaire() {
+  var texte = $('champ-commentaire').value.trim();
+  if (!texte) {
+    $('statut-commentaire').className = 'statut err';
+    $('statut-commentaire').textContent = 'Écrivez votre commentaire avant de l’envoyer.';
+    $('champ-commentaire').focus();
+    return;
+  }
+  $('btn-envoyer-commentaire').disabled = true;
+  $('statut-commentaire').className = 'statut';
+  $('statut-commentaire').textContent = 'Envoi…';
+  envoyer({ type: 'commentaire', commentaire: texte, page: 'ELC' });
+  clearTimeout(minuterieCommentaire);
+  minuterieCommentaire = setTimeout(function () {
+    surCommentaire({ ok: false, message: 'Pas de réponse du serveur. Vérifiez votre connexion et réessayez.' });
+  }, DELAI_REPONSE_MS);
+}
+function surCommentaire(msg) {
+  clearTimeout(minuterieCommentaire);
+  if ($('fenetre-commentaire').hidden) { return; }
+  $('btn-envoyer-commentaire').disabled = false;
+  if (msg.ok) {
+    $('champ-commentaire').value = '';
+    majCompteurCommentaire();
+    $('btn-envoyer-commentaire').disabled = true;
+    $('statut-commentaire').className = 'statut ok';
+    $('statut-commentaire').textContent = msg.message || 'Merci ! Votre commentaire a été envoyé.';
+    setTimeout(function () { if (!$('fenetre-commentaire').hidden) { fermerFenetre('fenetre-commentaire'); } }, 2500);
+    demanderCommentaires(); // le nouveau commentaire apparaît tout de suite dans l'onglet Commentaires
+    return;
+  }
+  $('statut-commentaire').className = 'statut err';
+  $('statut-commentaire').textContent = msg.message || 'Votre commentaire n’a pas pu être envoyé. Réessayez dans un instant.';
+}
+$('btn-commentaire').addEventListener('click', ouvrirCommentaire);
+$('btn-commentaire-annonce').addEventListener('click', function () { tracer('commentaire-annonce'); ouvrirCommentaire(); });
+$('champ-commentaire').addEventListener('input', majCompteurCommentaire);
+$('btn-annuler-commentaire').addEventListener('click', function () { fermerFenetre('fenetre-commentaire'); });
+$('btn-envoyer-commentaire').addEventListener('click', envoyerCommentaire);
+
+/* ---------- Onglet Commentaires ---------- */
+// Repris de l'EDA : le membre modifie ses commentaires tant que l'équipe n'y a pas répondu et les supprime en
+// tout temps ; la réponse est en lecture seule. Les réponses pas encore vues sont signalées par la pastille de
+// l'onglet, un bandeau en haut de l'espace et, dans la liste, le badge « Nouvelle réponse ».
+var LONGUEUR_COMMENTAIRE = 2000;
+var fmtDateHeure = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' });
+etat.commentaires = null;     // liste reçue du serveur (null : pas encore chargée)
+etat.edition = null;          // id du commentaire en cours de modification
+etat.reponsesVuesEnvoye = false;
+function dateHeure(iso) { return iso ? fmtDateHeure.format(new Date(iso)) : ''; }
+function demanderCommentaires() {
+  envoyer({ type: 'commentaires', page: 'ELC' });
+}
+function nbNouvellesReponses() {
+  return (etat.commentaires || []).filter(function (c) { return c.reponseNouvelle && !c.vueCetteFois; }).length;
+}
+function majSignalReponses() {
+  var n = nbNouvellesReponses();
+  var pastille = $('nb-commentaires');
+  pastille.textContent = n;
+  pastille.hidden = n === 0;
+  $('onglet-commentaires').setAttribute('aria-label', n ? 'Commentaires, ' + pluriel(n, 'nouvelle réponse', 'nouvelles réponses') : 'Commentaires');
+  $('bandeau-reponses').hidden = n === 0;
+  $('texte-bandeau-reponses').textContent = n === 1 ? 'Vous avez une nouvelle réponse de l’équipe TBL.' : 'Vous avez ' + n + ' nouvelles réponses de l’équipe TBL.';
+}
+function surCommentaires(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') {
+    if (etat.commentaires === null) {
+      $('etat-commentaires').textContent = 'Vos commentaires n’ont pas pu être chargés. Utilisez ↻ Actualiser pour réessayer.';
+      $('etat-commentaires').hidden = false;
+    }
+    return;
+  }
+  etat.commentaires = msg.commentaires || [];
+  etat.reponsesVuesEnvoye = false;
+  rendreCommentaires();
+  if (!$('panneau-commentaires').hidden) { reponsesVues(); }
+}
+// Commentaires avec une nouvelle réponse en tête, puis du plus récent au plus ancien.
+function commentairesTries() {
+  return (etat.commentaires || []).slice().sort(function (a, b) {
+    if (a.reponseNouvelle !== b.reponseNouvelle) { return a.reponseNouvelle ? -1 : 1; }
+    return String(b.date || '').localeCompare(String(a.date || ''));
+  });
+}
+function pastilleEtat(c) {
+  if (c.reponse) { return el('span', 'pastille ok', 'Répondu'); }
+  if (c.etat === 'Non lu') { return el('span', 'pastille attente', 'Envoyé'); }
+  return el('span', 'pastille bleu', 'Lu par l’équipe');
+}
+function rendreCommentaires() {
+  var liste = $('liste-commentaires');
+  vider(liste);
+  $('etat-commentaires').hidden = true;
+  var visibles = commentairesTries();
+  $('vide-commentaires').hidden = visibles.length > 0;
+  $('vide-commentaires').textContent = 'Vous n’avez pas encore envoyé de commentaire. Utilisez le bouton 💬 Commentaire en haut de la page pour écrire à l’équipe.';
+  visibles.forEach(function (c) { liste.appendChild(carteCommentaire(c)); });
+  majSignalReponses();
+}
+function carteCommentaire(c) {
+  var carte = el('article', 'card commentaire' + (c.reponseNouvelle ? ' nouvelle' : ''));
+  carte.id = 'commentaire-' + c.id;
+  var tete = el('div', 'tete-commentaire');
+  var infos = el('div', 'infos-commentaire');
+  infos.appendChild(el('span', 'date-commentaire', dateHeure(c.date)));
+  tete.appendChild(infos);
+  var badges = el('div', 'pastilles');
+  if (c.reponseNouvelle) { badges.appendChild(el('span', 'pastille rouge', 'Nouvelle réponse')); }
+  badges.appendChild(pastilleEtat(c));
+  tete.appendChild(badges);
+  carte.appendChild(tete);
+
+  if (etat.edition === c.id) {
+    carte.appendChild(formulaireEdition(c));
+  } else {
+    carte.appendChild(el('p', 'texte-commentaire', c.commentaire));
+    if (c.dateModification) { carte.appendChild(el('p', 'note modif-commentaire', 'Modifié le ' + dateHeure(c.dateModification))); }
+  }
+
+  if (c.reponse) {
+    var rep = el('div', 'reponse-commentaire');
+    rep.appendChild(el('p', 'titre-reponse', 'Réponse de l’équipe TBL'));
+    rep.appendChild(el('p', 'texte-commentaire', c.reponse));
+    var quand = 'Le ' + dateHeure(c.dateReponse);
+    if (c.dateModificationReponse) { quand += ' (modifiée le ' + dateHeure(c.dateModificationReponse) + ')'; }
+    rep.appendChild(el('p', 'note', quand));
+    carte.appendChild(rep);
+    carte.appendChild(el('p', 'note verrou-commentaire', 'L’équipe a répondu : ce commentaire ne peut plus être modifié, mais vous pouvez le supprimer.'));
+  }
+
+  // Modifier : tant que l'équipe n'a pas répondu. Supprimer : en tout temps.
+  if (etat.edition !== c.id) {
+    var actions = el('div', 'actions-commentaire');
+    if (!c.verrouille) {
+      var bModif = el('button', 'btn sec mini', 'Modifier'); bModif.type = 'button';
+      bModif.addEventListener('click', function () { commencerEdition(c.id); });
+      actions.appendChild(bModif);
+    }
+    var bSuppr = el('button', 'btn sec mini', 'Supprimer'); bSuppr.type = 'button';
+    bSuppr.addEventListener('click', function () { confirmerSuppression(c); });
+    actions.appendChild(bSuppr);
+    carte.appendChild(actions);
+  }
+  return carte;
+}
+function formulaireEdition(c) {
+  var bloc = el('div', 'edition-commentaire');
+  var zone = el('textarea'); zone.id = 'edition-' + c.id; zone.maxLength = LONGUEUR_COMMENTAIRE; zone.value = c.commentaire;
+  zone.setAttribute('aria-label', 'Modifier votre commentaire');
+  var compteur = el('div', 'aide', zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE);
+  zone.addEventListener('input', function () { compteur.textContent = zone.value.length + ' / ' + LONGUEUR_COMMENTAIRE; });
+  var statut = el('p', 'statut'); statut.id = 'statut-edition'; statut.setAttribute('role', 'status');
+  var actions = el('div', 'actions-commentaire');
+  var bAnnuler = el('button', 'btn sec mini', 'Annuler'); bAnnuler.type = 'button';
+  bAnnuler.addEventListener('click', function () { etat.edition = null; rendreCommentaires(); });
+  var bEnreg = el('button', 'btn mini', 'Enregistrer'); bEnreg.type = 'button'; bEnreg.id = 'btn-enregistrer-edition';
+  bEnreg.addEventListener('click', function () {
+    var texte = zone.value.trim();
+    if (!texte) { statut.className = 'statut err'; statut.textContent = 'Le commentaire ne peut pas être vide.'; zone.focus(); return; }
+    if (texte === c.commentaire) { etat.edition = null; rendreCommentaires(); return; }
+    bEnreg.disabled = true; bAnnuler.disabled = true;
+    statut.className = 'statut'; statut.textContent = 'Enregistrement…';
+    envoyer({ type: 'modifierCommentaire', id: c.id, commentaire: texte });
+  });
+  actions.appendChild(bAnnuler); actions.appendChild(bEnreg);
+  bloc.appendChild(zone); bloc.appendChild(compteur); bloc.appendChild(statut); bloc.appendChild(actions);
+  return bloc;
+}
+function commencerEdition(id) {
+  etat.edition = id;
+  rendreCommentaires();
+  var zone = $('edition-' + id);
+  if (zone) { zone.focus(); zone.setSelectionRange(zone.value.length, zone.value.length); }
+}
+function remplacerCommentaire(nouveau) {
+  etat.commentaires = (etat.commentaires || []).map(function (c) { return c.id === nouveau.id ? nouveau : c; });
+}
+function surModifierCommentaire(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok' && msg.commentaire) {
+    etat.edition = null;
+    remplacerCommentaire(msg.commentaire);
+    rendreCommentaires();
+    return;
+  }
+  var statut = $('statut-edition');
+  if (msg.statut === 'verrouille') { etat.edition = null; demanderCommentaires(); }
+  if (statut) {
+    statut.className = 'statut err';
+    statut.textContent = msg.message || 'Votre commentaire n’a pas pu être modifié. Réessayez dans un instant.';
+    var bEnreg = $('btn-enregistrer-edition');
+    if (bEnreg) { bEnreg.disabled = false; bEnreg.previousSibling.disabled = false; }
+  }
+}
+function confirmerSuppression(c) {
+  var texte = c.reponse
+    ? 'Le commentaire et la réponse de l’équipe disparaîtront de votre liste. Ils ne pourront pas être récupérés.'
+    : 'Il disparaîtra de votre liste et ne pourra pas être récupéré.';
+  confirmer('Supprimer ce commentaire ?', texte, 'Supprimer', function () {
+    envoyer({ type: 'supprimerCommentaire', id: c.id });
+  });
+}
+function surSupprimerCommentaire(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut === 'ok') {
+    etat.commentaires = (etat.commentaires || []).filter(function (c) { return c.id !== msg.id; });
+    rendreCommentaires();
+    return;
+  }
+  $('etat-commentaires').textContent = msg.message || 'Votre commentaire n’a pas pu être supprimé. Réessayez dans un instant.';
+  $('etat-commentaires').hidden = false;
+  demanderCommentaires();
+}
+// Le membre ouvre l'onglet : ses nouvelles réponses sont vues. La pastille et le bandeau disparaissent tout de
+// suite ; le badge reste jusqu'au prochain chargement, pour qu'il voie lesquelles.
+function reponsesVues() {
+  if (etat.reponsesVuesEnvoye || !nbNouvellesReponses()) { return; }
+  etat.reponsesVuesEnvoye = true;
+  (etat.commentaires || []).forEach(function (c) { if (c.reponseNouvelle) { c.vueCetteFois = true; } });
+  majSignalReponses();
+  envoyer({ type: 'reponsesVues' });
+}
+function surReponsesVues(msg) {
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') { etat.reponsesVuesEnvoye = false; }
+}
+$('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('commentaires', true); tracerOnglet('commentaires'); });
+$('btn-reessayer').addEventListener('click', demarrer);
+
+/* ---------- Démonstration ---------- */
+// Commentaires fictifs : 12 messages pour voir la liste défiler dans l'onglet Commentaires. Le premier a une
+// réponse pas encore vue (pastille et bandeau) seulement si avecNouvelle est vrai.
+function commentairesDemo(avecNouvelle) {
+  var liste = [
+    { id: 'demo-1', date: '2026-10-28T14:20:00Z', commentaire: 'Ce serait bien de retrouver ici les livres numériques que j’ai achetés, pour les télécharger de nouveau au besoin.', etat: 'Répondu', reponse: 'Merci pour cette belle idée ! Une bibliothèque de vos livres achetés fait partie de nos plans pour l’Espace Lecteur.', dateReponse: '2026-10-29T13:05:00Z', reponseNouvelle: !!avecNouvelle, verrouille: true },
+    { id: 'demo-2', date: '2026-10-30T19:45:00Z', commentaire: 'J’aimerais recevoir un avis quand un nouveau livre de mon auteur préféré paraît.', etat: 'Non lu', reponseNouvelle: false, verrouille: false }
+  ];
+  // Plus anciens messages : un sur trois a une réponse.
+  [
+  'Pourriez-vous offrir les livres numériques en format PDF en plus de l’EPUB ?',
+  'Une liste de lecture où je pourrais noter les livres que je veux lire plus tard.',
+  'J’aimerais voir les extraits des prochains livres avant leur sortie.',
+  'Est-ce qu’il y aura des recommandations selon mes achats ?',
+  'Un calendrier des séances de signature avec les auteurs serait génial.',
+  'Pouvoir laisser une critique sur un livre que j’ai lu.',
+  'Un mode sombre pour la lecture, mes yeux vous remercieraient !',
+  'Recevoir l’infolettre directement dans mon espace plutôt que par courriel.',
+  'Afficher mes factures pour mes achats de livres papier.',
+  'Des concours réservés aux membres, ce serait sympathique.'
+  ].forEach(function (texte, i) {
+    var jour = new Date(Date.UTC(2026, 9, 26 - i * 2, 15, 10));
+    var c = { id: 'demo-' + (i + 3), date: jour.toISOString(), commentaire: texte, etat: i % 3 === 0 ? 'Répondu' : (i % 2 ? 'Lu' : 'Non lu'), reponseNouvelle: false, verrouille: i % 3 === 0 };
+    if (c.verrouille) {
+      c.reponse = 'Merci pour votre suggestion ! Nous la gardons précieusement pour les prochaines versions de l’Espace Lecteur.';
+      c.dateReponse = new Date(jour.getTime() + 86400000).toISOString();
+    }
+    liste.push(c);
+  });
+  return liste;
+}
+// Éditeur Wix : lecteur fictif et ses commentaires, rien n'est envoyé. Sans réponse nouvelle, donc sans bandeau :
+// la hauteur de la page est celle de l'espace d'un membre ordinaire, pour régler la boîte HTML.
+var MSG_DEMO_EDITEUR = 'Aperçu de démonstration dans l’éditeur Wix : rien n’est envoyé.';
+function afficherDemoEditeur() {
+  etat.demoEditeur = true;
+  surEspace({ type: 'espace', statut: 'ok', membre: { prenom: 'Lecteur', nom: 'Démo', role: 'lecteur' } });
+}
+function repondreDemoEditeur(message) {
+  if (message.type === 'pret') { setTimeout(afficherDemoEditeur, 0); }
+  else if (message.type === 'commentaires') { recevoir({ type: 'resultatCommentaires', statut: 'ok', commentaires: commentairesDemo(false) }); }
+  else if (message.type === 'commentaire') { recevoir({ type: 'resultatCommentaire', ok: false, message: MSG_DEMO_EDITEUR }); }
+  else if (message.type === 'modifierCommentaire') { recevoir({ type: 'resultatModifierCommentaire', statut: 'erreur', message: MSG_DEMO_EDITEUR }); }
+  else if (message.type === 'supprimerCommentaire') { recevoir({ type: 'resultatSupprimerCommentaire', statut: 'erreur', message: MSG_DEMO_EDITEUR }); }
+}
+
+/* ---------- Démarrage ---------- */
+demarrer();
+})();
+</script>
+</body>
+</html>
