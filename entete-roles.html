@@ -55,7 +55,7 @@ var etat = { recu: false, demo: false, relance: null, abandon: null };
 function $(id) { return document.getElementById(id); }
 
 // Version publiée : dans la console seulement (la boîte est trop petite pour l'afficher).
-var VERSION_TBL = 'a163d95 · 2026-10-31 10:52';
+var VERSION_TBL = 'e66d34f · 2026-10-31 11:18';
 console.log('[entete-roles] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 
 function pastille(cle, n) {
@@ -99,8 +99,19 @@ window.addEventListener('message', function (e) {
     etat.recu = true;
     etat.demo = false;
     appliquer(msg);
+    memoriser(msg);
   }
 });
+
+// Derniers rôles reçus, gardés pour la session de l'onglet : si la boîte est rechargée à un changement de page, elle
+// les réaffiche aussitôt au lieu de rester vide en attendant masterPage.js (demande de Marcel du 31 octobre 2026).
+var CLE_MEMOIRE = 'tbl-entete-roles';
+function memoriser(d) {
+  try { sessionStorage.setItem(CLE_MEMOIRE, JSON.stringify(d)); } catch (e) { /* stockage bloqué : sans effet */ }
+}
+function memoire() {
+  try { return JSON.parse(sessionStorage.getItem(CLE_MEMOIRE) || 'null'); } catch (e) { return null; }
+}
 
 ['admin', 'auteur', 'lecteur'].forEach(function (cle) {
   $('btn-' + cle).addEventListener('click', function () {
@@ -114,7 +125,7 @@ window.addEventListener('message', function (e) {
 // charge avant lui. Sans réponse après 10 s : rien n'est affiché sur le site (visiteur ou erreur), démonstration
 // ailleurs (éditeur Wix).
 function demarrer() {
-  appliquer({});
+  appliquer(DANS_EDITEUR ? {} : memoire() || {});
   if (DANS_EDITEUR) { etat.demo = true; appliquer(DEMO); }
   arreter();
   etat.relance = setInterval(function () { envoyer({ type: 'pret' }); }, RELANCE_MS);
