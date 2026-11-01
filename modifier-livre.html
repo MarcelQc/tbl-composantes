@@ -692,10 +692,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 4b0005f · 2026-11-01 10:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 179d997 · 2026-11-01 10:25 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '4b0005f · 2026-11-01 10:22';
+var VERSION_TBL = '179d997 · 2026-11-01 10:25';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3485,11 +3485,15 @@ async function demarrer() {
 // On montre alors les vraies données du livre « lodt » (Les Ombres du temps), comme on l'a fait pour l'EDC,
 // pour que la boîte HTML ait sa vraie hauteur pendant qu'on la positionne, avec un contenu réaliste à l'œil.
 function blocPara(texte) { return { type: 'paragraphe', runs: texte ? [{ texte: texte }] : [] }; }
+var COFFRET_DEMO = { id: 'c6a5a476-abac-4185-bf6b-95200ef5b6db', titre: 'Ensemble numérique Les plumes du silence + Les Ombres du Temps',
+  image: 'https://static.wixstatic.com/media/26b968_497b44ae758a4cc9afdca68bc928dedd~mv2.png' };
 function donneesDemo() {
   var L = {
     image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
     photoAuteur: 'https://static.wixstatic.com/media/26b968_53a195ac1d504d2d814a7acc27120fd0~mv2.png',
-    afficheauteur: true, affichecoffret: false, coffret: '', email: 'marcelturgeon.qc@gmail.com', extraitPdf: '',
+    // Section Coffret active avec le vrai coffret « Les plumes du silence + Les Ombres du Temps » (demande de Marcel du
+    // 1er novembre 2026)
+    afficheauteur: true, affichecoffret: true, coffret: COFFRET_DEMO.id, email: 'marcelturgeon.qc@gmail.com', extraitPdf: '',
     vedettes: [], presentation1: '', image1Ord: '', image1Mob: '', demande1: '', indic1: ''
   };
   var livresProposes = [];
@@ -3528,6 +3532,7 @@ function donneesDemo() {
     livre: { id: 'e9235035-df55-4c28-bf9f-d8c14e7b9429', titre: 'Les Ombres du temps', prix: '7,99$ (prix de lancement)',
       cle: 'lodt', afficheNumPapier: true, livresProposes: livresProposes, vedettesSemaine: vedettesSemaine },
     champsLivre: { publie: L, copie: null },
+    coffrets: [COFFRET_DEMO],
     boutique: { publie: { prix: 7.99, description: '<p>Un recueil de contes sans rimes, pour reconnaître ses propres émotions.</p>' }, copie: null },
     publie: publie, copie: null
   };
