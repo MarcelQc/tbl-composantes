@@ -436,6 +436,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 #modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 /* Comme confirm-modal.html : Annuler à gauche, l'action principale à droite */
 #modal .btns .btn.sec{order:-1}
+/* Même hauteur pour les deux boutons : la classe sec des boîtes de section (.sec : rembourrage de 22 px, marge sous
+   la boîte, coins arrondis) s'appliquait aussi au bouton Annuler. */
+#modal .btns{align-items:center}
+#modal .btns .btn{margin:0;padding:0 20px;height:42px;min-width:120px;max-width:none;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;line-height:1;border-radius:var(--tbl-radius-btn)}
+#modal .btns .btn:not(.sec){border:1px solid transparent}
 
 /* ---------- Avis (toast) ---------- */
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
@@ -700,10 +705,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 316e4c4 · 2026-11-01 12:38 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 6ddeae2 · 2026-11-01 15:26 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '316e4c4 · 2026-11-01 12:38';
+var VERSION_TBL = '6ddeae2 · 2026-11-01 15:26';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
