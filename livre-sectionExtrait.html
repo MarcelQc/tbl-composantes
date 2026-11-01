@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Livre, section Extrait | Éditions TBL</title>
+<style>
+/* Section Extrait de la page d'un livre (/livres/{cle}) : titre en image « Extrait du livre », texte de l'extrait
+   (texte enrichi) et bouton « Demande d'extrait ». Même allure que l'aperçu de l'éditeur de livre (EDL,
+   Web\modifier-livre.html, champ data-champ="extrait"). Demande de Marcel du 1er novembre 2026.
+   Données : envoyées par la page (public/livre-page.js du dépôt editionstbl, brancherLivre), message
+   { type: 'tbl-livre', livre } ; cette boîte lit livre.extrait = { blocs: [blocs], demande }.
+   Le bouton n'apparaît que si le livre a un extrait PDF (comme dans l'EDL) ; il demande à la page d'ouvrir le
+   formulaire « Demander un extrait » avec ce livre ('tbl-livre:demandeExtrait'). Sans texte ni PDF, la page replie
+   la composante.
+   Ouverte seule dans un navigateur ou dans l'éditeur Wix (le code de la page ne tourne pas) : l'extrait du livre
+   « lodt » (Les Ombres du temps) en démonstration, comme livre-section1.html ; ?pdf=non montre la boîte sans bouton. */
+:root{--tbl-paper:#16181c;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
+.page{width:min(1160px,100%);margin:0 auto;padding:0 0 4px}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+/* Boîte grise comme les autres sections (EDL) */
+.pg{max-width:1000px;margin:0 auto 22px;background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px}
+/* Texte enrichi : mêmes règles que .rt de l'EDL */
+.rt{font:15px/1.6 Arial,Helvetica,sans-serif;color:#fff;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.rt p,.rt blockquote,.rt h1,.rt h2,.rt h3,.rt h4,.rt h5,.rt h6{margin:0;min-height:1.6em}
+.rt h1{font-size:32px;line-height:1.25}
+.rt h2{font-size:28px;line-height:1.25}
+.rt h3{font-size:24px;line-height:1.3}
+.rt h4{font-size:20px;font-weight:400;line-height:1.35}
+.rt h5{font-size:17px;line-height:1.4}
+.rt h6{font-size:15px;line-height:1.5}
+.rt blockquote{border-left:4px solid #0057E1;padding:6px 0 6px 16px;margin:0 0 6px 20px}
+.rt b{font-weight:700}
+/* Bouton « Demande d'extrait » : bouton rouge centré, comme .btn.btn-page de l'EDL */
+.btn-page{display:block;width:max-content;max-width:100%;margin:22px auto 0;border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--tbl-accent);color:#fff;font:bold .95rem var(--tbl-font-body);cursor:pointer;text-align:center}
+.btn-page:hover,.btn-page:focus-visible{filter:brightness(1.12)}
+/* Chargement : boîte grise et petit message, comme la section 1 */
+.pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
+.roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.roue{animation:none}}
+@media (max-width:600px){.pg{padding:16px 12px}}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <section class="pg chargement" aria-busy="true"><span class="roue" aria-hidden="true"></span>Chargement de l’extrait…</section>
+</div>
+<script>
+(function () {
+  var page = document.getElementById('page');
+  var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_6b43467106ca4b19ab9fdca95ae3c9fd~mv2.png';
+  function bloc(type, runs, niveau) { var b = { type: type, runs: runs }; if (niveau) { b.niveau = niveau; } return b; }
+  // Démonstration : le vrai extrait du livre « lodt » (Livres.extrait)
+  var DEMO = { titre: 'Les Ombres du temps', extrait: {
+    demande: !/[?&]pdf=non(&|$)/.test(location.search),
+    blocs: [
+      bloc('paragraphe', [{ texte: 'E' }, { texte: 'xtrait ', italique: true }, { texte: 'Conte 1 : Quand la maison dormait encore' }]),
+      bloc('paragraphe', []),
+      bloc('paragraphe', [{ texte: 'Le matin entrait doucement dans la maison, sans brusquer le silence.', italique: true }]),
+      bloc('paragraphe', []),
+      bloc('paragraphe', [{ texte: 'Chaque pièce gardait encore un peu de la nuit, comme si les souvenirs avaient besoin de quelques instants de plus pour reprendre leur place.', italique: true }]),
+      bloc('paragraphe', []),
+      bloc('paragraphe', [{ texte: 'Je marchais au milieu d’eux avec l’impression de retrouver une part de moi restée éveillée dans l’ombre.', italique: true }])
+    ] } };
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
+  function couleurSure(c) { return typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c) ? c : ''; }
+  function demander(type) { if (window.parent !== window) { window.parent.postMessage({ type: type }, '*'); } }
+
+  // Blocs du texte enrichi (modèle de l'EDL : paragraphe, titre, citation ; runs gras, italique, souligné,
+  // couleur du texte) vers des éléments, sans jamais passer par du HTML.
+  function blocsVersDom(blocs) {
+    var frag = document.createDocumentFragment();
+    (Array.isArray(blocs) ? blocs : []).forEach(function (b) {
+      var niveau = Math.min(6, Math.max(1, Number(b.niveau) || 4));
+      var e = document.createElement(b.type === 'titre' ? 'h' + niveau : (b.type === 'citation' ? 'blockquote' : 'p'));
+      var runs = Array.isArray(b.runs) ? b.runs : [];
+      if (!runs.length) { e.appendChild(document.createElement('br')); }
+      runs.forEach(function (r) {
+        var n = document.createTextNode(String(r.texte || ''));
+        function envelopper(tag) { var x = document.createElement(tag); x.appendChild(n); n = x; }
+        if (r.souligne) { envelopper('u'); }
+        if (r.italique) { envelopper('i'); }
+        if (r.gras) { envelopper('b'); }
+        var fg = r.couleur && couleurSure(r.couleur.foreground);
+        if (fg) { envelopper('span'); n.style.color = fg; }
+        e.appendChild(n);
+      });
+      frag.appendChild(e);
+    });
+    return frag;
+  }
+
+  function afficher(L) {
+    page.textContent = '';
+    var X = L && L.extrait;
+    var blocsX = X && Array.isArray(X.blocs) ? X.blocs : [];
+    var avecTexte = blocsX.some(function (b) { return Array.isArray(b.runs) && b.runs.some(function (r) { return String(r.texte || '').trim(); }); });
+    if (!avecTexte && !(X && X.demande)) { page.hidden = true; return; } // rien à montrer : la page replie la composante
+    page.hidden = false;
+    var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Extrait du livre'; page.appendChild(t);
+    var carte = el('section', 'pg');
+    if (avecTexte) { var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(blocsX)); carte.appendChild(rt); }
+    if (X.demande) {
+      var b = el('button', 'btn-page', 'Demande d’extrait'); b.type = 'button';
+      b.title = 'Recevoir l’extrait' + (L.titre ? ' du livre ' + L.titre : '') + ' par courriel';
+      b.addEventListener('click', function () { demander('tbl-livre:demandeExtrait'); });
+      carte.appendChild(b);
+    }
+    page.appendChild(carte);
+  }
+  function afficherDemo() { console.log('[livre-sectionExtrait] extrait de démonstration'); afficher(DEMO); }
+
+  var recu = false;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.type === 'tbl-livre') { recu = true; afficher(d.livre); }
+  });
+  if (window.parent === window) { afficherDemo(); return; }
+  window.parent.postMessage({ type: 'tbl-livre:pret' }, '*');
+
+  // Même détection que livre-section1.html : éditeur Wix (démonstration après 1,5 s) ou site (le livre vient de
+  // la page ; rien reçu après 8 s, la boîte se cache plutôt que de tourner sans fin).
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  console.log('[livre-sectionExtrait] parents :', hotes.join(', ') || '(inconnus)', dansEditeur ? '→ éditeur' : (surLeSite ? '→ site' : '→ autre'));
+  if (surLeSite) {
+    setTimeout(function () { if (!recu) { console.warn('[livre-sectionExtrait] aucun livre reçu de la page'); page.hidden = true; } }, 8000);
+    return;
+  }
+  setTimeout(function () { if (!recu) { afficherDemo(); } }, 1500);
+})();
+</script>
+</body>
+</html>
