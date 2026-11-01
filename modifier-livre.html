@@ -101,6 +101,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .rang-outils .ecart{flex:1}
 .rang-outils .aide{width:auto}
 .rang-outils .actions{margin-left:auto}
+/* Barre d'actions alignée (demande de Marcel du 1er novembre 2026) : tous les boutons à la même hauteur, avec ou
+   sans contour, et le total, le texte d'état et les boutons centrés sur la même ligne. */
+#outils .btn{height:38px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 16px;font-size:.9rem;line-height:1;white-space:nowrap;margin:0;max-width:none}
+/* La classe sec des boutons secondaires est aussi celle des boîtes de section de la page (.sec, marge de 22 px sous
+   la boîte) : sans margin:0 ci-dessus, les boutons à contour remontaient de 11 px par rapport aux autres. */
+#outils .btn:not(.sec){border:1px solid transparent}
+.rang-outils>*{align-self:center}
+.rang-outils .aide{min-height:0;line-height:38px}
 #outils #aide-appr:empty{display:none}
 .grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
 .grp:last-child{border-right:0}
@@ -692,10 +700,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// f6143f1 · 2026-11-01 10:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0ae1752 · 2026-11-01 11:01 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'f6143f1 · 2026-11-01 10:46';
+var VERSION_TBL = '0ae1752 · 2026-11-01 11:01';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
