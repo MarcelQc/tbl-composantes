@@ -73,13 +73,14 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   var page = document.getElementById('page');
   var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_ab62db9254e946639886c21de127b26e~mv2.png';
   var NBSP = ' ';
-  // Démonstration : le livre « lodt », comme les données de démonstration de l'EDL (donneesDemo). L'image
-  // publicitaire est publiée à côté de cette composante (livre-demo-lodt.jpg).
-  var PARAMS = new URLSearchParams(location.search);
+  // Démonstration : le livre « lodt », avec ses vraies images publicitaires (Livres.image1Ord et image1Mob),
+  // comme les données de démonstration de l'EDL (donneesDemo).
+  var gabaritDemande = /[?&]presentation=gabarit(&|$)/.test(location.search);
   var DEMO = {
     titre: 'Les Ombres du temps', prixNumerique: 7.99, etiquettePrix: '7,99$',
-    presentation1: PARAMS.get('presentation') === 'gabarit' ? 'gabarit' : 'image',
-    image1Ord: new URL('livre-demo-lodt.jpg', location.href).href, image1Mob: '',
+    presentation1: gabaritDemande ? 'gabarit' : 'image',
+    image1Ord: 'https://static.wixstatic.com/media/0037d9_fce9bf7e5e934b13897c5f9c88bcb9be~mv2.webp',
+    image1Mob: 'https://static.wixstatic.com/media/0037d9_5f9dcf67167a4f36959f22e1690ab0d2~mv2.webp',
     image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
     description: 'Livre numérique: Les Ombres du temps est un recueil de contes sans rimes, portés par le rythme naturel des phrases et la force des images. À travers l’enfance, l’absence, l’attente et la tendresse, il offre au lecteur l’espace de reconnaître ses propres émotions, dans une écriture simple, sensible et libre.'
   };
@@ -91,7 +92,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   }
   function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
   function demander(type) { if (window.parent !== window) { window.parent.postMessage({ type: type }, '*'); } }
-  var donnees = null, demo = false;
+  var donnees = null;
 
   function afficher(L) {
     donnees = L;
@@ -99,9 +100,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     if (!L || !L.titre) { page.hidden = true; return; } // rien à montrer : composante vide
     page.hidden = false;
     var mobile = window.matchMedia('(max-width:600px)').matches;
-    // Démonstration ouverte en local (file://) : l'image voisine est permise même sans https
-    var sure = demo ? function (u) { return u || ''; } : urlSure;
-    var imagePub = L.presentation1 === 'image' ? sure(mobile ? (L.image1Mob || L.image1Ord) : (L.image1Ord || L.image1Mob)) : '';
+    var imagePub = L.presentation1 === 'image' ? urlSure(mobile ? (L.image1Mob || L.image1Ord) : (L.image1Ord || L.image1Mob)) : '';
     // Titre en image « Livre » puis titre du livre centré, dans les deux présentations (comme l'EDL)
     var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Livre'; page.appendChild(t);
     page.appendChild(el('h1', 'titre-livre', L.titre));
@@ -111,7 +110,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
       var im = el('img', 'image-pub'); im.src = imagePub; im.alt = 'Image publicitaire du livre ' + L.titre; s1.appendChild(im);
     } else {
       var g = el('div', 'grille-hero');
-      var couv = el('div', 'couv'), src = sure(L.image);
+      var couv = el('div', 'couv'), src = urlSure(L.image);
       if (src) { var ic = el('img'); ic.src = src; ic.alt = 'Couverture du livre ' + L.titre; couv.appendChild(ic); }
       var carte = el('div', 'hero-carte');
       carte.appendChild(el('p', 'description', L.description || ''));
@@ -127,14 +126,17 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     bs.appendChild(achat); bs.appendChild(ext); s1.appendChild(bs);
     page.appendChild(s1);
   }
-  function afficherDemo() { demo = true; afficher(DEMO); }
-  // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image publicitaire
-  window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
+  function afficherDemo() { console.log('[livre-section1] livre de démonstration'); afficher(DEMO); }
+  // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image publicitaire.
+  // Dans un try : un navigateur sans addEventListener sur matchMedia ne doit pas bloquer la boîte.
+  try {
+    window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
+  } catch (e) { /* ignore */ }
 
   var recu = false;
   window.addEventListener('message', function (ev) {
     var d = ev.data;
-    if (d && d.type === 'tbl-livre') { recu = true; demo = false; afficher(d.livre); }
+    if (d && d.type === 'tbl-livre') { recu = true; afficher(d.livre); }
   });
   if (window.parent === window) { afficherDemo(); return; }
   window.parent.postMessage({ type: 'tbl-livre:pret' }, '*');
