@@ -692,10 +692,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 179d997 · 2026-11-01 10:25 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// f6143f1 · 2026-11-01 10:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '179d997 · 2026-11-01 10:25';
+var VERSION_TBL = 'f6143f1 · 2026-11-01 10:46';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3497,11 +3497,16 @@ function donneesDemo() {
     vedettes: [], presentation1: '', image1Ord: '', image1Mob: '', demande1: '', indic1: ''
   };
   var livresProposes = [];
+  // 4 vedettes, pour que les 4 places soient remplies en démonstration (demande de Marcel du 1er novembre 2026)
   var vedettesSemaine = [
     { id: '796f045a-ce6b-4c59-afe7-38c404356751', titre: 'Les grandes énigmes du monde',
       miniature: 'https://static.wixstatic.com/media/26b968_cfc6b50fee2442efa19157e1989e0a96~mv2.jpg' },
     { id: '6e4b6c98-b691-4115-bcf9-84debc3048bd', titre: 'Guide de survie aux Techniques policières (Numérique)',
-      miniature: 'https://static.wixstatic.com/media/26b968_5b6f2ec792e041a087828ff183afd5e4~mv2.jpg' }
+      miniature: 'https://static.wixstatic.com/media/26b968_5b6f2ec792e041a087828ff183afd5e4~mv2.jpg' },
+    { id: '078495a8-069d-4b09-814b-dd7ca5c11396', titre: 'True Crime Québec',
+      miniature: 'https://static.wixstatic.com/media/26b968_ce8ff7705bf3481c9f62bf9c825b57a0~mv2.jpg' },
+    { id: 'd08bada2-d068-48df-bdcf-6a2629d736d2', titre: 'Sur les traces du Québec paranormal',
+      miniature: 'https://static.wixstatic.com/media/26b968_661c4b1284bd4bd69466667d9a7f49f6~mv2.jpg' }
   ];
   var publie = {
     desc_plan: [blocPara('Livre numérique: Les Ombres du temps est un recueil de contes sans rimes, portés par le rythme naturel des phrases et la force des images. À travers l’enfance, l’absence, l’attente et la tendresse, il offre au lecteur l’espace de reconnaître ses propres émotions, dans une écriture simple, sensible et libre.')],
