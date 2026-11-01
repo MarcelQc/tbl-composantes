@@ -555,7 +555,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = 'ad554b3 · 2026-11-01 15:53';
+var VERSION_TBL = 'db6dec1 · 2026-11-01 16:00';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1387,13 +1387,20 @@ async function lancerApprobation() {
   var rep = await appeler(f.total ? 'payer' : 'envoyer', { coffretId: etat.d.coffretId });
   etat.occupe = false;
   if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'L’envoi a échoué. Réessayez dans un instant.', 'mal'); return; }
-  toast(f.total ? 'Paiement reçu : votre coffret est envoyé en approbation.' : 'Demande envoyée : votre coffret attend la validation de l’équipe.', 'ok');
+  // Paiement : la page Wix ouvre la page de paiement (code de la page Dashboard Coffret). Le coffret passe en
+  // attente de validation quand Wix confirme le paiement. Le montant payé est celui que le serveur recalcule.
+  if (rep.checkoutId) {
+    etat.occupe = true; majOutils();
+    toast('Ouverture de la page de paiement…', 'ok');
+    return;
+  }
+  toast('Demande envoyée : votre coffret attend la validation de l’équipe.' + (rep.facture ? ' Votre facture ' + rep.facture + ' vous a été envoyée par courriel.' : ''), 'ok');
   demarrer();
 }
 async function valider() {
   var corps = el('div');
   corps.appendChild(el('p', null, etat.d.produitBoutique
-    ? 'Le coffret sera publié. Il est déjà relié à son produit de la boutique, qui n’est pas modifié.'
+    ? 'Le coffret sera publié. Son produit de la boutique est mis à jour s’il y a lieu : prix, description et image du coffret. Son nom ne change pas.'
     : 'Le coffret sera publié et un NOUVEAU produit sera ajouté à la boutique (nom, prix, description et image du coffret). Il sera caché tant que son fichier numérique n’y est pas ajouté. Les autres produits ne sont pas touchés.'));
   // Case « Envoyer le courriel à l'auteur », toujours cochée au départ (demande de Marcel du 25 octobre 2026).
   // Décochée : ni courriel de publication ni facture à l'auteur, et aucun PDF dans ses documents.
@@ -1410,7 +1417,14 @@ async function valider() {
   etat.occupe = false;
   if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'La publication a échoué.', 'mal'); return; }
   if (rep.raisonProduit) { toast('Coffret publié, mais le produit n’a pas été ajouté à la boutique : ' + rep.raisonProduit, 'mal'); }
-  else { toast('Coffret publié. ' + (rep.produit === 'cree' ? 'Nouveau produit ajouté à la boutique, caché : ajoutez-y le fichier numérique, puis affichez-le.' : 'Produit de la boutique inchangé.') + (rep.sansCourriel ? ' Aucun courriel envoyé à l’auteur.' : ''), 'ok'); }
+  else {
+    var fb = rep.ficheBoutique, NOMS_FB = { prix: 'prix', description: 'description', image: 'image' };
+    var texteFb = rep.produit === 'cree' ? 'Nouveau produit ajouté à la boutique, caché : ajoutez-y le fichier numérique, puis affichez-le.'
+      : (!fb ? 'Produit de la boutique inchangé.'
+        : (fb.changes && fb.changes.length ? 'Produit de la boutique mis à jour (' + fb.changes.map(function (c) { return NOMS_FB[c] || c; }).join(', ') + ').' : '')
+          + (fb.ok ? '' : ' Attention : ' + (fb.raison || 'le produit de la boutique n’a pas été mis à jour.')));
+    toast('Coffret publié. ' + texteFb + (rep.sansCourriel ? ' Aucun courriel envoyé à l’auteur.' : ''), fb && !fb.ok ? 'mal' : 'ok');
+  }
   demarrer();
 }
 async function refuser() {
