@@ -651,6 +651,19 @@ body.v-rapport{background:#fff;color:#111}
         <img class="achat" data-action="achat" alt="Acheter le ePUB" src="https://static.wixstatic.com/media/7e3c5f_0393f08cbddc4b9ea22ca0669d2d8b79~mv2.png">
       </div>
     </section>
+    <!-- Section « Découvrez notre coffret » (demande de Marcel du 1er novembre 2026) : l'image d'un coffret publié,
+         de n'importe quel auteur, avant le Synopsis (déplacée le 1er novembre 2026, demande de Marcel). L'interrupteur et la liste
+         des coffrets ne paraissent que dans l'édition. -->
+    <section data-section="coffret">
+    <div class="controle-auteur controle-coffret">
+      <label class="interrupteur"><input type="checkbox" role="switch" data-role="affichecoffret"><span class="piste" aria-hidden="true"></span><span>Afficher un coffret sur la page</span></label>
+      <select data-role="choix-coffret" aria-label="Coffret à afficher sur la page"></select>
+      <span class="info-l" data-role="info-coffret"></span>
+    </div>
+    <div class="section-masquee">La section Coffret n’est pas affichée sur la page publiée. Activez l’interrupteur et choisissez un coffret, le vôtre ou celui d’un autre auteur.</div>
+    <img class="titre-img fige" alt="Découvrez notre coffret" src="https://static.wixstatic.com/media/26b968_389995ae98a8436390bc4bc8751ef8d3~mv2.png">
+    <div class="sec carte s-coffret"><img class="image-pub" data-role="img-coffret" alt="Image du coffret"></div>
+    </section>
     <img class="titre-img fige" alt="Synopsis" src="https://static.wixstatic.com/media/26b968_9256b8eb5fa24de8b9eb4456a760783e~mv2.png">
     <div class="sec carte champ" data-champ="synopsis"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div></div>
     <section data-section="auteur">
@@ -676,19 +689,6 @@ body.v-rapport{background:#fff;color:#111}
     <div class="sec carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
       <div data-zone-controle="extraitPdf"></div>
       <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
-    <!-- Section « Découvrez notre coffret » (demande de Marcel du 1er novembre 2026) : l'image d'un coffret publié,
-         de n'importe quel auteur, juste avant « En vedette » comme sur la page publique. L'interrupteur et la liste
-         des coffrets ne paraissent que dans l'édition. -->
-    <section data-section="coffret">
-    <div class="controle-auteur controle-coffret">
-      <label class="interrupteur"><input type="checkbox" role="switch" data-role="affichecoffret"><span class="piste" aria-hidden="true"></span><span>Afficher un coffret sur la page</span></label>
-      <select data-role="choix-coffret" aria-label="Coffret à afficher sur la page"></select>
-      <span class="info-l" data-role="info-coffret"></span>
-    </div>
-    <div class="section-masquee">La section Coffret n’est pas affichée sur la page publiée. Activez l’interrupteur et choisissez un coffret, le vôtre ou celui d’un autre auteur.</div>
-    <img class="titre-img fige" alt="Découvrez notre coffret" src="https://static.wixstatic.com/media/26b968_389995ae98a8436390bc4bc8751ef8d3~mv2.png">
-    <div class="sec carte s-coffret"><img class="image-pub" data-role="img-coffret" alt="Image du coffret"></div>
-    </section>
     <!-- Section « En vedette » (tâches 138 et 143) : livres choisis par l'auteur parmi ses autres livres publiés et
          actifs ; les places libres montrent les vedettes de la semaine, comme sur le site. -->
     <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
@@ -700,10 +700,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 0ae1752 · 2026-11-01 11:01 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// dc36372 · 2026-11-01 11:18 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '0ae1752 · 2026-11-01 11:01';
+var VERSION_TBL = 'dc36372 · 2026-11-01 11:18';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {

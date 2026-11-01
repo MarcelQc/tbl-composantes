@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Livre, section Coffret | Éditions TBL</title>
+<style>
+/* Section « Découvrez notre coffret » de la page d'un livre (/livres/{cle}) : titre en image, puis l'image du coffret
+   choisi dans l'éditeur de livre (EDL), paysage sur ordinateur et portrait sur mobile (sans portrait : la version
+   paysage). Le coffret peut être celui d'un autre auteur. Un clic sur l'image mène à la page du coffret.
+   Demande de Marcel du 1er novembre 2026.
+   Données : envoyées par la page (public/livre-page.js du dépôt editionstbl, brancherLivre), message
+   { type: 'tbl-livre', livre } ; cette boîte lit livre.coffret = { afficher, titre, image, imageMob, lien }.
+   Le clic demande à la page d'ouvrir le coffret ('tbl-livre:coffret'). Section désactivée ou sans coffret : la page
+   replie la composante.
+   Ouverte seule dans un navigateur ou dans l'éditeur Wix (le code de la page ne tourne pas) : le coffret
+   « Les plumes du silence + Les Ombres du Temps » en démonstration, comme livre-section1.html. */
+:root{--tbl-paper:#16181c;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
+.page{width:min(1160px,100%);margin:0 auto;padding:0 0 4px}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+/* Boîte grise comme les autres sections (EDL) */
+.pg{max-width:1000px;margin:0 auto 22px;background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px}
+.lien-coffret{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;border-radius:6px}
+.lien-coffret:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.image-coffret{display:block;width:100%;height:auto;border-radius:6px;transition:filter .15s}
+.lien-coffret:hover .image-coffret{filter:brightness(1.08)}
+/* Chargement : boîte grise et petit message, comme la section 1 */
+.pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
+.roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.roue{animation:none}.image-coffret{transition:none}}
+@media (max-width:600px){.pg{padding:12px}}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <section class="pg chargement" aria-busy="true"><span class="roue" aria-hidden="true"></span>Chargement du coffret…</section>
+</div>
+<script>
+(function () {
+  var page = document.getElementById('page');
+  var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_389995ae98a8436390bc4bc8751ef8d3~mv2.png';
+  // Démonstration : le vrai coffret « Les plumes du silence + Les Ombres du Temps » et ses images « Promo duo »
+  var DEMO = { titre: 'Les Ombres du temps', coffret: {
+    afficher: true, titre: 'Ensemble numérique Les plumes du silence + Les Ombres du Temps',
+    image: 'https://static.wixstatic.com/media/26b968_497b44ae758a4cc9afdca68bc928dedd~mv2.png',
+    imageMob: 'https://static.wixstatic.com/media/26b968_5dde62e596024b39b1f992a055f5011e~mv2.png',
+    lien: '' } };
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
+  function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
+  function demander(type) { if (window.parent !== window) { window.parent.postMessage({ type: type }, '*'); } }
+  var donnees = null;
+
+  function afficher(L) {
+    donnees = L;
+    page.textContent = '';
+    var C = L && L.coffret;
+    var mobile = window.matchMedia('(max-width:600px)').matches;
+    var src = C && C.afficher ? urlSure(mobile ? (C.imageMob || C.image) : (C.image || C.imageMob)) : '';
+    if (!src) { page.hidden = true; return; } // section désactivée ou sans image : la page replie la composante
+    page.hidden = false;
+    var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Découvrez notre coffret'; page.appendChild(t);
+    var boite = el('section', 'pg');
+    var b = el('button', 'lien-coffret'); b.type = 'button';
+    b.title = 'Voir le coffret' + (C.titre ? ' « ' + C.titre + ' »' : '');
+    var im = el('img', 'image-coffret'); im.src = src; im.alt = C.titre ? 'Coffret ' + C.titre : 'Coffret';
+    b.appendChild(im);
+    b.addEventListener('click', function () { demander('tbl-livre:coffret'); });
+    boite.appendChild(b);
+    page.appendChild(boite);
+  }
+  function afficherDemo() { console.log('[livre-sectionCoffret] coffret de démonstration'); afficher(DEMO); }
+  // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image
+  try {
+    window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
+  } catch (e) { /* ignore */ }
+
+  var recu = false;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.type === 'tbl-livre') { recu = true; afficher(d.livre); }
+  });
+  if (window.parent === window) { afficherDemo(); return; }
+  window.parent.postMessage({ type: 'tbl-livre:pret' }, '*');
+
+  // Même détection que livre-section1.html : éditeur Wix (démonstration après 1,5 s) ou site (le livre vient de
+  // la page ; rien reçu après 8 s, la boîte se cache plutôt que de tourner sans fin).
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  console.log('[livre-sectionCoffret] parents :', hotes.join(', ') || '(inconnus)', dansEditeur ? '→ éditeur' : (surLeSite ? '→ site' : '→ autre'));
+  if (surLeSite) {
+    setTimeout(function () { if (!recu) { console.warn('[livre-sectionCoffret] aucun livre reçu de la page'); page.hidden = true; } }, 8000);
+    return;
+  }
+  setTimeout(function () { if (!recu) { afficherDemo(); } }, 1500);
+})();
+</script>
+</body>
+</html>
