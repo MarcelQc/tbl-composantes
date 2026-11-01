@@ -436,6 +436,7 @@ textarea{min-height:96px;resize:vertical}
       <section class="section-livres" id="section-coffrets">
         <h3 id="titre-mes-coffrets">Mes coffrets</h3>
         <p class="note note-coffret" id="note-coffret" hidden></p>
+        <p class="statut" id="etat-coffrets" role="status" hidden></p>
         <div class="livres" id="liste-coffrets"></div>
         <div class="card vide" id="vide-coffrets" hidden>Aucun coffret pour le moment.</div>
       </section>
@@ -668,6 +669,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
   else if (msg.type === 'resultatSupprimerCommentaire' || msg.type === 'resultatDetruireCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
+  else if (msg.type === 'resultatSupprimerCoffret') { surSupprimerCoffret(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -734,10 +736,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// f1eec6e · 2026-11-01 11:34 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 316e4c4 · 2026-11-01 12:38 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'f1eec6e · 2026-11-01 11:34';
+var VERSION_TBL = '316e4c4 · 2026-11-01 12:38';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1323,8 +1325,39 @@ function carteCoffret(d, admin) {
   } else if (copie === 'Modifier' || aCorriger) { zone.appendChild(bouton(aCorriger ? 'Reprendre ma correction' : 'Reprendre ma modification', 'btn petit', ouvrir)); }
   else if (d.statut === 'Nouveau') { zone.appendChild(bouton('Reprendre ma demande', 'btn petit', ouvrir)); }
   else if (d.statut === 'Publier') { zone.appendChild(bouton('Modifier le coffret', 'btn sec petit', ouvrir)); }
+  // Administrateur : supprimer un coffret publié par erreur (décision de Marcel du 1er novembre 2026 : ses livres ne
+  // changent pas ; on le supprime et l'auteur en crée un nouveau). Le serveur l'archive et masque son produit.
+  if (admin) {
+    zone.appendChild(bouton('Supprimer le coffret', 'btn sec petit', function () {
+      confirmer('Supprimer ce coffret ?',
+        '« ' + d.titre + ' » disparaîtra du site et de l’Espace Auteurs, et son produit sera masqué dans la boutique (plus personne ne pourra l’acheter). '
+        + 'Rien n’est effacé : le coffret est archivé et les commandes passées restent intactes. Les pages de livres qui l’affichaient ne le montreront plus. '
+        + 'L’auteur pourra ensuite créer un nouveau coffret.',
+        'Supprimer', function () {
+          var st = $('etat-coffrets');
+          st.className = 'statut'; st.textContent = 'Suppression de « ' + d.titre + ' »…'; st.hidden = false;
+          envoyer({ type: 'supprimerCoffret', coffretId: d.id });
+        });
+    }));
+  }
   corps.appendChild(zone);
   return carte;
+}
+function surSupprimerCoffret(msg) {
+  if (accesBloque(msg)) { return; }
+  var st = $('etat-coffrets');
+  st.hidden = false;
+  if (msg.ok) {
+    var b = msg.boutique || {};
+    st.className = 'statut ok';
+    st.textContent = '« ' + (msg.titre || 'Le coffret') + ' » est supprimé (archivé). '
+      + (b.ok ? (b.deja ? 'Son produit était déjà masqué dans la boutique.' : 'Son produit est masqué dans la boutique.') : 'Attention : son produit n’a pas pu être masqué dans la boutique, faites-le dans Wix. ')
+      + (msg.livres ? ' ' + msg.livres + ' page(s) de livre ne l’affichent plus.' : '');
+    envoyer({ type: 'pret' }); // recharge la liste
+  } else {
+    st.className = 'statut err';
+    st.textContent = msg.message || (msg.statut === 'refuse' ? 'Cette action est réservée aux administrateurs.' : 'La suppression a échoué. Réessayez dans un instant.');
+  }
 }
 
 function rendreLivres() {
