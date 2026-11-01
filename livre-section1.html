@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Livre, section 1 | Éditions TBL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Haut de la page d'un livre (/livres/{cle}) : titre en image « Livre », titre du livre et section 1 (image
+   publicitaire ou présentation du livre, bouton « Numérique » avec le prix, bouton noir « Extrait »). Même allure
+   que l'aperçu de l'éditeur de livre (EDL, Web\modifier-livre.html, gabarit tpl-page) et que la boîte du coffret
+   (coffret-numerique.html). Demande de Marcel du 1er novembre 2026.
+   Données : envoyées par la page, message { type: 'tbl-livre', livre } avec
+   { titre, prixNumerique, presentation1: 'image' | 'gabarit', image1Ord, image1Mob, image, description, etiquettePrix }.
+   La composante annonce qu'elle est prête ('tbl-livre:pret') et demande à la page d'agir ('tbl-livre:acheter',
+   'tbl-livre:extrait').
+   Ouverte seule dans un navigateur ou dans l'éditeur Wix (le code de la page ne tourne pas) : le livre « lodt »
+   (Les Ombres du temps) en démonstration, pour voir la boîte à sa vraie hauteur. ?presentation=gabarit montre
+   la présentation du livre au lieu de l'image publicitaire. */
+:root{
+  --tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;
+  --tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent}
+body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
+.page{width:min(1160px,100%);margin:0 auto;padding:0 0 4px;container-type:inline-size;container-name:page}
+/* Section 1 dans une boîte grise ; ses éléments intérieurs un ton plus foncé (comme l'EDL) */
+.pg{max-width:1000px;margin:0 auto 22px;background:var(--tbl-paper);border-radius:var(--tbl-radius);padding:22px 20px}
+.titre-img{display:block;margin:4px auto -8px;width:min(340px,72%);height:auto;position:relative;z-index:1}
+/* Titre du livre, centré sous l'image « Livre » */
+.titre-livre{font:600 clamp(22px,3.2vw,30px)/1.25 'Oswald','Arial Narrow',Arial,sans-serif;text-align:center;letter-spacing:.03em;margin:14px auto 16px;padding:0 14px;max-width:1000px;color:#fff}
+.image-pub{width:100%;display:block;border-radius:6px}
+/* Présentation du livre : image du livre à gauche, description et prix à droite */
+.grille-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:26px;align-items:stretch}
+.couv img{width:100%;max-width:330px;display:block;margin:0 auto}
+.hero-carte{border-radius:var(--tbl-radius);padding:16px 26px 20px;min-height:400px;height:100%;display:flex;flex-direction:column;background:var(--tbl-paper-2)}
+.description{font:500 22px/1.5 'Oswald','Arial Narrow',Arial,sans-serif;letter-spacing:.05em;margin:0;white-space:pre-line}
+.prix{margin-top:auto;padding-top:18px;text-align:center;font:700 24px Georgia,'Times New Roman',serif;color:#F28901}
+.boutons-s1{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:22px 0 6px}
+.btn-achat{display:inline-block;background:#8b0000;color:#fff;border:2px solid #8b0000;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer}
+.btn-achat:hover,.btn-achat:focus-visible{filter:brightness(1.15)}
+/* Bouton noir (Templates\bouton-noir.html) : au survol, texte noir sur fond blanc */
+.btn-noir{display:inline-block;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
+.btn-noir:hover,.btn-noir:focus-visible{background:#fff;color:#000}
+/* Chargement : boîte grise et petit message, comme le coffret */
+.pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center}
+.chargement .msg{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted);font-size:1rem}
+.chargement .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.chargement .roue{animation:none}}
+@container page (max-width:760px){
+  .grille-hero{grid-template-columns:1fr;gap:14px}
+  .hero-carte{min-height:0;padding:14px 16px 18px}
+  .couv img{max-width:240px}
+  .description{font-size:17px}
+}
+@media (max-width:520px){.pg{padding:14px 12px}.btn-achat,.btn-noir{padding:11px 20px;font-size:15px}}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <section class="pg chargement" aria-busy="true">
+    <div class="msg" role="status"><span class="roue" aria-hidden="true"></span>Chargement du livre…</div>
+  </section>
+</div>
+<script>
+(function () {
+  var page = document.getElementById('page');
+  var IMAGE_TITRE = 'https://static.wixstatic.com/media/26b968_ab62db9254e946639886c21de127b26e~mv2.png';
+  var NBSP = ' ';
+  // Démonstration : le livre « lodt », comme les données de démonstration de l'EDL (donneesDemo). L'image
+  // publicitaire est publiée à côté de cette composante (livre-demo-lodt.jpg).
+  var PARAMS = new URLSearchParams(location.search);
+  var DEMO = {
+    titre: 'Les Ombres du temps', prixNumerique: 7.99, etiquettePrix: '7,99$',
+    presentation1: PARAMS.get('presentation') === 'gabarit' ? 'gabarit' : 'image',
+    image1Ord: new URL('livre-demo-lodt.jpg', location.href).href, image1Mob: '',
+    image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
+    description: 'Livre numérique: Les Ombres du temps est un recueil de contes sans rimes, portés par le rythme naturel des phrases et la force des images. À travers l’enfance, l’absence, l’attente et la tendresse, il offre au lecteur l’espace de reconnaître ses propres émotions, dans une écriture simple, sensible et libre.'
+  };
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
+  // Même texte que le bouton de l'EDL (texteNumerique) : « Numérique - 7,99 $ »
+  function texteNumerique(p) {
+    var n = Number(String(p === undefined || p === null ? '' : p).replace(',', '.').replace(/\s|\$/g, ''));
+    return 'Numérique' + (Number.isFinite(n) && n > 0 && n < 1000 ? ' - ' + n.toFixed(2).replace('.', ',') + NBSP + '$' : '');
+  }
+  function urlSure(u) { return typeof u === 'string' && /^https:\/\//i.test(u) ? u : ''; }
+  function demander(type) { if (window.parent !== window) { window.parent.postMessage({ type: type }, '*'); } }
+  var donnees = null, demo = false;
+
+  function afficher(L) {
+    donnees = L;
+    page.textContent = '';
+    if (!L || !L.titre) { page.hidden = true; return; } // rien à montrer : composante vide
+    page.hidden = false;
+    var mobile = window.matchMedia('(max-width:600px)').matches;
+    // Démonstration ouverte en local (file://) : l'image voisine est permise même sans https
+    var sure = demo ? function (u) { return u || ''; } : urlSure;
+    var imagePub = L.presentation1 === 'image' ? sure(mobile ? (L.image1Mob || L.image1Ord) : (L.image1Ord || L.image1Mob)) : '';
+    // Titre en image « Livre » puis titre du livre centré, dans les deux présentations (comme l'EDL)
+    var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Livre'; page.appendChild(t);
+    page.appendChild(el('h1', 'titre-livre', L.titre));
+    // Section 1 : image publicitaire, ou présentation du livre (image du livre, description et prix)
+    var s1 = el('section', 'pg s1');
+    if (imagePub) {
+      var im = el('img', 'image-pub'); im.src = imagePub; im.alt = 'Image publicitaire du livre ' + L.titre; s1.appendChild(im);
+    } else {
+      var g = el('div', 'grille-hero');
+      var couv = el('div', 'couv'), src = sure(L.image);
+      if (src) { var ic = el('img'); ic.src = src; ic.alt = 'Couverture du livre ' + L.titre; couv.appendChild(ic); }
+      var carte = el('div', 'hero-carte');
+      carte.appendChild(el('p', 'description', L.description || ''));
+      carte.appendChild(el('div', 'prix', L.etiquettePrix || ''));
+      var droite = el('div'); droite.appendChild(carte);
+      g.appendChild(couv); g.appendChild(droite); s1.appendChild(g);
+    }
+    var bs = el('div', 'boutons-s1');
+    var achat = el('button', 'btn-achat', texteNumerique(L.prixNumerique)); achat.type = 'button';
+    achat.addEventListener('click', function () { demander('tbl-livre:acheter'); });
+    var ext = el('button', 'btn-noir', 'Extrait'); ext.type = 'button'; ext.title = 'Aller à l’extrait du livre';
+    ext.addEventListener('click', function () { demander('tbl-livre:extrait'); });
+    bs.appendChild(achat); bs.appendChild(ext); s1.appendChild(bs);
+    page.appendChild(s1);
+  }
+  function afficherDemo() { demo = true; afficher(DEMO); }
+  // Passage ordinateur / mobile (rotation, fenêtre redimensionnée) : la bonne version de l'image publicitaire
+  window.matchMedia('(max-width:600px)').addEventListener('change', function () { if (donnees) { afficher(donnees); } });
+
+  var recu = false;
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.type === 'tbl-livre') { recu = true; demo = false; afficher(d.livre); }
+  });
+  if (window.parent === window) { afficherDemo(); return; }
+  window.parent.postMessage({ type: 'tbl-livre:pret' }, '*');
+
+  // Éditeur Wix (Design) : le code de la page ne tourne pas, rien n'arrive. La composante montre alors le livre
+  // de démonstration. Sur le site (et dans l'Aperçu), c'est toujours le livre envoyé par la page. Seuls les noms
+  // de serveurs comptent ; l'éditeur a priorité sur le site (comme coffret-numerique.html).
+  function hotesParents() {
+    var h = [];
+    try { Array.prototype.forEach.call(location.ancestorOrigins || [], function (o) { h.push(new URL(o).hostname); }); } catch (e) { /* ignore */ }
+    try { if (document.referrer) { h.push(new URL(document.referrer).hostname); } } catch (e) { /* ignore */ }
+    return h;
+  }
+  var hotes = hotesParents();
+  var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
+  var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
+  console.log('[livre-section1] parents :', hotes.join(', ') || '(inconnus)', dansEditeur ? '→ éditeur' : (surLeSite ? '→ site' : '→ autre'));
+  if (surLeSite) { return; }
+  setTimeout(function () { if (!recu) { afficherDemo(); } }, 1500);
+})();
+</script>
+</body>
+</html>
