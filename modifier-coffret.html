@@ -434,6 +434,7 @@ var GROUPES = {
 };
 var FRAIS = 0.05, TPS = 0.05, TVQ = 0.09975;
 var MAX_LIVRES = 4;
+var MIN_LIVRES = 2; // un coffret réunit au moins deux livres (demande de Marcel du 1er novembre 2026)
 
 // Champs du coffret (une seule collection Coffrets, décision de Marcel). type : texte, image, demande, autre, livre,
 // vedette, info (jamais facturé). Les noms servent au détail des montants et au Rapport Avant / Après.
@@ -554,7 +555,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = 'a55750d · 2026-11-01 11:28';
+var VERSION_TBL = 'f1eec6e · 2026-11-01 11:34';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -800,7 +801,7 @@ function manques(c) {
   if (!(prixCents(c.prix) > 0)) { m.push('le prix du coffret'); }
   if (!motsDe(c.description).length) { m.push('la description'); }
   if (!c.imageBoutique) { m.push('l’image du coffret'); }
-  if (!livresChoisis(c).length) { m.push('au moins un livre'); }
+  if (livresChoisis(c).length < MIN_LIVRES) { m.push('au moins deux livres'); }
   if (c.presentation1 === 'image' && !c.image1Ord && !c.demande1) { m.push('l’image publicitaire (ou la demande à TBL)'); }
   if (c.section2 && !c.image2 && !c.demande2) { m.push('l’image supplémentaire (ou la demande à TBL)'); }
   return m;
@@ -1177,6 +1178,9 @@ function rendrePage(c, mode, appareil) {
   for (var i = 1; i <= places; i += 1) { grille.appendChild(carteLivre(c, i, mode)); }
   s3.appendChild(grille);
   page.appendChild(s3);
+  // Édition : les livres du coffret se choisissent en premier, avant la section Coffret (demande de Marcel du
+  // 1er novembre 2026). Les aperçus gardent l'ordre de la page publique.
+  if (ed) { page.insertBefore(s3, page.firstChild); page.insertBefore(titreS3, s3); }
 
   // ----- En vedette (comme l'EDL) : places remplies dans l'ordre, place libre = vedette de la semaine
   // Titre « En vedette » : la même image que dans l'EDL et sur le site, au-dessus de la boîte grise
@@ -1207,7 +1211,13 @@ function gabaritCoffret(c, choisis) {
     img.style.zIndex = String(100 - Math.abs(dec * 10));
     covers.appendChild(img);
   });
-  if (!n) { var vd = el('div', 'image-vide'); vd.style.maxWidth = '180px'; vd.style.aspectRatio = '2/3'; vd.appendChild(el('strong', null, 'Choisissez vos livres')); vd.appendChild(el('span', null, 'Section 3, plus bas')); covers.appendChild(vd); }
+  // Moins de deux livres choisis : des couvertures vides complètent jusqu'à deux (les livres se choisissent juste
+  // au-dessus, dans « Livres du coffret », demande de Marcel du 1er novembre 2026)
+  for (var k = n; k < MIN_LIVRES; k += 1) {
+    var vd = el('div', 'image-vide'); vd.style.maxWidth = '140px'; vd.style.aspectRatio = '2/3'; vd.style.margin = '0 8px';
+    vd.appendChild(el('strong', null, 'Livre ' + (k + 1))); vd.appendChild(el('span', null, 'Livre à choisir'));
+    covers.appendChild(vd);
+  }
   b.appendChild(covers);
   b.appendChild(el('div', 'titles', choisis.map(function (l) { return l.titre; }).join(' + ')));
   var price = el('div', 'price');
@@ -1246,7 +1256,7 @@ function carteLivre(c, i, mode) {
     return carte;
   }
   if (!l) {
-    if (choisir) { var vd = el('div', 'image-vide'); vd.appendChild(el('strong', null, sel.disabled ? 'Choisissez d’abord le livre ' + (i - 1) : 'Place libre')); vd.appendChild(el('span', null, 'Un coffret contient de 1 à 4 livres.')); carte.appendChild(vd); }
+    if (choisir) { var vd = el('div', 'image-vide'); vd.appendChild(el('strong', null, sel.disabled ? 'Choisissez d’abord le livre ' + (i - 1) : 'Place libre')); vd.appendChild(el('span', null, 'Un coffret contient de 2 à 4 livres.')); carte.appendChild(vd); }
     return carte;
   }
   var img = el('img', 'couv'); img.src = l.couverture; img.alt = l.titre; carte.appendChild(img);
