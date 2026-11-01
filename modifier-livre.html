@@ -692,10 +692,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// ba70fc3 · 2026-11-01 10:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 4b0005f · 2026-11-01 10:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'ba70fc3 · 2026-11-01 10:14';
+var VERSION_TBL = '4b0005f · 2026-11-01 10:22';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2543,15 +2543,19 @@ var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de
 // Section 1, mêmes tarifs que l'EDC : changer de présentation 5 $, image publicitaire créée par TBL 20 $.
 var PRIX_CHOIX_S1 = 500;
 var PRIX_IMAGE_TBL = 2000;
+// Section « Découvrez notre coffret » : 10 $ pour l'activer, la désactiver ou changer de coffret (demande de Marcel
+// du 1er novembre 2026), compris dans le prix fixe d'un livre Nouveau.
+var PRIX_COFFRET = 1000;
 function lignesS1(P, W) {
   var l = [];
   if (valL(P.presentation1, 'presentation1') !== valL(W.presentation1, 'presentation1')) { l.push({ nom: 'Présentation de la section 1', montant: PRIX_CHOIX_S1, cle: 'ctl-s1' }); }
   if (W.demande1 && !P.demande1) { l.push({ nom: 'Image publicitaire créée par TBL', montant: PRIX_IMAGE_TBL, cle: 'demande1' }); }
+  if (texteCoffret(P) !== texteCoffret(W)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret' }); }
   return l;
 }
 function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
 // textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }] ; nbVedettes : places « En vedette » changées
-// (10 $ chacune, décision du 21 octobre 2026) ; autres : lignes déjà chiffrées (section 1).
+// (10 $ chacune, décision du 21 octobre 2026) ; autres : lignes déjà chiffrées (section 1, section Coffret).
 function factureCorrections(textes, images, gratuit, nbVedettes, autres) {
   var lignes = (autres || []).slice();
   textes.forEach(function (t) { var m = prixTexte(t.chg, t.taux); if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle }); } });
