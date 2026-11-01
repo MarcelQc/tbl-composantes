@@ -705,10 +705,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 6ddeae2 · 2026-11-01 15:26 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// ad554b3 · 2026-11-01 15:53 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '6ddeae2 · 2026-11-01 15:26';
+var VERSION_TBL = 'ad554b3 · 2026-11-01 15:53';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1379,19 +1379,6 @@ function alignerMots(blocsAvant, blocsApres) {
 var EN_WIX = true;
 var LIBELLE_PAYER = EN_WIX ? 'Payer' : 'Payer (simulation)';
 var MOTIF_MAX = 1000; // longueur maximale du commentaire de refus
-// Envoi en approbation (sans paiement pour un auteur gratuit ou admin, après paiement pour un auteur payant),
-// approbation, refus et publication par un administrateur : branchés au serveur.
-var APPROBATION_ACTIVE = true;
-var TEXTES_BIENTOT = {
-  appr: ['Envoyer en approbation', 'Le calcul du prix de vos modifications et le paiement arrivent bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.'],
-  publier: ['Publier', 'La publication directe par un administrateur arrive bientôt. Vos modifications sont enregistrées dans la copie.'],
-  revue: ['Approuver ou refuser', 'L’approbation et le refus d’une demande arrivent bientôt.'],
-  prixCorrection: ['Envoyer en approbation', 'Le calcul du prix des corrections d’un livre déjà publié arrive bientôt. Vos modifications sont enregistrées dans votre copie : vous les retrouverez telles quelles.']
-};
-function bientot(cle) {
-  var t = TEXTES_BIENTOT[cle];
-  return modale({ titre: t[0], corps: t[1], boutons: [{ id: 'ok', libelle: 'J’ai compris', principal: true }] });
-}
 var URL_ESPACE_AUTEURS = 'espace-auteurs.html';
 var PARAMS = new URLSearchParams(location.search);
 var VUE = ['apercu', 'rapport'].indexOf(PARAMS.get('vue')) >= 0 ? PARAMS.get('vue') : 'edition';
@@ -2524,7 +2511,7 @@ async function lancerApprobation() {
     });
     if (r !== 'ok') { return; }
   }
-  if (APPROBATION_ACTIVE) { approuver(); } else { bientot('appr'); }
+  approuver();
 }
 // « Demande d'extrait » : explique à l'auteur comment son extrait PDF est distribué.
 function demandeExtrait() {
@@ -2546,7 +2533,8 @@ function argent(cents) {
 // (service-correction-pages-livre.md, section 4). Montants en cents. Seuls les textes et les images sont
 // payants : la section Auteur (afficher ou masquer) et le courriel de contact sont gratuits.
 // Le plafond de 80 $ n'est jamais atteint ici (4 textes et 2 images : 60 $ au plus).
-// Affichage seulement : le paiement des corrections viendra avec le calcul du serveur (tâches 58-59).
+// Le serveur refait le même calcul sur la copie enregistrée (livres-editeur.js, servicesCorrections) : c'est son
+// montant qui est payé.
 var PRIX_TEXTE_PETIT = 500;   // moins de 20 % des mots modifiés (ou mise en forme seulement)
 var PRIX_TEXTE_GRAND = 1000;  // 20 % ou plus des mots modifiés
 var SEUIL_TEXTE_GRAND = 20;
@@ -3108,16 +3096,28 @@ async function refuser() {
   await demarrer();
 }
 // Un auteur payant paie AVANT la vérification par l'équipe. Une page « À corriger » a déjà été payée : son
-// nouvel envoi est sans paiement (même règle que livres-editeur.js).
-function paiementRequis() { return !etat.d.gratuit && etat.d.etat !== 'corriger'; }
+// nouvel envoi est sans paiement, comme des corrections sans service payant (même règle que livres-editeur.js).
+function paiementRequis() {
+  var f = factureCourante();
+  return !etat.d.gratuit && etat.d.etat !== 'corriger' && !!f && f.total > 0;
+}
 
 function paragraphe(texte) { var p = document.createElement('p'); p.textContent = texte; return p; }
 
 // Auteur payant : le serveur crée le paiement Wix, puis la page Wix ouvre la page de paiement. La page passe
 // à « En attente de validation » quand Wix confirme le paiement. En local, le paiement est simulé.
+// Corrections d'un livre publié : le montant payé est celui que le serveur recalcule sur la copie enregistrée
+// (livres-editeur.js, servicesCorrections) ; la page le relit juste avant d'ouvrir la fenêtre.
 async function payer() {
   var f = etat.d.facture;
-  if (!f) { bientot('prixCorrection'); return; }
+  if (!etat.nouveau) {
+    try {
+      var frais = await appeler('obtenir', { livreId: LIVRE_ID });
+      if (frais && frais.facture) { f = etat.d.facture = frais.facture; }
+    } catch (e) { /* le calcul de la page reste affiché */ }
+    f = f || factureCourante();
+  }
+  if (!f || !(f.total > 0)) { toast('Aucun service payant dans vos modifications : vous pouvez les envoyer en approbation.', 'ok'); return; }
   var corps = document.createElement('div');
   corps.appendChild(paragraphe('Pour que l’équipe TBL vérifie puis publie votre page, le paiement de vos services est requis. Vous serez dirigé vers la page de paiement sécurisée du site.'));
   var resume = document.createElement('div');
@@ -3166,7 +3166,9 @@ async function approuver() {
   corps.appendChild(paragraphe('Votre page sera envoyée à l’équipe TBL, qui la vérifiera puis la publiera. Elle sera verrouillée pendant l’examen.'));
   corps.appendChild(paragraphe(etat.d.gratuit
     ? 'Nos services vous sont offerts gratuitement : aucun paiement n’est demandé.'
-    : 'Vos services ont déjà été payés : aucun nouveau paiement n’est demandé.'));
+    : (etat.d.etat === 'corriger'
+      ? 'Vos services ont déjà été payés : aucun nouveau paiement n’est demandé.'
+      : 'Vos modifications ne comportent aucun service payant : aucun paiement n’est demandé.')));
   var res = null;
   var r = await modale({
     titre: 'Envoyer en approbation', corps: corps,
@@ -3253,8 +3255,8 @@ function brancherEdition() {
   $('t-rapport').addEventListener('click', function () { tracer('rapport', 'rapport'); ouvrirVue('rapport'); });
   $('b-enreg').addEventListener('click', enregistrer);
   $('b-appr').addEventListener('click', lancerApprobation);
-  $('b-valider').addEventListener('click', function () { if (APPROBATION_ACTIVE) { valider(); } else { bientot(etat.revue ? 'revue' : 'publier'); } });
-  $('b-refuser').addEventListener('click', function () { if (APPROBATION_ACTIVE) { refuser(); } else { bientot('revue'); } });
+  $('b-valider').addEventListener('click', valider);
+  $('b-refuser').addEventListener('click', refuser);
   document.addEventListener('selectionchange', function () { if (etat.actif) { majOutils(); } });
   document.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && VUE === 'edition') { e.preventDefault(); enregistrer(); }
