@@ -275,6 +275,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .interrupteur input:checked+.piste::after{left:23px}
 .interrupteur input:focus-visible+.piste{outline:2px solid var(--accent);outline-offset:2px}
 .interrupteur input:disabled+.piste{opacity:.5}
+.controle-coffret select{max-width:100%;min-width:220px;padding:7px 10px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);font:13px var(--tbl-font-body)}
+.s-coffret .image-pub:not([src]){display:none}
 .section-masquee{display:none;border:1px dashed var(--line);border-radius:22px;padding:18px;text-align:center;color:var(--muted);font:14px Arial,sans-serif;margin:8px auto}
 .v-edition [data-section].masque .section-masquee{display:block}
 .v-edition [data-section].masque .titre-img,.v-edition [data-section].masque .carte{display:none}
@@ -666,6 +668,19 @@ body.v-rapport{background:#fff;color:#111}
     <div class="sec carte champ" data-champ="extrait"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
       <div data-zone-controle="extraitPdf"></div>
       <button type="button" class="btn btn-page" data-role="demande-extrait" data-action="extrait">Demande d’extrait</button></div>
+    <!-- Section « Découvrez notre coffret » (demande de Marcel du 1er novembre 2026) : l'image d'un coffret publié,
+         de n'importe quel auteur, juste avant « En vedette » comme sur la page publique. L'interrupteur et la liste
+         des coffrets ne paraissent que dans l'édition. -->
+    <section data-section="coffret">
+    <div class="controle-auteur controle-coffret">
+      <label class="interrupteur"><input type="checkbox" role="switch" data-role="affichecoffret"><span class="piste" aria-hidden="true"></span><span>Afficher un coffret sur la page</span></label>
+      <select data-role="choix-coffret" aria-label="Coffret à afficher sur la page"></select>
+      <span class="info-l" data-role="info-coffret"></span>
+    </div>
+    <div class="section-masquee">La section Coffret n’est pas affichée sur la page publiée. Activez l’interrupteur et choisissez un coffret, le vôtre ou celui d’un autre auteur.</div>
+    <img class="titre-img fige" alt="Découvrez notre coffret" src="https://static.wixstatic.com/media/26b968_389995ae98a8436390bc4bc8751ef8d3~mv2.png">
+    <div class="sec carte s-coffret"><img class="image-pub" data-role="img-coffret" alt="Image du coffret"></div>
+    </section>
     <!-- Section « En vedette » (tâches 138 et 143) : livres choisis par l'auteur parmi ses autres livres publiés et
          actifs ; les places libres montrent les vedettes de la semaine, comme sur le site. -->
     <img class="titre-img fige" alt="En vedette" src="https://static.wixstatic.com/media/26b968_42da1caecfdc410e806687514e7068d4~mv2.png">
@@ -677,10 +692,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// 09895f0 · 2026-11-01 09:59 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// ba70fc3 · 2026-11-01 10:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '09895f0 · 2026-11-01 09:59';
+var VERSION_TBL = 'ba70fc3 · 2026-11-01 10:14';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1578,6 +1593,8 @@ function montrerEdition(d) {
   var LS = d.champsLivre.copie || d.champsLivre.publie;
   // Photo de la fiche de l'auteur (Auteurs.photo) : le bouton « Photo de ma fiche d'auteur » y ramène
   etat.photoFiche = d.photoFiche || '';
+  // Coffrets publiés (tous les auteurs) pour la section « Découvrez notre coffret »
+  etat.coffrets = Array.isArray(d.coffrets) ? d.coffrets : [];
   etat.L = { pub: clone(d.champsLivre.publie), saved: clone(LS), work: clone(LS) };
   etat.probL = {};
   // Fiche du livre dans la boutique : version du produit (ou tampons d'un livre jamais publié) et copie en cours
@@ -1787,12 +1804,12 @@ function imageSure(u) {
 // tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
 // image1Ord et image1Mob : images publicitaires de la section 1 (paysage et portrait), propres à la page.
 var CLES_IMAGES = ['image', 'photoAuteur', 'image1Ord', 'image1Mob'];
-var CLES_L = ['image', 'photoAuteur', 'sansPhoto', 'afficheauteur', 'email', 'extraitPdf', 'vedettes', 'image1Ord', 'image1Mob', 'presentation1', 'demande1', 'indic1'];
+var CLES_L = ['image', 'photoAuteur', 'sansPhoto', 'afficheauteur', 'affichecoffret', 'coffret', 'email', 'extraitPdf', 'vedettes', 'image1Ord', 'image1Mob', 'presentation1', 'demande1', 'indic1'];
 function valL(v, k) {
   if (k === 'extraitPdf') { return clePdf(v); }
   if (k === 'vedettes') { return JSON.stringify(placesVed(v)); }
   if (k === 'presentation1') { return v === 'image' ? 'image' : 'gabarit'; }
-  if (k === 'demande1' || k === 'sansPhoto') { return !!v; }
+  if (k === 'demande1' || k === 'sansPhoto' || k === 'affichecoffret') { return !!v; }
   if (k === 'indic1') { return String(v || '').trim(); }
   return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || ''));
 }
@@ -2080,6 +2097,11 @@ function appliquerLivre(page, L) {
     }
   });
   page.querySelector('[data-section="auteur"]').classList.toggle('masque', !L.afficheauteur);
+  // Section Coffret : affichée seulement avec l'interrupteur et un coffret choisi, comme sur la page publique
+  var coffret = coffretDe(L.coffret), imgCoffret = page.querySelector('[data-role="img-coffret"]');
+  page.querySelector('[data-section="coffret"]').classList.toggle('masque', !(L.affichecoffret && coffret));
+  if (coffret && imageSure(coffret.image)) { imgCoffret.src = coffret.image; imgCoffret.alt = 'Coffret ' + coffret.titre; }
+  else { imgCoffret.removeAttribute('src'); }
   // En vedette : boutons de choix seulement dans l'édition, page déverrouillée et hors « Voir les changements »
   var edition = page.id === 'hote-edition';
   remplirVedettes(page, L, edition && vedettesModifiables() && !etat.verrou && !etat.diff);
@@ -2112,6 +2134,10 @@ function preparerImage(fichier, conf) {
   });
 }
 function zoneLivre(role) { return $('hote-edition').querySelector('[data-role="' + role + '"]'); }
+// Section Coffret : coffret publié choisi (ou null), son texte pour les comparaisons, verrou de l'édition
+function coffretDe(id) { return id ? (etat.coffrets || []).filter(function (c) { return c.id === id; })[0] || null : null; }
+function texteCoffret(L) { var c = L && L.affichecoffret ? coffretDe(L.coffret) : null; return c ? 'affichée (' + c.titre + ')' : 'non affichée'; }
+function bloqueLivre() { return etat.verrou || etat.diff; }
 // Section 1, comme l'EDC : choix entre l'image publicitaire et la présentation du livre, et demande à TBL de créer
 // l'image publicitaire (avec des indications). Les deux images restent en mémoire quand on change de présentation.
 var PRES_S1 = [['image', 'Image publicitaire'], ['gabarit', 'Présentation du livre']];
@@ -2186,6 +2212,18 @@ function monterLivre() {
   cp.querySelector('[data-role="choisir-pdf"]').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fichierPdf.click(); } });
   cp.querySelector('[data-role="retablir-pdf"]').addEventListener('click', retablirPdf);
   creerControleVedettes();
+  var swc = zoneLivre('affichecoffret'), selc = zoneLivre('choix-coffret');
+  var opt0 = document.createElement('option'); opt0.value = ''; opt0.textContent = 'Choisir un coffret'; selc.appendChild(opt0);
+  (etat.coffrets || []).forEach(function (c) {
+    var o = document.createElement('option'); o.value = c.id; o.textContent = c.titre; selc.appendChild(o);
+  });
+  swc.addEventListener('change', function () { etat.L.work.affichecoffret = swc.checked; rendreLivre(); recalculer(); });
+  selc.addEventListener('change', function () {
+    etat.L.work.coffret = selc.value;
+    // Choisir un coffret active la section ; « Choisir un coffret » (aucun) la désactive
+    etat.L.work.affichecoffret = !!selc.value;
+    rendreLivre(); recalculer();
+  });
   var sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   sw.addEventListener('change', function () { etat.L.work.afficheauteur = sw.checked; rendreLivre(); recalculer(); });
   em.addEventListener('input', function () { etat.L.work.email = em.value; recalculer(); });
@@ -2196,6 +2234,10 @@ function rendreLivre() {
   var W = etat.L.work, page = $('hote-edition'), sw = zoneLivre('afficheauteur'), em = zoneLivre('email');
   appliquerLivre(page, W);
   sw.checked = !!W.afficheauteur;
+  var swc = zoneLivre('affichecoffret'), selc = zoneLivre('choix-coffret');
+  swc.checked = !!W.affichecoffret;
+  selc.value = coffretDe(W.coffret) ? W.coffret : '';
+  swc.disabled = bloqueLivre(); selc.disabled = bloqueLivre();
   if (document.activeElement !== em) { em.value = W.email || ''; }
   var bloque = etat.verrou || etat.diff;
   sw.disabled = bloque; em.disabled = bloque;
@@ -2243,6 +2285,7 @@ function majLivre() {
   cp.querySelector('[data-role="etat-pdf"]').hidden = !C.extraitPdf;
   cp.querySelector('[data-role="etat-pdf"]').textContent = C.extraitPdf ? 'Extrait PDF modifié (compris dans le prix de l’Extrait)' : '';
   cp.querySelector('[data-role="retablir-pdf"]').hidden = etat.verrou || clePdf(W.extraitPdf) === clePdf(referencePdf());
+  remplirInfo(zoneLivre('info-coffret'), C.affichecoffret || C.coffret, texteCoffret(P), texteCoffret(W));
   remplirInfo(zoneLivre('info-auteur'), C.afficheauteur, P.afficheauteur ? 'affichée' : 'masquée', W.afficheauteur ? 'affichée' : 'masquée');
   var pe = etat.probL.email;
   zoneLivre('msg-email').hidden = !pe; zoneLivre('msg-email').textContent = pe;
@@ -2853,7 +2896,7 @@ async function enregistrer() {
     var champs = {};
     CHAMPS.forEach(function (c) { if (!estLecture(c.cle)) { champs[c.cle] = norm(etat.work[c.cle]); } });
     var W = etat.L.work, S = etat.L.saved, P = etat.L.pub;
-    var livre = { afficheauteur: !!W.afficheauteur, sansPhoto: !!W.sansPhoto, email: courrielNorm(W.email), images: {},
+    var livre = { afficheauteur: !!W.afficheauteur, affichecoffret: !!W.affichecoffret && !!W.coffret, coffret: W.coffret || '', sansPhoto: !!W.sansPhoto, email: courrielNorm(W.email), images: {},
       presentation1: valL(W.presentation1, 'presentation1'), demande1: !!W.demande1, indic1: valL(W.indic1, 'indic1') };
     // Seules les images changées depuis le dernier enregistrement partent au serveur ; revenir à l'image
     // publiée retire le tampon.
@@ -2907,6 +2950,7 @@ function autresModifications() {
   if (C.image) { o.push('Image du livre'); }
   if (C.photoAuteur) { o.push('Photo de l’auteur'); }
   if (C.afficheauteur) { o.push('Section Auteur ' + (W.afficheauteur ? 'affichée' : 'masquée')); }
+  if (C.affichecoffret || C.coffret) { o.push('Section Coffret : ' + texteCoffret(W)); }
   if (C.email) { o.push('Courriel de contact'); }
   if (C.extraitPdf) { o.push('Extrait PDF'); }
   if (C.vedettes) { o.push('En vedette'); }
@@ -3206,6 +3250,7 @@ function brancherEdition() {
 // ===== Vue Aperçu (nouvel onglet) =====
 function montrerApercu(d) {
   document.body.className = 'v-apercu';
+  if (Array.isArray(d.coffrets)) { etat.coffrets = d.coffrets; } // section « Découvrez notre coffret »
   document.title = 'Aperçu : ' + d.livre.titre + ' | Éditions TBL';
   var src = d.copie || d.publie;
   $('ap-titre').textContent = d.livre.titre;
@@ -3305,6 +3350,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fe
 // ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
 function montrerRapport(d) {
   document.body.className = 'v-rapport';
+  if (Array.isArray(d.coffrets)) { etat.coffrets = d.coffrets; }
   document.title = 'Rapport Avant / Après : ' + d.livre.titre;
   var apres = d.copie || d.publie;
   var paires = CHAMPS.map(function (c) { return { avant: norm(d.publie[c.cle]), apres: norm(apres[c.cle]) }; });
@@ -3381,6 +3427,7 @@ function montrerRapport(d) {
     ligneAutre(x[1], miniImg(LP[x[0]], x[1]), chgI ? miniImg(LC[x[0]], x[1]) : el('span', '', 'Inchangée'), chgI);
   });
   ligneAutre('Section Auteur', LP.afficheauteur ? 'Affichée' : 'Masquée', LC.afficheauteur ? 'Affichée' : 'Masquée', !!LP.afficheauteur !== !!LC.afficheauteur);
+  ligneAutre('Section Coffret', texteCoffret(LP), texteCoffret(LC), texteCoffret(LP) !== texteCoffret(LC));
   ligneAutre('Courriel de contact', LP.email || '(aucun)', LC.email || '(aucun)', courrielNorm(LP.email) !== courrielNorm(LC.email));
   ligneAutre('Extrait PDF (compris dans l’Extrait)', LP.extraitPdf ? LP.extraitPdf.nom : '(aucun)', LC.extraitPdf ? LC.extraitPdf.nom : '(aucun)', pdfChg);
   // En vedette : titres des 4 places, avant et après (place libre = vedette de la semaine)
@@ -3438,7 +3485,7 @@ function donneesDemo() {
   var L = {
     image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
     photoAuteur: 'https://static.wixstatic.com/media/26b968_53a195ac1d504d2d814a7acc27120fd0~mv2.png',
-    afficheauteur: true, email: 'marcelturgeon.qc@gmail.com', extraitPdf: '',
+    afficheauteur: true, affichecoffret: false, coffret: '', email: 'marcelturgeon.qc@gmail.com', extraitPdf: '',
     vedettes: [], presentation1: '', image1Ord: '', image1Mob: '', demande1: '', indic1: ''
   };
   var livresProposes = [];
