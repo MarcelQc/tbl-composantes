@@ -13,7 +13,8 @@
    publicitaire ou présentation du livre, bouton « Numérique » avec le prix, bouton noir « Extrait »). Même allure
    que l'aperçu de l'éditeur de livre (EDL, Web\modifier-livre.html, gabarit tpl-page) et que la boîte du coffret
    (coffret-numerique.html). Demande de Marcel du 1er novembre 2026.
-   Données : envoyées par la page, message { type: 'tbl-livre', livre } avec
+   Données : envoyées par la page (public/livre-page.js du dépôt editionstbl, brancherLivre), message
+   { type: 'tbl-livre', livre } avec
    { titre, prixNumerique, presentation1: 'image' | 'gabarit', image1Ord, image1Mob, image, description, etiquettePrix }.
    La composante annonce qu'elle est prête ('tbl-livre:pret') et demande à la page d'agir ('tbl-livre:acheter',
    'tbl-livre:extrait').
@@ -151,7 +152,13 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   var dansEditeur = hotes.some(function (x) { return /(^|\.)(editor\.wix\.com|wixstudio\.com|editorx\.com)$/i.test(x); });
   var surLeSite = !dansEditeur && hotes.some(function (x) { return /(^|\.)editionstbl\.ca$/i.test(x); });
   console.log('[livre-section1] parents :', hotes.join(', ') || '(inconnus)', dansEditeur ? '→ éditeur' : (surLeSite ? '→ site' : '→ autre'));
-  if (surLeSite) { return; }
+  // Sur le site, le livre vient de la page (public/livre-page.js du dépôt editionstbl, brancherLivre). Rien reçu
+  // après 8 secondes (code de la page pas encore publié, livre illisible) : la boîte se cache plutôt que de
+  // tourner sans fin.
+  if (surLeSite) {
+    setTimeout(function () { if (!recu) { console.warn('[livre-section1] aucun livre reçu de la page'); page.hidden = true; } }, 8000);
+    return;
+  }
   setTimeout(function () { if (!recu) { afficherDemo(); } }, 1500);
 })();
 </script>
