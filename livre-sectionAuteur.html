@@ -14,7 +14,7 @@
    Le courriel de l'auteur ne vient jamais ici : le bouton demande à la page d'ouvrir le courriel
    ('tbl-livre:contact'). Section masquée par l'auteur (afficher faux) : la page replie la composante.
    Ouverte seule dans un navigateur ou dans l'éditeur Wix (le code de la page ne tourne pas) : l'auteur du livre
-   « lodt » (Les Ombres du temps) en démonstration, comme livre-section1.html. */
+   « lodt » (Les Ombres du temps) en démonstration, comme livre-section1.html ; ?photo=non montre la boîte sans photo. */
 :root{--tbl-paper:#16181c;--tbl-line:#34373e;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px}
 *{box-sizing:border-box}
 html,body{margin:0;background:transparent}
@@ -27,6 +27,9 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 .portrait{width:210px;border:6px solid #C7C7C7;display:block;height:auto}
 .col-photo{width:210px}
 .col-note{display:flex;flex-direction:column;min-height:260px}
+/* Sans photo (retirée par l'auteur dans l'EDL) : la note et le bouton prennent toute la largeur */
+.carte-auteur.sans-photo{grid-template-columns:1fr}
+.carte-auteur.sans-photo .col-note{min-height:0}
 /* Texte enrichi : mêmes règles que .rt de l'EDL */
 .rt{font:15px/1.6 Arial,Helvetica,sans-serif;color:#fff;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 .rt p,.rt blockquote,.rt h1,.rt h2,.rt h3,.rt h4,.rt h5,.rt h6{margin:0;min-height:1.6em}
@@ -68,7 +71,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   // Démonstration : l'auteur du livre « lodt », avec sa vraie note (Livres.bioAuteur) et sa photo
   var DEMO = { titre: 'Les Ombres du temps', auteur: {
     afficher: true, contact: true,
-    photo: 'https://static.wixstatic.com/media/26b968_53a195ac1d504d2d814a7acc27120fd0~mv2.png',
+    photo: /[?&]photo=non(&|$)/.test(location.search) ? '' : 'https://static.wixstatic.com/media/26b968_53a195ac1d504d2d814a7acc27120fd0~mv2.png',
     bio: [
       bloc('titre', [{ texte: 'Note de l’auteur' }], 4),
       bloc('paragraphe', [{ texte: 'J’écris pour explorer ce qui se cache derrière les apparences : les silences, les émotions, les souvenirs et ces vérités que l’on découvre parfois trop tard. Avec ' },
@@ -112,9 +115,13 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     if (!A || !A.afficher) { page.hidden = true; return; } // section masquée par l'auteur : la page replie la composante
     page.hidden = false;
     var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Auteur'; page.appendChild(t);
-    var carte = el('section', 'pg carte-auteur');
-    var colPhoto = el('div', 'col-photo'), photo = urlSure(A.photo);
-    if (photo) { var p = el('img', 'portrait'); p.src = photo; p.alt = 'Photo de l’auteur' + (L.titre ? ' du livre ' + L.titre : ''); colPhoto.appendChild(p); }
+    var photo = urlSure(A.photo);
+    var carte = el('section', 'pg carte-auteur' + (photo ? '' : ' sans-photo'));
+    if (photo) {
+      var colPhoto = el('div', 'col-photo');
+      var p = el('img', 'portrait'); p.src = photo; p.alt = 'Photo de l’auteur' + (L.titre ? ' du livre ' + L.titre : '');
+      colPhoto.appendChild(p); carte.appendChild(colPhoto);
+    }
     var colNote = el('div', 'col-note');
     var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(A.bio)); colNote.appendChild(rt);
     if (A.contact) {
@@ -123,7 +130,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
       b.addEventListener('click', function () { demander('tbl-livre:contact'); });
       ligne.appendChild(b); colNote.appendChild(ligne);
     }
-    carte.appendChild(colPhoto); carte.appendChild(colNote);
+    carte.appendChild(colNote);
     page.appendChild(carte);
   }
   function afficherDemo() { console.log('[livre-sectionAuteur] auteur de démonstration'); afficher(DEMO); }

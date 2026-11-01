@@ -242,6 +242,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .col-photo .controle-image{max-width:210px;padding:8px}
 .col-photo .controle-image .mini.gros{padding:6px 10px;font-size:12px}
 .col-note{display:flex;flex-direction:column;min-height:260px}
+/* Photo retirée de la page (demande de Marcel du 1er novembre 2026) : dans l'aperçu, comme sur le site, la note et le
+   bouton « Contacter l'auteur » prennent toute la largeur ; dans l'édition, la photo reste visible, pâlie, pour la
+   remettre. */
+.v-apercu .carte-auteur.sans-photo{grid-template-columns:1fr}
+.v-apercu .carte-auteur.sans-photo .col-photo{display:none}
+.v-edition .carte-auteur.sans-photo .portrait{opacity:.35}
 .controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:var(--card);border:0;border-radius:var(--tbl-radius);padding:10px 12px;text-align:center;font:12px var(--tbl-font-body);color:var(--muted)}
 .controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .controle-image .etat-img{color:var(--gold);font-weight:bold}
@@ -671,10 +677,10 @@ body.v-rapport{background:#fff;color:#111}
 </template>
 <script>
 // ===== Version publiée =====
-// cdc0467 · 2026-11-01 08:06 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 4da3b86 · 2026-11-01 08:15 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'cdc0467 · 2026-11-01 08:06';
+var VERSION_TBL = '4da3b86 · 2026-11-01 08:15';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1570,6 +1576,8 @@ function montrerEdition(d) {
     etat.work[c.cle] = clone(etat.saved[c.cle]);
   });
   var LS = d.champsLivre.copie || d.champsLivre.publie;
+  // Photo de la fiche de l'auteur (Auteurs.photo) : le bouton « Photo de ma fiche d'auteur » y ramène
+  etat.photoFiche = d.photoFiche || '';
   etat.L = { pub: clone(d.champsLivre.publie), saved: clone(LS), work: clone(LS) };
   etat.probL = {};
   // Fiche du livre dans la boutique : version du produit (ou tampons d'un livre jamais publié) et copie en cours
@@ -1779,12 +1787,12 @@ function imageSure(u) {
 // tampon du livre, jamais directement dans le catalogue ni dans la fiche de l'auteur.
 // image1Ord et image1Mob : images publicitaires de la section 1 (paysage et portrait), propres à la page.
 var CLES_IMAGES = ['image', 'photoAuteur', 'image1Ord', 'image1Mob'];
-var CLES_L = ['image', 'photoAuteur', 'afficheauteur', 'email', 'extraitPdf', 'vedettes', 'image1Ord', 'image1Mob', 'presentation1', 'demande1', 'indic1'];
+var CLES_L = ['image', 'photoAuteur', 'sansPhoto', 'afficheauteur', 'email', 'extraitPdf', 'vedettes', 'image1Ord', 'image1Mob', 'presentation1', 'demande1', 'indic1'];
 function valL(v, k) {
   if (k === 'extraitPdf') { return clePdf(v); }
   if (k === 'vedettes') { return JSON.stringify(placesVed(v)); }
   if (k === 'presentation1') { return v === 'image' ? 'image' : 'gabarit'; }
-  if (k === 'demande1') { return !!v; }
+  if (k === 'demande1' || k === 'sansPhoto') { return !!v; }
   if (k === 'indic1') { return String(v || '').trim(); }
   return k === 'email' ? courrielNorm(v) : (k === 'afficheauteur' ? !!v : (v || ''));
 }
@@ -2053,6 +2061,7 @@ function majControleVedettes() {
 function appliquerLivre(page, L) {
   remplirImage(page.querySelector('[data-img="couverture3d"]'), L.image, 'image');
   remplirImage(page.querySelector('[data-affiche="photoAuteur"]'), L.photoAuteur, 'photoAuteur');
+  page.querySelector('.carte-auteur').classList.toggle('sans-photo', !!L.sansPhoto);
   // Section 1 : présentation choisie et images publicitaires. Sans image, une demande à TBL montre l'image à venir.
   var s1 = page.querySelector('[data-s1]'), pres = valL(L.presentation1, 'presentation1');
   s1.classList.toggle('pres-image', pres === 'image');
@@ -2141,6 +2150,27 @@ function majControleS1(bloque) {
 }
 function monterLivre() {
   creerControles();
+  // Portrait : retirer la photo de la page (ou la remettre) et revenir à la photo de la fiche de l'auteur
+  var ctlPhoto = ctl('photoAuteur'), rangPhoto = ctlPhoto.querySelector('.rang');
+  [['retirer-photo', 'Retirer la photo de la page, ou la remettre'], ['photo-fiche', 'Reprendre la photo de votre fiche d’auteur']].forEach(function (x) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mini gros'; b.setAttribute('data-role', x[0]); b.title = x[1];
+    if (x[0] === 'photo-fiche') { b.textContent = 'Photo de ma fiche d’auteur'; }
+    rangPhoto.appendChild(b);
+  });
+  ctlPhoto.querySelector('[data-role="retirer-photo"]').addEventListener('click', function () {
+    if (etat.verrou) { return; }
+    etat.L.work.sansPhoto = !etat.L.work.sansPhoto;
+    rendreLivre(); recalculer();
+  });
+  ctlPhoto.querySelector('[data-role="photo-fiche"]').addEventListener('click', function () {
+    if (etat.verrou || !imageSure(etat.photoFiche)) { return; }
+    etat.L.work.photoAuteur = etat.photoFiche;
+    etat.L.work.sansPhoto = false;
+    ctlPhoto.querySelector('[data-role="err-img"]').hidden = true;
+    rendreLivre(); recalculer();
+    toast('Photo de votre fiche d’auteur remise. Enregistrez pour conserver ce changement.');
+  });
   creerControleS1();
   CLES_IMAGES.forEach(function (cle) {
     var c = ctl(cle), fichier = c.querySelector('[data-role="fichier-img"]');
@@ -2174,6 +2204,10 @@ function rendreLivre() {
     // « Téléverser » quand l'emplacement est vide, « Changer » quand il y a déjà une image
     ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
   });
+  var cpa = ctl('photoAuteur'), bRetirer = cpa.querySelector('[data-role="retirer-photo"]');
+  bRetirer.textContent = W.sansPhoto ? 'Remettre la photo' : 'Retirer la photo';
+  bRetirer.hidden = !W.sansPhoto && !imageSure(W.photoAuteur);
+  cpa.querySelector('[data-role="photo-fiche"]').hidden = !imageSure(etat.photoFiche) || W.photoAuteur === etat.photoFiche;
   rendrePdf(bloque);
   majControleS1(bloque);
   var cv = $('hote-edition').querySelector('[data-controle-ved]');
@@ -2201,6 +2235,9 @@ function majLivre() {
     // dernière image enregistrée pour un livre Nouveau).
     c.querySelector('[data-role="retablir-img"]').hidden = etat.verrou || W[cle] === referenceImage(cle);
   });
+  // Photo retirée : on le dit sous la photo pâlie
+  var etp = ctl('photoAuteur').querySelector('[data-role="etat-img"]');
+  if (W.sansPhoto) { etp.hidden = false; etp.textContent = 'Photo retirée de la page : la note de l’auteur prend toute la largeur.'; }
   majControleVedettes();
   var cp = ctlPdf();
   cp.querySelector('[data-role="etat-pdf"]').hidden = !C.extraitPdf;
@@ -2418,7 +2455,7 @@ function elementsIncomplets() {
   var manque = CHAMPS.filter(function (c) { return texteBrut(norm(etat.work[c.cle] || [])).trim() === ''; }).map(function (c) { return c.court; });
   if (!imageSure(etat.L.work.image)) { manque.push('Image du livre'); }
   if (valL(etat.L.work.presentation1, 'presentation1') === 'image' && !imageSure(etat.L.work.image1Ord) && !etat.L.work.demande1) { manque.push('Image publicitaire (ou la demande à TBL)'); }
-  if (!imageSure(etat.L.work.photoAuteur)) { manque.push('Portrait de l’auteur'); }
+  if (!etat.L.work.sansPhoto && !imageSure(etat.L.work.photoAuteur)) { manque.push('Portrait de l’auteur'); }
   return manque;
 }
 async function lancerApprobation() {
@@ -2486,7 +2523,8 @@ function factureCourante() {
   if (etat.d.etat === 'corriger') { return null; }
   return factureCorrections(
     CHAMPS.map(function (c) { return { cle: c.cle, nom: c.court, chg: champModifie(c.cle), taux: etat.t[c.cle] || 0 }; }),
-    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] }; }),
+    // Revenir à la photo de la fiche de l'auteur, ou retirer la photo, n'est pas facturé : aucune image à traiter
+    IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] && !(x[0] === 'photoAuteur' && etat.L.work.photoAuteur === etat.photoFiche) }; }),
     etat.d.gratuit,
     vedettesModifiables() ? placesChangees(etat.L.pub.vedettes, etat.L.work.vedettes) : 0,
     lignesS1(etat.L.pub, etat.L.work));
@@ -2815,11 +2853,16 @@ async function enregistrer() {
     var champs = {};
     CHAMPS.forEach(function (c) { if (!estLecture(c.cle)) { champs[c.cle] = norm(etat.work[c.cle]); } });
     var W = etat.L.work, S = etat.L.saved, P = etat.L.pub;
-    var livre = { afficheauteur: !!W.afficheauteur, email: courrielNorm(W.email), images: {},
+    var livre = { afficheauteur: !!W.afficheauteur, sansPhoto: !!W.sansPhoto, email: courrielNorm(W.email), images: {},
       presentation1: valL(W.presentation1, 'presentation1'), demande1: !!W.demande1, indic1: valL(W.indic1, 'indic1') };
     // Seules les images changées depuis le dernier enregistrement partent au serveur ; revenir à l'image
     // publiée retire le tampon.
-    CLES_IMAGES.forEach(function (k) { if (W[k] !== S[k]) { livre.images[k] = W[k] === P[k] ? { retablir: true } : { data: W[k] }; } });
+    // La photo de la fiche de l'auteur n'est pas renvoyée : le serveur la reprend lui-même ({ fiche: true }).
+    CLES_IMAGES.forEach(function (k) {
+      if (W[k] !== S[k]) {
+        livre.images[k] = W[k] === P[k] ? { retablir: true } : (k === 'photoAuteur' && W[k] === etat.photoFiche ? { fiche: true } : { data: W[k] });
+      }
+    });
     // Extrait PDF : un nouveau fichier part au serveur ; revenir à l'extrait publié (ou à aucun) vide le tampon.
     if (clePdf(W.extraitPdf) !== clePdf(S.extraitPdf)) {
       livre.extraitPdf = W.extraitPdf && W.extraitPdf.data ? { data: W.extraitPdf.data, nom: W.extraitPdf.nom } : { retablir: true };
