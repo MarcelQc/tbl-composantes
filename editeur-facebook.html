@@ -362,7 +362,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '219ba84 · 2026-11-02 11:23';
+var VERSION_TBL = 'bd33b3e · 2026-11-02 11:47';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -402,6 +402,7 @@ async function demarrer() {
   reinitialiser();
   rendreAnciennes();
   montrer('vue');
+  ajusterHauteurAnciennes(); // les hauteurs ne se mesurent qu'une fois la page visible
 }
 
 function remplirListes() {
@@ -574,7 +575,23 @@ function rendreAnciennes() {
     grille.appendChild(ligne);
   });
   zone.appendChild(grille);
+  ajusterHauteurAnciennes();
 }
+// Trois publicités visibles, puis défilement dans la grille (demande de Marcel du 2 novembre 2026). La hauteur se
+// mesure : une ligne est plus haute sur un téléphone, où les colonnes s'empilent.
+var VISIBLES = 3;
+function hauteurLigne(l) { return l.offsetHeight || (l.firstElementChild ? l.firstElementChild.offsetHeight : 0); }
+function ajusterHauteurAnciennes() {
+  var zone = $('anciennes');
+  var lignes = zone.querySelectorAll('.lg-ligne');
+  if (lignes.length <= VISIBLES) { zone.style.maxHeight = ''; return; }
+  var entete = zone.querySelector('.lg-entete');
+  var h = entete && entete.firstElementChild ? entete.firstElementChild.offsetHeight : 0;
+  for (var i = 0; i < VISIBLES; i += 1) { h += hauteurLigne(lignes[i]); }
+  if (!h) { return; } // page encore cachée
+  zone.style.maxHeight = (h + 2) + 'px'; // + 2 : bordure de la zone
+}
+window.addEventListener('resize', function () { if (etat.d) { ajusterHauteurAnciennes(); } });
 
 // Répéter : même publicité, date de début à aujourd'hui, image fournie réutilisée telle quelle (l'auteur peut la
 // remplacer), choix « TBL produit mon image » décoché. Rien n'est envoyé ni payé.
