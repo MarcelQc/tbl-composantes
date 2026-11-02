@@ -736,10 +736,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// c813e03 · 2026-11-02 08:26 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// d5f0471 · 2026-11-02 10:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'c813e03 · 2026-11-02 08:26';
+var VERSION_TBL = 'd5f0471 · 2026-11-02 10:40';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1206,6 +1206,22 @@ function ouvrirCoffret(coffretId, auteurId) {
   location.href = 'modifier-coffret.html' + suffixe;
 }
 
+// Éditeur de publicité Facebook (EDF, page Wix /editeurfacebook) : même principe que l'EDC, dans un nouvel onglet.
+// auteurId (administrateur seulement) : la publicité est préparée pour cet auteur ; le serveur revérifie Auteurs.admin.
+var URL_FACEBOOK = 'https://www.editionstbl.ca/editeurfacebook';
+function ouvrirFacebook(auteurId) {
+  tracer('facebook-ouvert', {});
+  var suffixe = auteurId ? '?auteur=' + encodeURIComponent(auteurId) : '';
+  if (EN_WIX) {
+    var onglet = null;
+    try { onglet = window.open(URL_FACEBOOK + suffixe, '_blank'); } catch (e) { onglet = null; }
+    if (onglet) { return; }
+    envoyer({ type: 'ouvrirFacebook', auteurId: auteurId || '' });
+    return;
+  }
+  location.href = 'editeur-facebook.html' + suffixe;
+}
+
 // Calendrier des vedettes (service « Mise en vedette ») : même principe, dans un nouvel onglet. Le livre se
 // choisit dans le calendrier ; livreId (facultatif) le présélectionne.
 var URL_VEDETTES = 'https://www.editionstbl.ca/miseenvedette';
@@ -1511,7 +1527,7 @@ var SERVICES = [
   { cle: 'vedette', nom: 'Mise en vedette', prix: '25 $ par semaine', desc: 'Votre livre dans la vitrine de la page d\'accueil et dans le carrousel pendant une semaine.', livres: 0, calendrier: true },
   { cle: 'coffret', nom: 'Forfait Coffret', prix: '50 $', desc: 'Un coffret de 1 à 4 de vos livres publiés, vendu à prix réduit, avec son image et deux images publicitaires.', livres: 1, publies: true },
   { cle: 'amazon', nom: 'Publication sur Amazon', prix: '75 $ par livre', desc: 'Votre livre sur Amazon.ca, avec le bouton Amazon sur la page de votre livre.', livres: 1 },
-  { cle: 'fbpub', nom: 'Publicité Facebook', prix: '25 $ par publication', desc: 'Faire connaître votre livre sur la page Facebook des Éditions TBL.', livres: 1 },
+  { cle: 'fbpub', nom: 'Publicité Facebook', prix: 'Votre budget + 5 %', desc: 'Une publicité Meta pour votre livre, au budget global ou quotidien de votre choix, préparée et programmée par l'équipe TBL.', livres: 1, publies: true },
   { cle: 'fbimage', nom: 'Image Facebook', prix: 'Prix à venir', desc: 'Une image publicitaire au format Facebook, conçue par l\'équipe TBL.', livres: 1 },
   { cle: 'courriel', nom: 'Courriel promotionnel', prix: '25 $ par courriel', desc: 'Un courriel envoyé par TBL pour présenter votre livre, un seul par semaine pour tout le site.', livres: 1 },
   { cle: 'couverture', nom: 'Image recto/verso', prix: 'Prix à venir', desc: 'La couverture ou l\'image du verso (4e de couverture) de votre livre.', livres: 1 }
@@ -1598,6 +1614,11 @@ function carteService(service) {
       return carte;
     }
     zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirCoffret('', admin ? auteur : ''); }));
+    return carte;
+  }
+  // Publicité Facebook : éditeur de publicité (EDF), pour l'auteur choisi quand c'est un admin (2 novembre 2026).
+  if (service.cle === 'fbpub') {
+    zone.appendChild(bouton('Continuer', 'btn petit', function () { ouvrirFacebook(admin ? auteur : ''); }));
     return carte;
   }
   // Services à un livre : plus de liste « Choisir un livre » (demande de Marcel du 17 octobre 2026),
