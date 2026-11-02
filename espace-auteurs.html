@@ -736,10 +736,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// db6dec1 · 2026-11-01 16:00 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// d09be01 · 2026-11-02 07:16 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'db6dec1 · 2026-11-01 16:00';
+var VERSION_TBL = 'd09be01 · 2026-11-02 07:16';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1776,10 +1776,9 @@ function dateHeure(iso) { return iso ? fmtDateHeure.format(new Date(iso)) : ''; 
 function demanderCommentaires() {
   envoyer({ type: 'commentaires' });
 }
-// Administrateur : jamais de signal de nouvelles réponses (il s'adresse aux auteurs), donc rien n'est marqué
-// comme vu en son nom (demande de Marcel du 24 octobre 2026 ; le serveur le refuse aussi).
+// Réponses nouvelles sur ses propres commentaires seulement (le serveur ne signale jamais celles des autres
+// auteurs). Un administrateur a le même comportement qu'un auteur (demande de Marcel du 2 novembre 2026).
 function nbNouvellesReponses() {
-  if (estAdmin()) { return 0; }
   return (etat.commentaires || []).filter(function (c) { return c.reponseNouvelle && !c.vueCetteFois; }).length;
 }
 // Pastille du titre de l'onglet et bandeau de l'espace : nombre de réponses pas encore vues.
