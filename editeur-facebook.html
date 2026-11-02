@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Publicité Facebook | Éditions TBL</title>
+<style>
+/* Éditeur de publicité Facebook (EDF) : plan .claude/Plans/EDF-Plan formulaire-publicite-facebook-tbl.md.
+   Même en-tête, mêmes boutons, mêmes pastilles et même fenêtre que l'éditeur de coffret (Web\modifier-coffret.html),
+   onglets (Templates\tabs.html) et grille (Templates\list-grid.html) des gabarits.
+   Jetons des gabarits (Templates\tokens.css) copiés ici : la composante est un fichier autonome. */
+:root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-space-xs:8px;--tbl-space-sm:16px;--tbl-space-md:24px;--tbl-space-lg:40px;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:0 6px 18px rgba(0,0,0,.5)}
+:root{--bg:var(--tbl-bg);--card:var(--tbl-paper);--card2:var(--tbl-paper-2);--line:var(--tbl-line);--txt:var(--tbl-ink);--muted:var(--tbl-muted);--accent:var(--tbl-accent);--rouge-texte:#ffb3b8;--redsoft:var(--tbl-accent-soft);--gold:#FFCB05;--ok:var(--tbl-ok);--edit:var(--tbl-blue)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+html{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin;scroll-behavior:smooth}
+body{margin:0;color:var(--txt);font-family:var(--tbl-font-body);line-height:1.5}
+.wrap{width:min(1000px,calc(100% - 28px));margin:auto;padding-bottom:40px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sub{color:var(--muted);margin:0}
+.version-tbl{margin:0 auto 0 0;align-self:center;font:12px/1.4 Arial,Helvetica,sans-serif;color:#8a8e97}
+
+/* Boutons (Templates\action-buttons.html) */
+.btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--accent);color:#fff;font-weight:bold;font-size:.95rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover:not(:disabled){filter:brightness(1.12)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:normal}
+.btn.sec:hover:not(:disabled){border-color:var(--accent);filter:none}
+.btn.petit{padding:8px 14px;font-size:.85rem}
+
+/* États plein écran */
+.etat{max-width:620px;margin:70px auto;text-align:center;padding:0 16px}
+.etat h1{font-size:1.6rem;margin:0 0 10px}
+.etat p{color:var(--muted);margin:0 0 18px}
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}html{scroll-behavior:auto}}
+
+/* En-tête (comme l'EDC) */
+#haut{padding:18px 0 4px}
+.barre-haut{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.actions-haut{display:flex;flex-wrap:wrap;gap:8px}
+.barre-haut .btn{padding:8px 14px;font-size:.9rem}
+.sur-titre{margin:6px 0 0;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.titre-page{font-family:var(--tbl-font-heading);font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.1;margin:2px 0 8px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+/* Pastilles de statut (Templates\status-badge.html) */
+.pastille{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:4px 12px;font-family:var(--tbl-font-body);font-size:.8rem;font-weight:600;line-height:1.4;background:#20232a;color:var(--muted);white-space:nowrap}
+.pastille::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pastille.pub{background:rgba(76,195,138,.15);color:var(--ok)}
+.pastille.mod{background:var(--tbl-orange-soft);color:var(--tbl-orange)}
+.pastille.appr{background:var(--tbl-blue-soft);color:var(--tbl-blue)}
+.pastille.admin{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.pastille.admin::before{display:none}
+#bandeau-auteur{background:var(--tbl-blue-soft);border:1px solid var(--tbl-blue);border-radius:var(--tbl-radius);padding:12px 16px;margin:12px 0}
+#msg-global{background:var(--redsoft);border:1px solid var(--accent);border-radius:var(--tbl-radius);padding:12px 16px;margin:12px 0}
+
+/* Sections du formulaire */
+.section{background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:18px 20px;margin:16px 0}
+.section h2{font-family:var(--tbl-font-heading);font-size:1.15rem;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+.section h2 .num{color:var(--accent)}
+.section > .sub{margin-bottom:14px;font-size:.92rem}
+.grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px}
+.grille .large{grid-column:1 / -1}
+@media (max-width:640px){.grille{grid-template-columns:1fr}}
+.champ{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font:600 12px var(--tbl-font-body);color:var(--muted)}
+.champ .oblig{color:var(--rouge-texte);font-weight:normal}
+.champ input,.champ select,.champ textarea{background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 12px;font:15px var(--tbl-font-body);color:var(--txt);width:100%}
+.champ textarea{min-height:84px;resize:vertical}
+.champ input:focus,.champ select:focus,.champ textarea:focus{outline:none;border-color:var(--edit)}
+.champ input[readonly]{opacity:.75}
+.champ.err input,.champ.err select,.champ.err textarea{border-color:var(--accent)}
+.champ .aide{font-weight:normal;font-size:12px;color:var(--muted)}
+
+/* Onglets du type de budget (Templates\tabs.html) */
+.onglets{display:flex;gap:4px;align-items:flex-end;overflow-x:auto;padding:2px 2px 0;scrollbar-width:none;border-bottom:1px solid var(--line);margin-bottom:14px}
+.onglet{flex:0 0 auto;border:1px solid var(--line);border-bottom:0;background:var(--card2);border-radius:var(--tbl-radius-btn) var(--tbl-radius-btn) 0 0;padding:10px 18px;font-family:var(--tbl-font-heading);font-size:.98rem;cursor:pointer;color:var(--muted);white-space:nowrap}
+.onglet:hover{color:var(--txt)}
+.onglet[aria-selected="true"]{background:var(--card2);color:var(--txt);font-weight:bold;box-shadow:inset 0 2px 0 var(--accent)}
+.resultat{background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:14px 16px;margin:2px 0 12px}
+.resultat .lib{font-size:.85rem;color:var(--muted)}
+.resultat .val{font-size:1.6rem;font-weight:bold;line-height:1.2}
+.resultat .det{color:var(--muted);font-size:.9rem}
+.resultat .periode{margin-top:6px;font-weight:600}
+
+/* Image publicitaire */
+.choix-image{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+@media (max-width:640px){.choix-image{grid-template-columns:1fr}}
+.option{display:flex;gap:10px;align-items:flex-start;background:var(--card2);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:12px 14px;cursor:pointer}
+.option:has(input:checked){border-color:var(--accent);background:var(--redsoft)}
+.option input{margin-top:4px;accent-color:var(--accent)}
+.option strong{display:block}
+.option span{color:var(--muted);font-size:.88rem}
+.televersement{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin-bottom:12px}
+.televersement input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.apercu-img{width:160px;aspect-ratio:4/5;border:2px dashed rgba(255,255,255,.35);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:12px;padding:8px;overflow:hidden;background:var(--card2)}
+.apercu-img img{width:100%;height:100%;object-fit:cover;display:block}
+.televersement .infos{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.etat-img{color:var(--gold);font-weight:bold;font-size:.88rem}
+.err-img{color:var(--rouge-texte);font-weight:bold;font-size:.88rem}
+
+/* Récapitulatif */
+.recap{width:100%;border-collapse:collapse;font-size:.95rem}
+.recap td{padding:7px 0;border-bottom:1px solid var(--line)}
+.recap td.m{text-align:right;white-space:nowrap;padding-left:12px}
+.recap tr.total td{font-weight:bold;font-size:1.1rem;border-bottom:0;padding-top:12px}
+.recap tr.gratuite td{color:var(--ok)}
+.envoi{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between;margin-top:16px}
+.case{display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:.92rem}
+.case input{margin-top:4px;accent-color:var(--accent)}
+.lien{background:none;border:0;padding:0;color:var(--edit);text-decoration:underline;cursor:pointer;font-size:inherit}
+
+/* Mes publicités précédentes (Templates\list-grid.html) */
+.tbl-list-grid{font-family:var(--tbl-font-body);color:var(--tbl-ink);box-sizing:border-box}
+.tbl-list-grid *{box-sizing:border-box}
+.tbl-list-grid .lg-zone{overflow:auto;border:1px solid var(--tbl-line);border-radius:10px;background:var(--tbl-paper-2);scrollbar-width:thin;scrollbar-color:var(--tbl-line) transparent}
+.tbl-list-grid .lg-grille{display:grid;grid-template-columns:var(--lg-colonnes);min-width:0}
+.tbl-list-grid .lg-entete,.tbl-list-grid .lg-ligne{display:contents}
+.tbl-list-grid .lg-entete > div{position:sticky;top:0;z-index:1;background:var(--tbl-paper);border-bottom:1px solid var(--tbl-line);color:var(--tbl-muted);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px;white-space:nowrap}
+.tbl-list-grid .lg-ligne > div{padding:10px 12px;border-bottom:1px solid var(--tbl-line);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;font-size:.9rem}
+.tbl-list-grid .lg-ligne:last-child > div{border-bottom:0}
+.tbl-list-grid .lg-ligne:hover > div{background:rgba(255,255,255,.03)}
+.tbl-list-grid .lg-principal{font-weight:bold}
+.tbl-list-grid .lg-actions{justify-content:flex-end;gap:6px}
+.tbl-list-grid .lg-vide{color:var(--tbl-muted);text-align:center;padding:var(--tbl-space-md)}
+@media (max-width:720px){
+  .tbl-list-grid .lg-grille{display:block}
+  .tbl-list-grid .lg-entete{display:none}
+  .tbl-list-grid .lg-ligne{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 12px;border-bottom:1px solid var(--tbl-line)}
+  .tbl-list-grid .lg-ligne:last-child{border-bottom:0}
+  .tbl-list-grid .lg-ligne > div{padding:0;border:0;white-space:normal}
+  .tbl-list-grid .lg-ligne > .lg-principal{grid-column:1;grid-row:1;overflow-wrap:anywhere}
+  .tbl-list-grid .lg-ligne > .lg-actions{grid-column:2;grid-row:1 / span 8;align-items:flex-start}
+  .tbl-list-grid .lg-ligne > .lg-autre{grid-column:1;color:var(--tbl-muted);font-size:.85rem}
+}
+
+/* Fenêtre (Templates\confirm-modal.html) et avis */
+#modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+#modal .voile{position:absolute;inset:0;background:rgba(0,0,0,.72)}
+#modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto}
+#modal h2{font-family:var(--tbl-font-heading);margin:0 0 10px;font-size:1.15rem}
+#modal .corps{color:var(--muted);font-size:.95rem}
+#modal .corps ul{padding-left:20px}
+#modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+#modal .btns .btn.sec{order:-1}
+#modal textarea{width:100%;min-height:120px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#toast.ok{border-color:var(--ok)}
+#toast.mal{border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div id="chargement" class="etat"><div class="spin" aria-hidden="true"></div><p>Chargement de l’éditeur de publicité…</p></div>
+<div id="etat-msg" class="etat" hidden><h1 id="etat-titre"></h1><p id="etat-texte"></p><p><button type="button" class="btn sec" id="etat-btn">Revenir à l’Espace Auteurs</button></p></div>
+
+<div id="vue" hidden>
+  <header id="haut"><div class="wrap" style="padding-bottom:0">
+    <div class="barre-haut">
+      <button type="button" class="btn sec" id="b-retour" title="Fermer l’éditeur et revenir à l’Espace Auteurs">✕ Fermer</button>
+      <p class="version-tbl" id="version-tbl" hidden></p>
+      <span class="actions-haut">
+        <button type="button" class="btn sec" id="b-commentaire" title="Écrire un commentaire à l’équipe des Éditions TBL">💬 Commentaire</button>
+      </span>
+    </div>
+    <p class="sur-titre">Services</p>
+    <h1 class="titre-page">Publicité Facebook<span id="chip-admin" class="pastille admin" hidden>Administrateur</span></h1>
+    <p class="sub">Préparez votre publicité : l’équipe TBL la crée et la programme dans Meta Ads, depuis le compte des Éditions TBL, après votre approbation.</p>
+  </div></header>
+
+  <main class="wrap">
+    <div id="bandeau-auteur" hidden></div>
+    <div id="msg-global" role="alert" hidden></div>
+
+    <form id="formulaire" novalidate>
+      <!-- 1. Le livre -->
+      <section class="section" aria-labelledby="t-livre">
+        <h2 id="t-livre"><span class="num">1.</span> Le livre</h2>
+        <p class="sub">Votre nom et votre courriel sont repris de votre fiche d’auteur.</p>
+        <div class="grille">
+          <label class="champ">Nom<input id="c-nom" readonly></label>
+          <label class="champ">Courriel<input id="c-courriel" readonly></label>
+          <label class="champ" id="ch-livre">Titre du livre <span class="oblig">(obligatoire)</span><select id="c-livre"></select></label>
+          <label class="champ" id="ch-genre">Genre littéraire <span class="oblig">(obligatoire)</span><select id="c-genre"></select></label>
+          <label class="champ large" id="ch-lien">Lien vers la page de vente <span class="oblig">(obligatoire)</span><input id="c-lien" type="url" maxlength="500" placeholder="https://www.editionstbl.ca/livres/…"><span class="aide">Site TBL, Amazon ou autre. Le lien de la page du livre sur le site TBL est proposé.</span></label>
+          <label class="champ large">Résumé ou phrase d’accroche <span class="aide">(facultatif)</span><textarea id="c-resume" maxlength="600" rows="3"></textarea></label>
+        </div>
+      </section>
+
+      <!-- 2. La campagne -->
+      <section class="section" aria-labelledby="t-campagne">
+        <h2 id="t-campagne"><span class="num">2.</span> La campagne</h2>
+        <p class="sub">Choisissez votre type de budget. Le calcul se met à jour pendant que vous tapez.</p>
+        <div class="onglets" role="tablist" aria-label="Type de budget">
+          <button type="button" class="onglet" role="tab" id="o-global" aria-selected="true">Budget global</button>
+          <button type="button" class="onglet" role="tab" id="o-quotidien" aria-selected="false">Budget quotidien</button>
+        </div>
+        <div class="grille">
+          <label class="champ" id="ch-montant"><span id="lib-montant">Budget total ($)</span> <span class="oblig">(obligatoire)</span><input id="c-montant" inputmode="decimal" placeholder="150"></label>
+          <label class="champ" id="ch-jours">Nombre de jours <span class="oblig">(obligatoire)</span><input id="c-jours" type="number" min="1" max="90" step="1" inputmode="numeric" value="10"></label>
+        </div>
+        <div class="resultat" aria-live="polite">
+          <div class="lib" id="r-lib">Dépense totale maximale prévue</div>
+          <div class="val" id="r-val">0,00 $</div>
+          <div class="det" id="r-det"></div>
+          <div class="periode" id="r-periode"></div>
+        </div>
+        <div class="grille">
+          <label class="champ" id="ch-debut">Date de début de diffusion <span class="oblig">(obligatoire)</span><input id="c-debut" type="date"><span class="aide">La diffusion commence après l’approbation de l’annonce par vous et par Meta. Elle peut donc débuter un peu plus tard que cette date.</span></label>
+          <label class="champ">Date de fin de diffusion<input id="c-fin" readonly><span class="aide">Calculée : TBL programme toujours une date de fin, la dépense s’arrête d’elle-même.</span></label>
+          <label class="champ" id="ch-region">Région ciblée <span class="oblig">(obligatoire)</span><select id="c-region"></select></label>
+          <label class="champ">Public visé <span class="aide">(facultatif)</span><input id="c-public" maxlength="300" placeholder="Âge, intérêts (ex. : lecteurs de polars)"></label>
+        </div>
+        <p class="sub" style="font-size:.85rem">À savoir : une publicité Meta n’apparaît pas forcément dans le fil de la page Facebook des Éditions TBL.</p>
+      </section>
+
+      <!-- 3. L'image publicitaire -->
+      <section class="section" aria-labelledby="t-image">
+        <h2 id="t-image"><span class="num">3.</span> L’image publicitaire</h2>
+        <p class="sub">Fournissez votre image, ou laissez l’équipe TBL la produire.</p>
+        <div class="choix-image" role="radiogroup" aria-label="Image publicitaire">
+          <label class="option"><input type="radio" name="image" value="fournie" checked><div><strong>Je télécharge mon image</strong><span>JPG ou PNG, 1080 × 1350 px conseillé. Sans frais.</span></div></label>
+          <label class="option"><input type="radio" name="image" value="tbl"><div><strong>TBL produit mon image</strong><span id="prix-image">10,00 $, soumise à votre approbation avec l’annonce.</span></div></label>
+        </div>
+        <div id="zone-fournie">
+          <div class="televersement">
+            <div class="apercu-img" id="apercu-image">Aucune image</div>
+            <div class="infos">
+              <div class="rang"><input type="file" id="f-image" accept="image/jpeg,image/png,image/webp"><label for="f-image" class="btn sec petit" role="button" tabindex="0" id="b-image">Choisir l’image</label> <button type="button" class="btn sec petit" id="b-retirer" hidden>Retirer</button></div>
+              <div class="etat-img" id="etat-image"></div>
+              <div class="err-img" id="err-image" role="alert"></div>
+            </div>
+          </div>
+        </div>
+        <div id="zone-tbl" hidden>
+          <label class="champ">Consignes pour l’image <span class="aide">(facultatif)</span><textarea id="c-consignes" maxlength="1000" rows="3" placeholder="Ambiance, couleurs, texte à mettre en valeur…"></textarea></label>
+        </div>
+        <div class="grille">
+          <div class="champ">Couverture du livre <span class="aide">(facultatif, utile dans les deux cas)</span>
+            <div class="televersement" style="margin:4px 0 0"><input type="file" id="f-couverture" accept="image/jpeg,image/png,image/webp"><label for="f-couverture" class="btn sec petit" role="button" tabindex="0">Joindre la couverture</label> <span class="etat-img" id="etat-couverture"></span></div>
+          </div>
+          <label class="champ large">Texte de l’annonce proposé <span class="aide">(facultatif, TBL peut le rédiger)</span><textarea id="c-texte" maxlength="1500" rows="4"></textarea></label>
+        </div>
+      </section>
+
+      <!-- 4. Récapitulatif et 5. Paiement -->
+      <section class="section" aria-labelledby="t-recap">
+        <h2 id="t-recap"><span class="num">4.</span> Récapitulatif</h2>
+        <p class="sub">Calculé automatiquement. Le serveur refait le calcul avant le paiement.</p>
+        <table class="recap"><tbody id="recap"></tbody></table>
+        <div class="envoi">
+          <label class="case"><input type="checkbox" id="c-conditions"><span>J’ai lu et j’accepte les <button type="button" class="lien" id="b-conditions">conditions du service</button>.</span></label>
+          <button type="button" class="btn" id="b-envoyer">Payer et envoyer la demande</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- 5. Mes publicités précédentes -->
+    <section class="section" aria-labelledby="t-anciennes">
+      <h2 id="t-anciennes"><span class="num">5.</span> <span id="titre-anciennes">Mes publicités précédentes</span></h2>
+      <p class="sub">Répéter remplit le formulaire avec la même publicité, à la date d’aujourd’hui. Rien n’est envoyé avant le paiement.</p>
+      <div class="tbl-list-grid"><div class="lg-zone" id="anciennes"></div></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+var EN_WIX = true;
+var PARAMS = new URLSearchParams(location.search);
+// Administrateur qui prépare la publicité d'un auteur (onglet Services de l'Espace Auteurs) : envoyé avec chaque
+// demande, le serveur revérifie que le membre connecté est administrateur.
+var AUTEUR_ID = /^[0-9a-f-]{36}$/i.test(PARAMS.get('auteur') || '') ? PARAMS.get('auteur') : '';
+var DELAI_REPONSE_MS = 30000;
+function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
+var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.test(originesParent());
+var SUR_LE_SITE = /editionstbl\.ca/i.test(originesParent());
+var DELAI_EDITEUR_MS = 3000;
+var TAILLE_MAX_IMAGE = 4 * 1024 * 1024;
+var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+var etat = { d: null, type: 'global', image: '', imageReprise: '', couverture: '', occupe: false };
+
+/* ---------- Outils ---------- */
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, txt) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (txt !== undefined && txt !== null) { n.textContent = txt; } return n; }
+function argent(c) { return (c / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' $'; }
+function cents(v) { var n = Number(String(v || '').replace(',', '.').replace(/\s|\$/g, '')); return isFinite(n) && String(v || '').trim() !== '' ? Math.round(n * 100) : NaN; }
+function plusJours(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function dateLongue(iso) { var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Number(m[3]) + (m[3] === '01' ? 'er' : '') + ' ' + MOIS[Number(m[2]) - 1] + ' ' + m[1] : ''; }
+function dateCourte(iso) { return iso ? new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Toronto' }).format(new Date(iso)) : ''; }
+// « Du 3 au 12 novembre 2026 », « Du 28 novembre au 7 décembre 2026 », ou une seule journée.
+function periode(debut, fin) {
+  if (!debut || !fin) { return ''; }
+  if (debut === fin) { return 'Le ' + dateLongue(debut); }
+  var a = debut.split('-'), b = fin.split('-');
+  var jourA = Number(a[2]) + (a[2] === '01' ? 'er' : '');
+  if (a[0] === b[0] && a[1] === b[1]) { return 'Du ' + jourA + ' au ' + dateLongue(fin); }
+  if (a[0] === b[0]) { return 'Du ' + jourA + ' ' + MOIS[Number(a[1]) - 1] + ' au ' + dateLongue(fin); }
+  return 'Du ' + dateLongue(debut) + ' au ' + dateLongue(fin);
+}
+
+/* ---------- Pont avec la page Wix ---------- */
+var attentes = {}, numero = 0;
+function appeler(action, params, delai) {
+  if (AUTEUR_ID) { params = Object.assign({ auteurId: AUTEUR_ID }, params || {}); }
+  return new Promise(function (ok) {
+    numero += 1;
+    var id = numero;
+    if (etat.d && etat.d.demo && action !== 'obtenir') { ok({ ok: false, statut: 'erreur', message: 'Aperçu de démonstration dans l’éditeur Wix : rien n’est envoyé.' }); return; }
+    if (!EN_WIX || window.parent === window) { ok(donneesDemo()); return; }
+    attentes[id] = ok;
+    window.parent.postMessage({ type: 'editeurFacebook', action: action, params: params || {}, id: id }, '*');
+    setTimeout(function () { if (attentes[id]) { delete attentes[id]; ok({ statut: 'erreur', delai: true, message: 'Le serveur ne répond pas. Réessayez dans un instant.' }); } }, delai || DELAI_REPONSE_MS);
+  });
+}
+window.addEventListener('message', function (e) {
+  if (!EN_WIX || e.source !== window.parent) { return; }
+  var m = e.data || {};
+  if (m.type === 'editeurFacebookReponse' && attentes[m.id]) { var f = attentes[m.id]; delete attentes[m.id]; f(m.data || { statut: 'erreur' }); }
+});
+function retourEspace() {
+  if (EN_WIX && window.parent !== window) { window.parent.postMessage({ type: 'retourEspace' }, '*'); return; }
+  location.href = 'espace-auteurs.html#services';
+}
+
+/* ---------- Fenêtres et avis (Templates\confirm-modal.html) ---------- */
+function modale(o) {
+  return new Promise(function (ok) {
+    var m = el('div'); m.id = 'modal';
+    var voile = el('div', 'voile');
+    var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
+    b.appendChild(el('h2', null, o.titre));
+    var corps = el('div', 'corps');
+    if (typeof o.corps === 'string') { corps.appendChild(el('p', null, o.corps)); } else if (o.corps) { corps.appendChild(o.corps); }
+    b.appendChild(corps);
+    var btns = el('div', 'btns');
+    function fermer(r) { document.removeEventListener('keydown', echap); m.remove(); ok(r); }
+    function echap(ev) { if (ev.key === 'Escape') { fermer(null); } }
+    (o.boutons || [{ id: 'ok', libelle: 'Fermer' }]).forEach(function (x) {
+      var bt = el('button', 'btn' + (x.principal ? '' : ' sec'), x.libelle); bt.type = 'button';
+      bt.addEventListener('click', function () { if (x.avant && x.avant() === false) { return; } fermer(x.id); });
+      btns.appendChild(bt);
+    });
+    b.appendChild(btns);
+    voile.addEventListener('click', function () { fermer(null); });
+    document.addEventListener('keydown', echap);
+    m.appendChild(voile); m.appendChild(b);
+    document.body.appendChild(m);
+    var premier = b.querySelector('textarea, .btns .btn'); if (premier) { premier.focus(); }
+  });
+}
+var minuterieToast = null;
+function toast(texte, classe) {
+  var t = $('toast'); if (!t) { t = el('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.className = classe || ''; t.textContent = texte; t.hidden = false;
+  clearTimeout(minuterieToast); minuterieToast = setTimeout(function () { t.hidden = true; }, 4500);
+}
+
+/* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
+var VERSION_TBL = '219ba84 · 2026-11-02 11:23';
+function texteVersion(admin) {
+  // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
+  if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
+  var morceaux = VERSION_TBL.split(' · ');
+  return 'Version ' + (admin === false && morceaux.length > 1 ? morceaux.slice(1).join(' · ') : VERSION_TBL);
+}
+console.log('[editeur-facebook] ' + texteVersion());
+
+/* ---------- États de la page ---------- */
+function montrer(vue) { ['chargement', 'etat-msg', 'vue'].forEach(function (id) { $(id).hidden = id !== vue; }); }
+function erreurPage(titre, texte) { $('etat-titre').textContent = titre; $('etat-texte').textContent = texte; montrer('etat-msg'); }
+
+async function demarrer() {
+  montrer('chargement');
+  var d = await appeler('obtenir', {}, DANS_EDITEUR ? DELAI_EDITEUR_MS : 0);
+  // Éditeur Wix (le code de la page ne tourne pas) : données fictives pour voir toutes les sections.
+  if (d && d.delai && !SUR_LE_SITE) { d = donneesDemo(); }
+  if (!d || d.statut !== 'ok') {
+    if (d && d.statut === 'connexion') { erreurPage('Connexion requise', 'Connectez-vous pour préparer votre publicité.'); return; }
+    if (d && d.statut === 'refuse') { erreurPage('Accès interdit', 'Votre compte auteur n’est pas actif.'); return; }
+    if (d && d.statut === 'choisirAuteur') { erreurPage('Choisissez d’abord l’auteur', d.message); return; }
+    erreurPage('Un petit problème de chargement', (d && d.message) || 'Nous n’arrivons pas à charger l’éditeur. Réessayez dans un instant.');
+    return;
+  }
+  etat.d = d;
+  $('version-tbl').textContent = texteVersion(!!d.admin); $('version-tbl').hidden = false;
+  $('chip-admin').hidden = !d.admin;
+  $('bandeau-auteur').hidden = !d.pourAutre;
+  $('bandeau-auteur').textContent = 'Publicité pour : ' + d.auteur.nom + (d.gratuit ? ' (auteur gratuit)' : '') + '. La demande est envoyée sans paiement en ligne.';
+  $('prix-image').textContent = argent(d.tarifs.imageTbl) + ', soumise à votre approbation avec l’annonce.';
+  $('c-jours').max = d.tarifs.joursMax;
+  remplirListes();
+  if (!d.livres.length) {
+    erreurPage('Service pas encore offert', 'La publicité Facebook est offerte dès qu’un livre ' + (d.pourAutre ? 'de cet auteur' : 'à votre nom') + ' est publié.');
+    return;
+  }
+  reinitialiser();
+  rendreAnciennes();
+  montrer('vue');
+}
+
+function remplirListes() {
+  var d = etat.d;
+  $('c-nom').value = d.auteur.nom; $('c-courriel').value = d.auteur.courriel;
+  function options(sel, valeurs, vide) {
+    while (sel.options.length) { sel.remove(0); }
+    var o = el('option', null, vide); o.value = ''; sel.appendChild(o);
+    valeurs.forEach(function (v) { var x = el('option', null, v.texte); x.value = v.valeur; sel.appendChild(x); });
+  }
+  options($('c-livre'), d.livres.map(function (l) { return { valeur: l.id, texte: l.titre }; }), 'Choisir un livre');
+  options($('c-genre'), d.genres.map(function (g) { return { valeur: g, texte: g }; }), 'Choisir un genre');
+  options($('c-region'), d.regions.map(function (r) { return { valeur: r, texte: r }; }), 'Choisir une région');
+  $('c-debut').min = d.aujourdhui;
+}
+
+function reinitialiser() {
+  var d = etat.d;
+  $('c-livre').value = d.livres.length === 1 ? d.livres[0].id : '';
+  $('c-lien').value = d.livres.length === 1 ? d.livres[0].lien : '';
+  $('c-genre').value = ''; $('c-resume').value = '';
+  choisirType('global');
+  $('c-montant').value = ''; $('c-jours').value = '10';
+  $('c-debut').value = d.aujourdhui;
+  $('c-region').value = 'Québec'; $('c-public').value = '';
+  choisirImage('fournie'); retirerImage();
+  $('c-consignes').value = ''; $('c-texte').value = '';
+  etat.couverture = ''; $('etat-couverture').textContent = '';
+  $('c-conditions').checked = false;
+  calculer();
+}
+
+/* ---------- Simulateur de budget ---------- */
+function choisirType(type) {
+  etat.type = type;
+  $('o-global').setAttribute('aria-selected', type === 'global' ? 'true' : 'false');
+  $('o-quotidien').setAttribute('aria-selected', type === 'quotidien' ? 'true' : 'false');
+  $('lib-montant').textContent = type === 'global' ? 'Budget total ($)' : 'Budget par jour ($)';
+  $('c-montant').placeholder = type === 'global' ? '150' : '15';
+  calculer();
+}
+function jours() { var n = Number($('c-jours').value); return Number.isInteger(n) && n >= 1 ? n : 0; }
+// Budget en cents, ou NaN.
+function budget() {
+  var m = cents($('c-montant').value), n = jours();
+  if (!(m > 0) || !n) { return NaN; }
+  return etat.type === 'global' ? m : m * n;
+}
+function calculer() {
+  var n = jours(), m = cents($('c-montant').value), b = budget();
+  var global = etat.type === 'global';
+  $('r-lib').textContent = global ? 'Dépense totale maximale prévue' : 'Dépense totale approximative';
+  $('r-val').textContent = isFinite(b) ? argent(b) : '0,00 $';
+  if (global) {
+    $('r-det').textContent = isFinite(b) ? 'Soit une moyenne de ' + argent(Math.round(m / n)) + ' par jour.' : 'Indiquez le budget total et le nombre de jours.';
+  } else {
+    $('r-det').textContent = isFinite(b) ? 'Sur ' + n + ' jour' + (n > 1 ? 's' : '') + ', avec des variations quotidiennes possibles.' : 'Indiquez le budget par jour et le nombre de jours.';
+  }
+  var debut = $('c-debut').value;
+  var fin = debut && n ? plusJours(debut, n - 1) : '';
+  $('c-fin').value = fin ? dateLongue(fin) : '';
+  $('r-periode').textContent = periode(debut, fin);
+  rendreRecap();
+}
+
+/* ---------- Image publicitaire ---------- */
+function choisirImage(choix) {
+  document.querySelector('input[name=image][value="' + choix + '"]').checked = true;
+  $('zone-fournie').hidden = choix !== 'fournie';
+  $('zone-tbl').hidden = choix !== 'tbl';
+  rendreRecap();
+}
+function choixImage() { return document.querySelector('input[name=image]:checked').value; }
+function lireFichier(fichier) {
+  return new Promise(function (ok, ko) {
+    if (!fichier) { ko(new Error('vide')); return; }
+    if (!/^image\/(jpeg|png|webp)$/.test(fichier.type)) { ko(new Error('Format refusé : JPG, PNG ou WebP seulement.')); return; }
+    if (fichier.size > TAILLE_MAX_IMAGE) { ko(new Error('Image trop lourde : 4 Mo au plus.')); return; }
+    var r = new FileReader();
+    r.onload = function () { ok(r.result); };
+    r.onerror = function () { ko(new Error('Lecture de l’image impossible.')); };
+    r.readAsDataURL(fichier);
+  });
+}
+function montrerImage(src, texte) {
+  var a = $('apercu-image'); a.textContent = '';
+  if (src) { var img = el('img'); img.src = src; img.alt = 'Aperçu de l’image publicitaire'; a.appendChild(img); } else { a.textContent = texte || 'Aucune image'; }
+}
+function retirerImage() {
+  etat.image = ''; etat.imageReprise = '';
+  montrerImage('', 'Aucune image');
+  $('etat-image').textContent = ''; $('err-image').textContent = '';
+  $('b-retirer').hidden = true; $('f-image').value = '';
+}
+$('f-image').addEventListener('change', async function () {
+  $('err-image').textContent = '';
+  try {
+    var data = await lireFichier(this.files[0]);
+    etat.image = data; etat.imageReprise = '';
+    montrerImage(data);
+    $('etat-image').textContent = 'Image prête : ' + this.files[0].name;
+    $('b-retirer').hidden = false;
+  } catch (e) { if (e.message !== 'vide') { $('err-image').textContent = e.message; } }
+});
+$('f-couverture').addEventListener('change', async function () {
+  try {
+    etat.couverture = await lireFichier(this.files[0]);
+    $('etat-couverture').textContent = 'Jointe : ' + this.files[0].name;
+  } catch (e) { etat.couverture = ''; $('etat-couverture').textContent = e.message === 'vide' ? '' : e.message; }
+});
+$('b-retirer').addEventListener('click', retirerImage);
+$('b-image').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('f-image').click(); } });
+
+/* ---------- Récapitulatif (même calcul que le serveur : frais de 5 % sur le budget et l'image, puis taxes) ---------- */
+var TPS = 0.05, TVQ = 0.09975;
+function rendreRecap() {
+  if (!etat.d) { return; }
+  var t = etat.d.tarifs;
+  var b = budget();
+  var lignes = [['Budget publicitaire', isFinite(b) ? b : 0]];
+  if (choixImage() === 'tbl') { lignes.push(['Image publicitaire produite par TBL', t.imageTbl]); }
+  var sousTotal = lignes.reduce(function (s, l) { return s + l[1]; }, 0);
+  var frais = Math.round(sousTotal * t.frais);
+  var base = sousTotal + frais;
+  var gratuit = etat.d.gratuit;
+  var tps = gratuit ? 0 : Math.round(base * TPS), tvq = gratuit ? 0 : Math.round(base * TVQ);
+  lignes.push(['Frais de service (5 %)', frais]);
+  if (gratuit) { lignes.push(['Gratuité (services offerts)', -base]); }
+  lignes.push(['TPS', tps], ['TVQ', tvq]);
+  var corps = $('recap'); corps.textContent = '';
+  lignes.forEach(function (l) {
+    var tr = el('tr', l[0].indexOf('Gratuité') === 0 ? 'gratuite' : null);
+    tr.appendChild(el('td', null, l[0])); tr.appendChild(el('td', 'm', argent(l[1]))); corps.appendChild(tr);
+  });
+  var total = (gratuit ? 0 : base) + tps + tvq;
+  var tr = el('tr', 'total'); tr.appendChild(el('td', null, 'Total à payer')); tr.appendChild(el('td', 'm', argent(total))); corps.appendChild(tr);
+  var sansPaiement = gratuit || etat.d.admin;
+  $('b-envoyer').textContent = sansPaiement ? 'Envoyer la demande' : 'Payer et envoyer la demande';
+}
+
+/* ---------- Mes publicités précédentes (Templates\list-grid.html, présentation « tableau ») ---------- */
+var STATUTS = { 'Payée': 'appr', 'En préparation': 'mod', 'En cours': 'pub', 'Terminée': '' };
+function texteBudgetDemande(x) { return x.typeBudget === 'quotidien' ? argent(Math.round(x.montantSaisi * 100)) + '/jour' : 'Global ' + argent(Math.round(x.montantSaisi * 100)); }
+function rendreAnciennes() {
+  var zone = $('anciennes'); zone.textContent = '';
+  var liste = etat.d.demandes || [];
+  $('titre-anciennes').textContent = etat.d.pourAutre ? 'Publicités précédentes de l’auteur' : 'Mes publicités précédentes';
+  if (!liste.length) { zone.appendChild(el('div', 'lg-vide', 'Aucune publicité pour le moment.')); return; }
+  var colonnes = ['Demande', 'Diffusion', 'Livre', 'Budget', 'Jours', 'Région', 'Image', 'Statut', ''];
+  var grille = el('div', 'lg-grille');
+  grille.style.setProperty('--lg-colonnes', 'minmax(90px,auto) minmax(150px,1.2fr) minmax(140px,1.5fr) minmax(110px,auto) 60px minmax(80px,auto) minmax(110px,auto) minmax(120px,auto) 104px');
+  var entete = el('div', 'lg-entete');
+  colonnes.forEach(function (c) { entete.appendChild(el('div', null, c)); });
+  grille.appendChild(entete);
+  liste.forEach(function (x) {
+    // Le livre est la colonne principale : sur un téléphone, il passe en tête de la ligne (grid-row 1).
+    var ligne = el('div', 'lg-ligne');
+    ligne.appendChild(el('div', 'lg-autre', dateCourte(x.date)));
+    ligne.appendChild(el('div', 'lg-autre', periode(x.dateDebut, x.dateFin)));
+    ligne.appendChild(el('div', 'lg-principal', x.livreTitre));
+    ligne.appendChild(el('div', 'lg-autre', texteBudgetDemande(x)));
+    ligne.appendChild(el('div', 'lg-autre', x.nbJours + ' j'));
+    ligne.appendChild(el('div', 'lg-autre', x.region));
+    ligne.appendChild(el('div', 'lg-autre', x.imageChoix === 'tbl' ? 'Produite par TBL' : (x.aImage ? 'Image fournie' : 'Aucune')));
+    var st = el('div', 'lg-autre'); st.appendChild(el('span', 'pastille ' + (STATUTS[x.statut] || ''), x.statut)); ligne.appendChild(st);
+    var actions = el('div', 'lg-actions');
+    var b = el('button', 'btn sec petit', 'Répéter'); b.type = 'button'; b.title = 'Remplir le formulaire avec cette publicité, à la date d’aujourd’hui';
+    b.addEventListener('click', function () { repeter(x); });
+    actions.appendChild(b); ligne.appendChild(actions);
+    grille.appendChild(ligne);
+  });
+  zone.appendChild(grille);
+}
+
+// Répéter : même publicité, date de début à aujourd'hui, image fournie réutilisée telle quelle (l'auteur peut la
+// remplacer), choix « TBL produit mon image » décoché. Rien n'est envoyé ni payé.
+function repeter(x) {
+  var d = etat.d;
+  var livre = d.livres.filter(function (l) { return l.id === x.livreId; })[0];
+  $('c-livre').value = livre ? livre.id : '';
+  $('c-lien').value = x.lienVente || (livre ? livre.lien : '');
+  $('c-genre').value = x.genre || '';
+  $('c-resume').value = x.resume || '';
+  choisirType(x.typeBudget === 'quotidien' ? 'quotidien' : 'global');
+  $('c-montant').value = String(x.montantSaisi).replace('.', ',');
+  $('c-jours').value = String(x.nbJours || 10);
+  $('c-debut').value = d.aujourdhui;
+  $('c-region').value = x.region || '';
+  $('c-public').value = x.publicVise || '';
+  $('c-texte').value = x.texteAnnonce || '';
+  $('c-consignes').value = '';
+  choisirImage('fournie');
+  retirerImage();
+  if (x.aImage) {
+    etat.imageReprise = x.id;
+    montrerImage('', 'Image de la publicité du ' + dateCourte(x.date));
+    $('etat-image').textContent = 'L’image de la publicité précédente sera réutilisée.';
+    $('b-retirer').hidden = false;
+  } else if (x.imageChoix === 'tbl') {
+    $('etat-image').textContent = 'L’image produite par TBL pour cette publicité peut être réutilisée sans frais : précisez-le dans le texte de l’annonce, ou téléversez-la.';
+  }
+  $('c-conditions').checked = false;
+  calculer();
+  if (!livre) { toast('Ce livre n’est plus publié : choisissez un autre livre.', 'mal'); }
+  $('haut').scrollIntoView({ behavior: 'smooth' });
+  toast('Formulaire rempli. Relisez, modifiez au besoin, puis envoyez.', 'ok');
+}
+
+/* ---------- Vérification et envoi ---------- */
+function marquer(id, mal) { var c = $(id); if (c) { c.classList.toggle('err', !!mal); } }
+function verifier() {
+  var d = etat.d, t = d.tarifs, n = jours(), b = budget();
+  var erreurs = [];
+  function exiger(cond, champ, message) { marquer(champ, !cond); if (!cond) { erreurs.push(message); } }
+  exiger(!!$('c-livre').value, 'ch-livre', 'Choisissez le livre à annoncer.');
+  exiger(/^https?:\/\/[^\s]+\.[^\s]+$/i.test($('c-lien').value.trim()), 'ch-lien', 'Indiquez le lien vers la page de vente (https://…).');
+  exiger(!!$('c-genre').value, 'ch-genre', 'Choisissez le genre littéraire.');
+  exiger(n >= t.joursMin && n <= t.joursMax, 'ch-jours', 'Le nombre de jours doit être de ' + t.joursMin + ' à ' + t.joursMax + '.');
+  var budgetOk = isFinite(b) && b >= t.budgetMin && b <= t.budgetMax && n > 0 && b / n >= t.budgetJourMin;
+  exiger(budgetOk, 'ch-montant', isFinite(b) ? 'Budget total de ' + argent(t.budgetMin) + ' au moins (et ' + argent(t.budgetJourMin) + ' par jour en moyenne), ' + argent(t.budgetMax) + ' au plus.' : 'Indiquez le montant du budget.');
+  exiger(!!$('c-debut').value && $('c-debut').value >= d.aujourdhui, 'ch-debut', 'La date de début ne peut pas être dans le passé.');
+  exiger(!!$('c-region').value, 'ch-region', 'Choisissez la région ciblée.');
+  if (choixImage() === 'fournie' && !etat.image && !etat.imageReprise) { erreurs.push('Téléversez votre image publicitaire, ou choisissez « TBL produit mon image ».'); $('err-image').textContent = 'Image requise.'; }
+  if (!$('c-conditions').checked) { erreurs.push('Acceptez les conditions du service.'); }
+  return erreurs;
+}
+function champs() {
+  var tbl = choixImage() === 'tbl';
+  return {
+    livreId: $('c-livre').value, lienVente: $('c-lien').value.trim(), genre: $('c-genre').value, resume: $('c-resume').value.trim(),
+    typeBudget: etat.type, montant: $('c-montant').value, nbJours: jours(), dateDebut: $('c-debut').value,
+    region: $('c-region').value, publicVise: $('c-public').value.trim(), texteAnnonce: $('c-texte').value.trim(),
+    imageChoix: tbl ? 'tbl' : 'fournie', consignesImage: tbl ? $('c-consignes').value.trim() : '',
+    image: tbl ? '' : etat.image, imageReprise: tbl || etat.image ? '' : etat.imageReprise, couverture: etat.couverture
+  };
+}
+async function envoyer() {
+  if (etat.occupe) { return; }
+  $('msg-global').hidden = true;
+  var erreurs = verifier();
+  if (erreurs.length) {
+    $('msg-global').textContent = erreurs.join(' ');
+    $('msg-global').hidden = false;
+    $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  var sansPaiement = etat.d.gratuit || etat.d.admin;
+  var corps = el('div');
+  corps.appendChild(el('p', null, $('c-livre').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
+  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Vous passez maintenant au paiement sécurisé de Wix. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
+  var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
+  if (r !== 'ok') { return; }
+  etat.occupe = true;
+  $('b-envoyer').disabled = true;
+  var ancien = $('b-envoyer').textContent;
+  $('b-envoyer').textContent = 'Envoi en cours…';
+  var rep = await appeler('envoyer', { champs: champs() }, 60000);
+  etat.occupe = false;
+  $('b-envoyer').disabled = false;
+  $('b-envoyer').textContent = ancien;
+  if (!rep || !rep.ok) {
+    $('msg-global').textContent = (rep && rep.message) || 'La demande n’a pas pu être envoyée. Réessayez dans un instant.';
+    $('msg-global').hidden = false;
+    $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (rep.checkoutId) { toast('Ouverture de la page de paiement…', 'ok'); return; }
+  if (rep.demandes) { etat.d.demandes = rep.demandes; rendreAnciennes(); }
+  reinitialiser();
+  await modale({ titre: 'Demande envoyée', corps: 'Merci ! L’équipe TBL prépare l’annonce et vous la soumettra pour approbation.' + (rep.facture ? ' Votre facture ' + rep.facture + ' est dans l’onglet Documents de l’Espace Auteurs.' : '') });
+}
+
+async function conditions() {
+  var corps = el('div'), ul = el('ul');
+  [
+    'Le budget publicitaire est dépensé dans Meta Ads, depuis le compte des Éditions TBL, pour la période choisie. La date de fin arrête la dépense automatiquement.',
+    'L’annonce est soumise à votre approbation, puis à celle de Meta. La diffusion peut donc commencer un peu plus tard que la date prévue : TBL décale alors les deux dates pour garder le nombre de jours payé et vous en avise.',
+    'Meta répartit la dépense selon ses propres règles : la dépense d’une journée peut varier.',
+    'Une publicité Meta n’apparaît pas forcément dans le fil de la page Facebook des Éditions TBL.',
+    'L’image produite par TBL (10 $) vous est soumise avant la diffusion. Vous pouvez la réutiliser sans frais.',
+    'Les frais de service de 5 % et les taxes s’ajoutent au budget et à l’image. Votre facture est déposée dans l’onglet Documents de l’Espace Auteurs.',
+    'À la fin de la campagne, vous recevez le rapport de résultats.'
+  ].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+  corps.appendChild(ul);
+  var r = await modale({ titre: 'Conditions du service Publicité Facebook', corps: corps, boutons: [{ id: 'non', libelle: 'Fermer' }, { id: 'ok', libelle: 'J’accepte', principal: true }] });
+  if (r === 'ok') { $('c-conditions').checked = true; }
+}
+
+async function ecrireCommentaire() {
+  var corps = el('div');
+  corps.appendChild(el('p', null, 'Une question, une suggestion ou un problème ? Votre commentaire est transmis à l’équipe des Éditions TBL.'));
+  var ta = el('textarea'); ta.maxLength = 2000; ta.setAttribute('aria-label', 'Votre commentaire'); corps.appendChild(ta);
+  var r = await modale({ titre: 'Envoyer un commentaire', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Envoyer', principal: true, avant: function () { if (!ta.value.trim()) { ta.focus(); return false; } } }] });
+  if (r !== 'ok') { return; }
+  var rep = await appeler('commentaire', { commentaire: ta.value.trim() });
+  toast(rep && rep.ok ? (rep.message || 'Merci ! Votre commentaire a été envoyé.') : 'Votre commentaire n’a pas pu être envoyé.', rep && rep.ok ? 'ok' : 'mal');
+}
+
+/* ---------- Événements ---------- */
+$('o-global').addEventListener('click', function () { choisirType('global'); });
+$('o-quotidien').addEventListener('click', function () { choisirType('quotidien'); });
+['c-montant', 'c-jours', 'c-debut'].forEach(function (id) { $(id).addEventListener('input', calculer); });
+document.querySelectorAll('input[name=image]').forEach(function (r) { r.addEventListener('change', function () { choisirImage(this.value); }); });
+// Autre livre : son lien du site TBL remplace le lien proposé, mais jamais un lien saisi par l'auteur (Amazon, etc.).
+$('c-livre').addEventListener('change', function () {
+  var l = etat.d.livres.filter(function (x) { return x.id === $('c-livre').value; })[0];
+  var lien = $('c-lien').value.trim();
+  var propose = !lien || etat.d.livres.some(function (x) { return x.lien === lien; });
+  if (l && l.lien && propose) { $('c-lien').value = l.lien; }
+});
+$('b-envoyer').addEventListener('click', envoyer);
+$('b-conditions').addEventListener('click', conditions);
+$('b-commentaire').addEventListener('click', ecrireCommentaire);
+$('b-retour').addEventListener('click', retourEspace);
+$('etat-btn').addEventListener('click', retourEspace);
+$('formulaire').addEventListener('submit', function (e) { e.preventDefault(); });
+
+/* ---------- Données de démonstration (éditeur Wix, ou fichier ouvert seul) ---------- */
+function donneesDemo() {
+  var auj = new Date().toISOString().slice(0, 10);
+  return {
+    statut: 'ok', demo: true, admin: false, pourAutre: false, gratuit: false,
+    auteur: { id: 'demo', nom: 'Auteur de démonstration', courriel: 'auteur@exemple.ca' },
+    livres: [{ id: 'l1', titre: 'Livre de démonstration', lien: 'https://www.editionstbl.ca/livres/demo' }],
+    demandes: [{ id: 'd1', date: auj + 'T12:00:00Z', livreId: 'l1', livreTitre: 'Livre de démonstration', lienVente: 'https://www.editionstbl.ca/livres/demo', genre: 'Polar', resume: '', typeBudget: 'global', montantSaisi: 150, nbJours: 10, budget: 150, dateDebut: auj, dateFin: plusJours(auj, 9), region: 'Québec', publicVise: 'Lecteurs de polars', texteAnnonce: '', imageChoix: 'tbl', aImage: false, consignesImage: '', statut: 'Terminée' }],
+    aujourdhui: auj,
+    tarifs: { imageTbl: 1000, frais: 0.05, joursMin: 1, joursMax: 90, budgetMin: 1000, budgetJourMin: 100, budgetMax: 1000000 },
+    genres: ['Roman', 'Polar', 'Jeunesse', 'Essai', 'Poésie', 'Autre'],
+    regions: ['Québec', 'Canada', 'France', 'Francophonie', 'Autre']
+  };
+}
+
+demarrer();
+})();
+</script>
+</body>
+</html>
