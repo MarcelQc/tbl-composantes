@@ -362,7 +362,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '608a2a5 · 2026-11-02 13:34';
+var VERSION_TBL = '6ada1b1 · 2026-11-02 14:37';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -516,7 +516,8 @@ $('f-couverture').addEventListener('change', async function () {
 $('b-retirer').addEventListener('click', retirerImage);
 $('b-image').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('f-image').click(); } });
 
-/* ---------- Récapitulatif (même calcul que le serveur : frais de 5 % sur le budget et l'image, puis taxes) ---------- */
+/* ---------- Récapitulatif (même calcul que le serveur : frais de 5 % sur le budget et l'image, puis taxes) ----------
+   Auteur gratuit : la gratuité couvre seulement les frais de service, jamais le budget ni l'image (2 novembre 2026). */
 var TPS = 0.05, TVQ = 0.09975;
 function rendreRecap() {
   if (!etat.d) { return; }
@@ -526,20 +527,20 @@ function rendreRecap() {
   if (choixImage() === 'tbl') { lignes.push(['Image publicitaire produite par TBL', t.imageTbl]); }
   var sousTotal = lignes.reduce(function (s, l) { return s + l[1]; }, 0);
   var frais = Math.round(sousTotal * t.frais);
-  var base = sousTotal + frais;
   var gratuit = etat.d.gratuit;
-  var tps = gratuit ? 0 : Math.round(base * TPS), tvq = gratuit ? 0 : Math.round(base * TVQ);
+  var base = sousTotal + (gratuit ? 0 : frais);
+  var tps = Math.round(base * TPS), tvq = Math.round(base * TVQ);
   lignes.push(['Frais de service (5 %)', frais]);
-  if (gratuit) { lignes.push(['Gratuité (services offerts)', -base]); }
+  if (gratuit) { lignes.push(['Gratuité (frais de service offerts)', -frais]); }
   lignes.push(['TPS', tps], ['TVQ', tvq]);
   var corps = $('recap'); corps.textContent = '';
   lignes.forEach(function (l) {
     var tr = el('tr', l[0].indexOf('Gratuité') === 0 ? 'gratuite' : null);
     tr.appendChild(el('td', null, l[0])); tr.appendChild(el('td', 'm', argent(l[1]))); corps.appendChild(tr);
   });
-  var total = (gratuit ? 0 : base) + tps + tvq;
+  var total = base + tps + tvq;
   var tr = el('tr', 'total'); tr.appendChild(el('td', null, 'Total à payer')); tr.appendChild(el('td', 'm', argent(total))); corps.appendChild(tr);
-  var sansPaiement = gratuit || etat.d.admin;
+  var sansPaiement = etat.d.admin;
   $('b-envoyer').textContent = sansPaiement ? 'Envoyer la demande' : 'Payer et envoyer la demande';
 }
 
@@ -665,7 +666,7 @@ async function envoyer() {
     $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  var sansPaiement = etat.d.gratuit || etat.d.admin;
+  var sansPaiement = etat.d.admin;
   var corps = el('div');
   corps.appendChild(el('p', null, $('c-livre').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
   corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Vous passez maintenant au paiement sécurisé de Wix. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
