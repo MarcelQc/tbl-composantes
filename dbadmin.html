@@ -1320,6 +1320,31 @@ select:focus { outline: none; border-color: var(--accent); }
    par commentaire, la réponse de l'équipe en dessous comme dans le Forum. */
 #btn-commentaires { display: inline-flex; align-items: center; gap: 8px; }
 #btn-commentaires[hidden], .com-pastille[hidden] { display: none; }
+
+/* Journal du site (plan des logs du 4 novembre 2026) : fenêtre « Voir les logs », liste des fichiers du dossier
+   MEDIA System/Log et texte en lecture seule. */
+#btn-logs[hidden] { display: none; }
+.modal-backdrop.logs-ouvert .modal-box { max-width: 1200px; }
+.logs-barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+.logs-barre label { color: var(--text-dim); }
+.logs-barre select { min-width: 220px; }
+.logs-etat { color: var(--text-dim); font-size: 0.85rem; }
+.logs-texte {
+  width: 100%;
+  height: 60vh;
+  resize: vertical;
+  box-sizing: border-box;
+  white-space: pre;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
 .com-pastille { background: var(--accent); color: #fff; border-radius: 999px; padding: 0 8px; font-size: 0.75rem; font-weight: 700; min-width: 22px; text-align: center; }
 .com-overlay { position: fixed; inset: 0; z-index: 960; background: var(--bg-panel); display: flex; flex-direction: column; padding: 18px 26px 14px; }
 .com-overlay[hidden] { display: none; }
@@ -1444,6 +1469,7 @@ select:focus { outline: none; border-color: var(--accent); }
   </div>
   <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
   <button class="tabs-actualiser" type="button" id="btn-commentaires" title="Lire les commentaires des auteurs et y répondre" hidden>&#128232; Commentaires <span class="com-pastille" id="nb-commentaires" hidden>0</span></button>
+  <button class="tabs-actualiser" type="button" id="btn-logs" title="Consulter les fichiers log du site (MEDIA, System/Log)" hidden>&#128196; Voir les logs</button>
 </header>
 
 <nav class="tabs" id="tabs" aria-label="Sections du tableau de bord">
@@ -1520,6 +1546,7 @@ select:focus { outline: none; border-color: var(--accent); }
       etat.pret = true;
       renderTab(currentTab());
       if (etat.admin) comDemarrer(); // bouton « Commentaires » et son nombre de non-lus
+      if (etat.admin) document.getElementById('btn-logs').hidden = false; // bouton « Voir les logs »
       return;
     }
     if (d.reqId && attentes[d.reqId]) {
@@ -1656,6 +1683,7 @@ select:focus { outline: none; border-color: var(--accent); }
   }
   function openModal(titre, corpsHtml) {
     var el = ensureModal();
+    el.classList.remove('logs-ouvert'); // largeur normale (la fenêtre des logs la remet après)
     el.querySelector('#modal-title').textContent = titre;
     el.querySelector('#modal-body').innerHTML = corpsHtml;
     el.classList.add('open');
@@ -2036,6 +2064,91 @@ select:focus { outline: none; border-color: var(--accent); }
   }
 
   document.getElementById('btn-commentaires').addEventListener('click', comOuvrir);
+
+  /* ===================== Journal : « Voir les logs » ===================== */
+  // Fichiers du dossier MEDIA System/Log (backend/journal.js). listerLogs régénère d'abord All.log, Error.log et
+  // Debug.log à partir de la collection Journal : à l'ouverture de la fenêtre et à chaque clic sur Actualiser.
+
+  var logs = { choix: 'All.log', jeton: 0 };
+
+  function logsTaille(octets) {
+    if (!octets) return '';
+    return octets < 1024 ? octets + ' o' : (octets < 1048576 ? Math.round(octets / 1024) + ' Ko' : (octets / 1048576).toFixed(1) + ' Mo');
+  }
+  function logsEtat(texte) { var e = document.getElementById('logs-etat'); if (e) e.textContent = texte; }
+  function logsTexte(texte) { var t = document.getElementById('logs-texte'); if (t) { t.value = texte; t.scrollTop = 0; } }
+
+  function logsOuvrir() {
+    openModal('Logs du site', '' +
+      '<div class="logs-barre">' +
+        '<label for="logs-fichier">Fichier</label>' +
+        '<select id="logs-fichier"></select>' +
+        '<button class="btn" type="button" id="logs-actualiser">&#8635; Actualiser</button>' +
+        '<span class="logs-etat" id="logs-etat" role="status" aria-live="polite"></span>' +
+      '</div>' +
+      '<textarea class="logs-texte" id="logs-texte" readonly spellcheck="false" wrap="off" aria-label="Contenu du fichier log"></textarea>');
+    ensureModal().classList.add('logs-ouvert'); // fenêtre plus large ; openModal retire la classe pour les autres
+    document.getElementById('logs-fichier').addEventListener('change', function () { logs.choix = this.value; logsLire(); });
+    document.getElementById('logs-actualiser').addEventListener('click', logsActualiser);
+    logsActualiser();
+  }
+
+  // Régénère les fichiers, remplit la liste, puis relit le fichier choisi (All.log par défaut).
+  function logsActualiser() {
+    var jeton = ++logs.jeton;
+    var bouton = document.getElementById('logs-actualiser');
+    if (bouton) bouton.disabled = true;
+    logsEtat('Mise à jour des logs…');
+    appeler('listerLogs').then(function (r) {
+      if (jeton !== logs.jeton) return;
+      var fichiers = (r && r.fichiers) || [];
+      var sel = document.getElementById('logs-fichier');
+      if (!sel) return;
+      sel.innerHTML = fichiers.map(function (f) {
+        return '<option value="' + esc(f.nom) + '">' + esc(f.nom) + (f.taille ? ' (' + logsTaille(f.taille) + ')' : '') + '</option>';
+      }).join('');
+      if (!fichiers.length) {
+        logsEtat(r && r.regeneration && r.regeneration.erreur ? 'Mise à jour impossible : ' + r.regeneration.erreur : '');
+        logsTexte('Aucun log pour le moment.');
+        return;
+      }
+      if (!fichiers.some(function (f) { return f.nom === logs.choix; })) logs.choix = fichiers[0].nom;
+      sel.value = logs.choix;
+      logsLire(r && r.regeneration && r.regeneration.erreur ? 'Mise à jour impossible (' + r.regeneration.erreur + '), fichiers précédents affichés.' : '');
+    }).catch(function (e) {
+      if (jeton !== logs.jeton) return;
+      logsEtat('');
+      logsTexte('Les logs n’ont pas pu être chargés : ' + e.message);
+    }).then(function () {
+      if (bouton && jeton === logs.jeton) bouton.disabled = false;
+    });
+  }
+
+  function logsLire(note) {
+    var jeton = ++logs.jeton;
+    var bouton = document.getElementById('logs-actualiser');
+    if (bouton) bouton.disabled = true;
+    logsEtat('Chargement…');
+    appeler('lireLog', logs.choix).then(function (r) {
+      if (jeton !== logs.jeton) return;
+      if (!r || r.statut !== 'ok') {
+        logsEtat('');
+        logsTexte('Ce fichier est introuvable. Cliquez sur Actualiser.');
+        return;
+      }
+      var lignes = r.texte ? r.texte.split('\n').filter(function (l) { return l; }).length : 0;
+      logsEtat(note || (comPluriel(lignes, 'ligne', 'lignes') + (r.coupe ? ', fichier coupé à 2 Mo' : '')));
+      logsTexte(r.texte || 'Ce fichier est vide.');
+    }).catch(function (e) {
+      if (jeton !== logs.jeton) return;
+      logsEtat('');
+      logsTexte('Le fichier n’a pas pu être lu : ' + e.message);
+    }).then(function () {
+      if (bouton && jeton === logs.jeton) bouton.disabled = false;
+    });
+  }
+
+  document.getElementById('btn-logs').addEventListener('click', logsOuvrir);
 
   /* ===================== Accueil ===================== */
 
