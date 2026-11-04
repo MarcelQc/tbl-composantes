@@ -185,7 +185,7 @@ button,input,select,textarea{font:inherit;color:inherit}
           <button type="button" class="onglet" role="tab" id="o-quotidien" aria-selected="false">Budget quotidien</button>
         </div>
         <div class="grille">
-          <label class="champ" id="ch-montant"><span id="lib-montant">Budget total ($)</span> <span class="oblig">(obligatoire)</span><input id="c-montant" inputmode="decimal" placeholder="150"></label>
+          <label class="champ" id="ch-montant"><span id="lib-montant">Budget total ($)</span> <span class="oblig">(obligatoire)</span><input id="c-montant" inputmode="decimal" placeholder="100" value="100"></label>
           <label class="champ" id="ch-jours">Nombre de jours <span class="oblig">(obligatoire)</span><input id="c-jours" type="number" min="1" max="90" step="1" inputmode="numeric" value="10"></label>
         </div>
         <div class="resultat" aria-live="polite">
@@ -353,7 +353,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '5131d61 · 2026-11-04 12:18';
+var VERSION_TBL = '9bfb92f · 2026-11-04 17:04';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -443,7 +443,8 @@ function reinitialiser() {
   afficherLien();
   $('c-genre').value = '';
   choisirType('global');
-  $('c-montant').value = ''; $('c-jours').value = '10';
+  // Valeurs par défaut d'une nouvelle publicité : budget global de 100 $ sur 10 jours (Marcel, 4 novembre 2026).
+  $('c-montant').value = '100'; $('c-jours').value = '10';
   $('c-debut').value = d.aujourdhui;
   $('c-region').value = 'Québec'; $('c-public').value = '';
   choisirImage('fournie'); retirerImage();
@@ -459,7 +460,7 @@ function choisirType(type) {
   $('o-global').setAttribute('aria-selected', type === 'global' ? 'true' : 'false');
   $('o-quotidien').setAttribute('aria-selected', type === 'quotidien' ? 'true' : 'false');
   $('lib-montant').textContent = type === 'global' ? 'Budget total ($)' : 'Budget par jour ($)';
-  $('c-montant').placeholder = type === 'global' ? '150' : '15';
+  $('c-montant').placeholder = type === 'global' ? '100' : '10';
   calculer();
 }
 function jours() { var n = Number($('c-jours').value); return Number.isInteger(n) && n >= 1 ? n : 0; }
