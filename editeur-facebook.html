@@ -175,23 +175,10 @@ button,input,select,textarea{font:inherit;color:inherit}
     <div id="msg-global" role="alert" hidden></div>
 
     <form id="formulaire" novalidate>
-      <!-- 1. Le livre -->
-      <section class="section" aria-labelledby="t-livre">
-        <h2 id="t-livre"><span class="num">1.</span> Le livre</h2>
-        <p class="sub">Votre nom et votre courriel sont repris de votre fiche d’auteur.</p>
-        <div class="grille">
-          <label class="champ">Nom<input id="c-nom" readonly></label>
-          <label class="champ">Courriel<input id="c-courriel" readonly></label>
-          <label class="champ" id="ch-livre">Titre du livre <span class="oblig">(obligatoire)</span><select id="c-livre"></select></label>
-          <label class="champ" id="ch-genre">Genre littéraire <span class="oblig">(obligatoire)</span><select id="c-genre"></select></label>
-          <label class="champ large" id="ch-lien">Lien vers la page de vente <span class="oblig">(obligatoire)</span><input id="c-lien" type="url" maxlength="500" placeholder="https://www.editionstbl.ca/livres/…"><span class="aide">Site TBL, Amazon ou autre. Le lien de la page du livre sur le site TBL est proposé.</span></label>
-          <label class="champ large">Résumé ou phrase d’accroche <span class="aide">(facultatif)</span><textarea id="c-resume" maxlength="600" rows="3"></textarea></label>
-        </div>
-      </section>
-
-      <!-- 2. La campagne -->
+      <!-- 1. La campagne (l'ancienne section « Le livre » est retirée : une annonce peut montrer plusieurs livres,
+           selon l'image, demande de Marcel du 4 novembre 2026) -->
       <section class="section" aria-labelledby="t-campagne">
-        <h2 id="t-campagne"><span class="num">2.</span> La campagne</h2>
+        <h2 id="t-campagne"><span class="num">1.</span> La campagne</h2>
         <p class="sub">Choisissez votre type de budget. Le calcul se met à jour pendant que vous tapez.</p>
         <div class="onglets" role="tablist" aria-label="Type de budget">
           <button type="button" class="onglet" role="tab" id="o-global" aria-selected="true">Budget global</button>
@@ -211,15 +198,19 @@ button,input,select,textarea{font:inherit;color:inherit}
           <label class="champ" id="ch-debut">Date de début de diffusion <span class="oblig">(obligatoire)</span><input id="c-debut" type="date"><span class="aide">La diffusion commence après l’approbation de l’annonce par vous et par Meta. Elle peut donc débuter un peu plus tard que cette date.</span></label>
           <label class="champ">Date de fin de diffusion<input id="c-fin" readonly><span class="aide">Calculée : TBL programme toujours une date de fin, la dépense s’arrête d’elle-même.</span></label>
           <label class="champ" id="ch-region">Région ciblée <span class="oblig">(obligatoire)</span><select id="c-region"></select></label>
-          <label class="champ">Public visé <span class="aide">(facultatif)</span><input id="c-public" maxlength="300" placeholder="Âge, intérêts (ex. : lecteurs de polars)"></label>
+          <label class="champ" id="ch-genre">Genre littéraire <span class="oblig">(obligatoire)</span><select id="c-genre"></select></label>
+          <label class="champ large">Public visé <span class="aide">(facultatif)</span><input id="c-public" maxlength="300" placeholder="Âge, intérêts (ex. : lecteurs de polars)"></label>
         </div>
         <p class="sub" style="font-size:.85rem">À savoir : une publicité Meta n’apparaît pas forcément dans le fil de la page Facebook des Éditions TBL.</p>
       </section>
 
-      <!-- 3. L'image publicitaire -->
+      <!-- 2. L'annonce : la page où elle mène, puis l'image et le texte -->
       <section class="section" aria-labelledby="t-image">
-        <h2 id="t-image"><span class="num">3.</span> L’image publicitaire</h2>
-        <p class="sub">Fournissez votre image, ou laissez l’équipe TBL la produire.</p>
+        <h2 id="t-image"><span class="num">2.</span> L’annonce</h2>
+        <div class="grille">
+          <label class="champ large" id="ch-lien">Page où mène l’annonce <span class="oblig">(obligatoire)</span><select id="c-lien"></select><span class="aide" id="aide-lien">La page d’un de vos livres, un de vos coffrets, la boutique ou l’accueil des Éditions TBL.</span></label>
+        </div>
+        <p class="sub">Fournissez votre image, ou laissez l’équipe TBL la produire. Elle peut présenter un seul livre ou un montage de plusieurs de vos livres.</p>
         <div class="choix-image" role="radiogroup" aria-label="Image publicitaire">
           <label class="option"><input type="radio" name="image" value="fournie" checked><div><strong>Je télécharge mon image</strong><span>JPG ou PNG, 1080 × 1350 px conseillé. Sans frais.</span></div></label>
           <label class="option"><input type="radio" name="image" value="tbl"><div><strong>TBL produit mon image</strong><span id="prix-image">10,00 $, soumise à votre approbation avec l’annonce.</span></div></label>
@@ -238,16 +229,16 @@ button,input,select,textarea{font:inherit;color:inherit}
           <label class="champ">Consignes pour l’image <span class="aide">(facultatif)</span><textarea id="c-consignes" maxlength="1000" rows="3" placeholder="Ambiance, couleurs, texte à mettre en valeur…"></textarea></label>
         </div>
         <div class="grille">
-          <div class="champ">Couverture du livre <span class="aide">(facultatif, utile dans les deux cas)</span>
+          <div class="champ">Couverture ou visuel à intégrer <span class="aide">(facultatif, utile dans les deux cas)</span>
             <div class="televersement" style="margin:4px 0 0"><input type="file" id="f-couverture" accept="image/jpeg,image/png,image/webp"><label for="f-couverture" class="btn sec petit" role="button" tabindex="0">Joindre la couverture</label> <span class="etat-img" id="etat-couverture"></span></div>
           </div>
           <label class="champ large">Texte de l’annonce proposé <span class="aide">(facultatif, TBL peut le rédiger)</span><textarea id="c-texte" maxlength="1500" rows="4"></textarea></label>
         </div>
       </section>
 
-      <!-- 4. Récapitulatif et 5. Paiement -->
+      <!-- 3. Récapitulatif et paiement -->
       <section class="section" aria-labelledby="t-recap">
-        <h2 id="t-recap"><span class="num">4.</span> Récapitulatif</h2>
+        <h2 id="t-recap"><span class="num">3.</span> Récapitulatif</h2>
         <p class="sub">Calculé automatiquement. Le serveur refait le calcul avant le paiement.</p>
         <table class="recap"><tbody id="recap"></tbody></table>
         <div class="envoi">
@@ -257,9 +248,9 @@ button,input,select,textarea{font:inherit;color:inherit}
       </section>
     </form>
 
-    <!-- 5. Mes publicités précédentes -->
+    <!-- 4. Mes publicités précédentes -->
     <section class="section" aria-labelledby="t-anciennes">
-      <h2 id="t-anciennes"><span class="num">5.</span> <span id="titre-anciennes">Mes publicités précédentes</span></h2>
+      <h2 id="t-anciennes"><span class="num">4.</span> <span id="titre-anciennes">Mes publicités précédentes</span></h2>
       <p class="sub">Répéter remplit le formulaire avec la même publicité, à la date d’aujourd’hui. Rien n’est envoyé avant le paiement.</p>
       <div class="tbl-list-grid"><div class="lg-zone" id="anciennes"></div></div>
     </section>
@@ -362,7 +353,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '910885b · 2026-11-04 07:04';
+var VERSION_TBL = '5131d61 · 2026-11-04 12:18';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -405,15 +396,41 @@ async function demarrer() {
   ajusterHauteurAnciennes(); // les hauteurs ne se mesurent qu'une fois la page visible
 }
 
+// Liens permis, regroupés (le serveur refuse toute autre adresse) : livres et coffrets de l'auteur, puis TBL.
+function groupesLiens() {
+  var autre = etat.d.pourAutre;
+  return [
+    { cle: 'livres', titre: autre ? 'Livres de l’auteur' : 'Mes livres' },
+    { cle: 'coffrets', titre: autre ? 'Coffrets de l’auteur' : 'Mes coffrets' },
+    { cle: 'tbl', titre: 'Éditions TBL' }
+  ];
+}
+function remplirLiens() {
+  var sel = $('c-lien'), liens = etat.d.liens || [];
+  sel.textContent = '';
+  var vide = el('option', null, 'Choisir la page'); vide.value = ''; sel.appendChild(vide);
+  groupesLiens().forEach(function (g) {
+    var dans = liens.filter(function (l) { return l.groupe === g.cle; });
+    if (!dans.length) { return; }
+    var og = document.createElement('optgroup'); og.label = g.titre;
+    dans.forEach(function (l) { var o = el('option', null, l.texte); o.value = l.url; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+}
+function afficherLien() {
+  var url = $('c-lien').value;
+  $('aide-lien').textContent = url ? 'Adresse : ' + url : 'La page d’un de vos livres, un de vos coffrets, la boutique ou l’accueil des Éditions TBL.';
+}
+function lienPermis(url) { return (etat.d.liens || []).some(function (l) { return l.url === url; }); }
+
 function remplirListes() {
   var d = etat.d;
-  $('c-nom').value = d.auteur.nom; $('c-courriel').value = d.auteur.courriel;
   function options(sel, valeurs, vide) {
     while (sel.options.length) { sel.remove(0); }
     var o = el('option', null, vide); o.value = ''; sel.appendChild(o);
     valeurs.forEach(function (v) { var x = el('option', null, v.texte); x.value = v.valeur; sel.appendChild(x); });
   }
-  options($('c-livre'), d.livres.map(function (l) { return { valeur: l.id, texte: l.titre }; }), 'Choisir un livre');
+  remplirLiens();
   options($('c-genre'), d.genres.map(function (g) { return { valeur: g, texte: g }; }), 'Choisir un genre');
   options($('c-region'), d.regions.map(function (r) { return { valeur: r, texte: r }; }), 'Choisir une région');
   $('c-debut').min = d.aujourdhui;
@@ -421,9 +438,10 @@ function remplirListes() {
 
 function reinitialiser() {
   var d = etat.d;
-  $('c-livre').value = d.livres.length === 1 ? d.livres[0].id : '';
-  $('c-lien').value = d.livres.length === 1 ? d.livres[0].lien : '';
-  $('c-genre').value = ''; $('c-resume').value = '';
+  // Un seul livre : sa page est proposée d'office.
+  $('c-lien').value = d.livres.length === 1 && lienPermis(d.livres[0].lien) ? d.livres[0].lien : '';
+  afficherLien();
+  $('c-genre').value = '';
   choisirType('global');
   $('c-montant').value = ''; $('c-jours').value = '10';
   $('c-debut').value = d.aujourdhui;
@@ -552,14 +570,14 @@ function rendreAnciennes() {
   var liste = etat.d.demandes || [];
   $('titre-anciennes').textContent = etat.d.pourAutre ? 'Publicités précédentes de l’auteur' : 'Mes publicités précédentes';
   if (!liste.length) { zone.appendChild(el('div', 'lg-vide', 'Aucune publicité pour le moment.')); return; }
-  var colonnes = ['Demande', 'Diffusion', 'Livre', 'Budget', 'Jours', 'Région', 'Image', 'Statut', ''];
+  var colonnes = ['Demande', 'Diffusion', 'Page annoncée', 'Budget', 'Jours', 'Région', 'Image', 'Statut', ''];
   var grille = el('div', 'lg-grille');
   grille.style.setProperty('--lg-colonnes', 'minmax(90px,auto) minmax(150px,1.2fr) minmax(140px,1.5fr) minmax(110px,auto) 60px minmax(80px,auto) minmax(110px,auto) minmax(120px,auto) 104px');
   var entete = el('div', 'lg-entete');
   colonnes.forEach(function (c) { entete.appendChild(el('div', null, c)); });
   grille.appendChild(entete);
   liste.forEach(function (x) {
-    // Le livre est la colonne principale : sur un téléphone, il passe en tête de la ligne (grid-row 1).
+    // La page annoncée est la colonne principale : sur un téléphone, elle passe en tête de la ligne (grid-row 1).
     var ligne = el('div', 'lg-ligne');
     ligne.appendChild(el('div', 'lg-autre', dateCourte(x.date)));
     ligne.appendChild(el('div', 'lg-autre', periode(x.dateDebut, x.dateFin)));
@@ -598,11 +616,11 @@ window.addEventListener('resize', function () { if (etat.d) { ajusterHauteurAnci
 // remplacer), choix « TBL produit mon image » décoché. Rien n'est envoyé ni payé.
 function repeter(x) {
   var d = etat.d;
-  var livre = d.livres.filter(function (l) { return l.id === x.livreId; })[0];
-  $('c-livre').value = livre ? livre.id : '';
-  $('c-lien').value = x.lienVente || (livre ? livre.lien : '');
+  // Seul un lien encore proposé est repris (une ancienne demande pouvait mener à une adresse libre).
+  var lienRepris = lienPermis(x.lienVente);
+  $('c-lien').value = lienRepris ? x.lienVente : '';
+  afficherLien();
   $('c-genre').value = x.genre || '';
-  $('c-resume').value = x.resume || '';
   choisirType(x.typeBudget === 'quotidien' ? 'quotidien' : 'global');
   $('c-montant').value = String(x.montantSaisi).replace('.', ',');
   $('c-jours').value = String(x.nbJours || 10);
@@ -623,8 +641,8 @@ function repeter(x) {
   }
   $('c-conditions').checked = false;
   calculer();
-  if (!livre) { toast('Ce livre n’est plus publié : choisissez un autre livre.', 'mal'); }
   $('haut').scrollIntoView({ behavior: 'smooth' });
+  if (!lienRepris) { toast('Formulaire rempli. Choisissez la page où mène l’annonce, puis envoyez.', 'mal'); return; }
   toast('Formulaire rempli. Relisez, modifiez au besoin, puis envoyez.', 'ok');
 }
 
@@ -634,8 +652,7 @@ function verifier() {
   var d = etat.d, t = d.tarifs, n = jours(), b = budget();
   var erreurs = [];
   function exiger(cond, champ, message) { marquer(champ, !cond); if (!cond) { erreurs.push(message); } }
-  exiger(!!$('c-livre').value, 'ch-livre', 'Choisissez le livre à annoncer.');
-  exiger(/^https?:\/\/[^\s]+\.[^\s]+$/i.test($('c-lien').value.trim()), 'ch-lien', 'Indiquez le lien vers la page de vente (https://…).');
+  exiger(lienPermis($('c-lien').value), 'ch-lien', 'Choisissez la page où mène l’annonce.');
   exiger(!!$('c-genre').value, 'ch-genre', 'Choisissez le genre littéraire.');
   exiger(n >= t.joursMin && n <= t.joursMax, 'ch-jours', 'Le nombre de jours doit être de ' + t.joursMin + ' à ' + t.joursMax + '.');
   var budgetOk = isFinite(b) && b >= t.budgetMin && b <= t.budgetMax && n > 0 && b / n >= t.budgetJourMin;
@@ -649,7 +666,7 @@ function verifier() {
 function champs() {
   var tbl = choixImage() === 'tbl';
   return {
-    livreId: $('c-livre').value, lienVente: $('c-lien').value.trim(), genre: $('c-genre').value, resume: $('c-resume').value.trim(),
+    lienVente: $('c-lien').value, genre: $('c-genre').value,
     typeBudget: etat.type, montant: $('c-montant').value, nbJours: jours(), dateDebut: $('c-debut').value,
     region: $('c-region').value, publicVise: $('c-public').value.trim(), texteAnnonce: $('c-texte').value.trim(),
     imageChoix: tbl ? 'tbl' : 'fournie', consignesImage: tbl ? $('c-consignes').value.trim() : '',
@@ -668,7 +685,7 @@ async function envoyer() {
   }
   var sansPaiement = etat.d.admin;
   var corps = el('div');
-  corps.appendChild(el('p', null, $('c-livre').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
+  corps.appendChild(el('p', null, $('c-lien').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
   corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Vous passez maintenant au paiement sécurisé de Wix. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
   var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
   if (r !== 'ok') { return; }
@@ -723,13 +740,7 @@ $('o-global').addEventListener('click', function () { choisirType('global'); });
 $('o-quotidien').addEventListener('click', function () { choisirType('quotidien'); });
 ['c-montant', 'c-jours', 'c-debut'].forEach(function (id) { $(id).addEventListener('input', calculer); });
 document.querySelectorAll('input[name=image]').forEach(function (r) { r.addEventListener('change', function () { choisirImage(this.value); }); });
-// Autre livre : son lien du site TBL remplace le lien proposé, mais jamais un lien saisi par l'auteur (Amazon, etc.).
-$('c-livre').addEventListener('change', function () {
-  var l = etat.d.livres.filter(function (x) { return x.id === $('c-livre').value; })[0];
-  var lien = $('c-lien').value.trim();
-  var propose = !lien || etat.d.livres.some(function (x) { return x.lien === lien; });
-  if (l && l.lien && propose) { $('c-lien').value = l.lien; }
-});
+$('c-lien').addEventListener('change', function () { afficherLien(); marquer('ch-lien', false); });
 $('b-envoyer').addEventListener('click', envoyer);
 $('b-conditions').addEventListener('click', conditions);
 $('b-commentaire').addEventListener('click', ecrireCommentaire);
@@ -744,6 +755,12 @@ function donneesDemo() {
     statut: 'ok', demo: true, admin: false, pourAutre: false, gratuit: false,
     auteur: { id: 'demo', nom: 'Auteur de démonstration', courriel: 'auteur@exemple.ca' },
     livres: [{ id: 'l1', titre: 'Livre de démonstration', lien: 'https://www.editionstbl.ca/livres/demo' }],
+    liens: [
+      { url: 'https://www.editionstbl.ca/livres/demo', texte: 'Page du livre : Livre de démonstration', groupe: 'livres' },
+      { url: 'https://www.editionstbl.ca/coffrets/demo', texte: 'Coffret : Coffret de démonstration', groupe: 'coffrets' },
+      { url: 'https://www.editionstbl.ca/category/all-products', texte: 'Boutique des Éditions TBL', groupe: 'tbl' },
+      { url: 'https://www.editionstbl.ca/', texte: 'Page d’accueil des Éditions TBL', groupe: 'tbl' }
+    ],
     demandes: [{ id: 'd1', date: auj + 'T12:00:00Z', livreId: 'l1', livreTitre: 'Livre de démonstration', lienVente: 'https://www.editionstbl.ca/livres/demo', genre: 'Polar', resume: '', typeBudget: 'global', montantSaisi: 150, nbJours: 10, budget: 150, dateDebut: auj, dateFin: plusJours(auj, 9), region: 'Québec', publicVise: 'Lecteurs de polars', texteAnnonce: '', imageChoix: 'tbl', aImage: false, consignesImage: '', statut: 'Terminée' }],
     aujourdhui: auj,
     tarifs: { imageTbl: 1000, frais: 0.05, joursMin: 1, joursMax: 90, budgetMin: 1000, budgetJourMin: 100, budgetMax: 1000000 },
