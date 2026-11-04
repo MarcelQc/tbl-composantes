@@ -82,6 +82,7 @@ h3{margin:0 0 12px;font-size:1.15rem}
 /* Ventes */
 .barre-mois{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
 .barre-mois label{color:var(--muted);margin-right:8px}
+.choix-ventes{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
 select,input[type=text],textarea{background:#0f1114;border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%}
 select{width:auto;min-width:200px}
 select:focus,input:focus,textarea:focus{border-color:var(--or);outline:none}
@@ -351,13 +352,16 @@ textarea{min-height:96px;resize:vertical}
     <!-- VENTES -->
     <div class="panneau" role="tabpanel" id="panneau-ventes" aria-labelledby="onglet-ventes">
       <div class="barre-mois">
-        <div><label for="choix-mois">Mois affiché</label><select id="choix-mois"></select></div>
+        <div class="choix-ventes">
+          <div><label for="choix-mois">Mois affiché</label><select id="choix-mois"></select></div>
+          <div id="zone-auteur-ventes" hidden><label for="choix-auteur-ventes">Auteur</label><select id="choix-auteur-ventes"></select></div>
+        </div>
         <span class="sub" id="etat-ventes" role="status" aria-live="polite"></span>
       </div>
       <div class="kpis">
         <div class="card kpi"><div class="etiquette">Ventes brutes</div><div class="valeur" id="kpi-brut">…</div><div class="detail">Montants payés par les acheteurs, taxes incluses</div></div>
         <div class="card kpi"><div class="etiquette">Exemplaires vendus</div><div class="valeur" id="kpi-ex">…</div><div class="detail">Livres numériques et ensembles</div></div>
-        <div class="card kpi"><div class="etiquette">Votre part estimée</div><div class="valeur" id="kpi-part">…</div><div class="detail" id="kpi-part-detail">Selon votre taux de commission</div></div>
+        <div class="card kpi"><div class="etiquette" id="kpi-part-etiquette">Votre part estimée</div><div class="valeur" id="kpi-part">…</div><div class="detail" id="kpi-part-detail">Selon votre taux de commission</div></div>
       </div>
       <div class="card graphique">
         <h3>Les 12 derniers mois</h3>
@@ -367,7 +371,7 @@ textarea{min-height:96px;resize:vertical}
         <h3 id="titre-tableau">Ventes par livre</h3>
         <div class="zone-fixe zone-ventes" id="zone-ventes" role="region" aria-labelledby="titre-tableau" tabindex="0">
           <table id="table-ventes">
-            <thead><tr><th>Livre</th><th class="n c-ex">Exemplaires</th><th class="n c-brut">Ventes brutes</th><th class="n c-liens">Par vos liens de partage</th></tr></thead>
+            <thead><tr><th>Livre</th><th class="n c-ex">Exemplaires</th><th class="n c-brut">Ventes brutes</th><th class="n c-liens" id="entete-liens">Par vos liens de partage</th></tr></thead>
             <tbody id="corps-ventes"></tbody>
             <tfoot id="pied-ventes"></tfoot>
           </table>
@@ -736,10 +740,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 6ada1b1 · 2026-11-02 14:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 769f628 · 2026-11-04 05:51 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '6ada1b1 · 2026-11-02 14:37';
+var VERSION_TBL = '769f628 · 2026-11-04 05:51';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -799,6 +803,7 @@ function rendreEspace() {
   rendreServices();
   rendreDocuments();
   construireChoixMois();
+  construireChoixAuteurVentes();
   $('nb-livres').textContent = d.livres.length + (d.coffrets || []).length;
   $('nb-documents').textContent = d.documents.generaux.length + d.documents.auteur.length;
 }
@@ -815,23 +820,58 @@ function construireChoixMois() {
   }
   select.value = moisUtc(0);
 }
+// Administrateur : liste « Auteur » de l'onglet Ventes, comme dans l'onglet Services (demande de Marcel du
+// 4 novembre 2026). « Tous les auteurs » par défaut ; le serveur revérifie Auteurs.admin à chaque demande.
+var TOUS_AUTEURS_VENTES = '*';
+function auteurVentes() { return estAdmin() ? ($('choix-auteur-ventes').value || TOUS_AUTEURS_VENTES) : ''; }
+function construireChoixAuteurVentes() {
+  var admin = estAdmin();
+  var sel = $('choix-auteur-ventes');
+  $('zone-auteur-ventes').hidden = !admin;
+  $('kpi-part-etiquette').textContent = admin ? 'Part des auteurs estimée' : 'Votre part estimée';
+  $('entete-liens').textContent = admin ? 'Par les liens de partage' : 'Par vos liens de partage';
+  if (!admin) { return; }
+  var choix = sel.value || TOUS_AUTEURS_VENTES;
+  vider(sel);
+  var tous = el('option', null, 'Tous les auteurs');
+  tous.value = TOUS_AUTEURS_VENTES;
+  sel.appendChild(tous);
+  ((etat.donnees && etat.donnees.auteursActifs) || []).forEach(function (a) {
+    var o = el('option', null, a.nom);
+    o.value = a.id;
+    sel.appendChild(o);
+  });
+  sel.value = sel.querySelector('option[value="' + choix + '"]') ? choix : TOUS_AUTEURS_VENTES;
+}
 function demanderVentes(mois) {
   etat.mois = mois;
+  etat.auteurVentes = auteurVentes();
   $('choix-mois').value = mois;
   $('etat-ventes').textContent = 'Chargement des ventes…';
-  envoyer({ type: 'ventes', mois: mois });
+  var demande = { type: 'ventes', mois: mois };
+  if (etat.auteurVentes) { demande.auteurId = etat.auteurVentes; }
+  envoyer(demande);
 }
 $('choix-mois').addEventListener('change', function () { demanderVentes(this.value); tracer('mois-ventes', { detail: this.value }); });
+$('choix-auteur-ventes').addEventListener('change', function () { demanderVentes(etat.mois || moisUtc(0)); });
 
 function surVentes(msg) {
   if (accesBloque(msg)) { return; }
   if (msg.statut !== 'ok') { $('etat-ventes').textContent = 'Les ventes sont indisponibles pour le moment. Réessayez dans quelques instants.'; return; }
   if (msg.mois !== etat.mois) { return; } // réponse d'un mois déjà remplacé
+  // Réponse pour un autre auteur que celui choisi maintenant (administrateur). Un ancien code de page Wix
+  // ne renvoie pas auteurId : la réponse est alors acceptée telle quelle.
+  if (msg.auteurId !== undefined && msg.auteurId !== etat.auteurVentes) { return; }
   $('etat-ventes').textContent = '';
 
   $('kpi-brut').textContent = fmtArgent.format(msg.courant.ventesBrutes);
   $('kpi-ex').textContent = fmtEntier.format(msg.courant.exemplaires);
-  if (msg.courant.partAuteur === null || msg.prcCommission === null) {
+  if (msg.plusieursAuteurs) {
+    $('kpi-part').textContent = msg.courant.partAuteur === null ? 'N/D' : fmtArgent.format(msg.courant.partAuteur);
+    $('kpi-part-detail').textContent = msg.courant.partAuteur === null
+      ? 'Taux de commission manquant pour un auteur'
+      : 'Selon le taux de commission de chaque auteur';
+  } else if (msg.courant.partAuteur === null || msg.prcCommission === null) {
     $('kpi-part').textContent = 'N/D';
     $('kpi-part-detail').textContent = 'Taux de commission non renseigné';
   } else {
@@ -849,6 +889,9 @@ function surVentes(msg) {
     : '';
   $('note-ventes').textContent = secours + depuis + 'Les ensembles de deux livres sont répartis à parts égales entre les livres qu\'ils contiennent. Votre part est une estimation. Le montant net après frais de service figure dans votre rapport de commission mensuel, dans l\'onglet Documents.';
 
+  // Totaux par livre de l'onglet Livres : seulement d'une réponse qui couvre tous les livres affichés
+  // (auteur ordinaire, ou administrateur sur « Tous les auteurs »), jamais d'un seul auteur choisi.
+  if (msg.auteurId !== undefined && msg.auteurId !== TOUS_AUTEURS_VENTES) { return; }
   var premiere = !etat.ventesRecues;
   etat.ventesRecues = true;
   etat.totaux = {};
