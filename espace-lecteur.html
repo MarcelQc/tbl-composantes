@@ -8,7 +8,8 @@
 <style>
 /* Espace Lecteur (ELC), à l'image de l'Espace Auteurs (espace-auteurs.html, EDA) : mêmes jetons, en-tête, onglets
    et commentaires. Ouvert à tout membre connecté (lecteur, auteur ou administrateur). Version 1 : une annonce
-   « en construction » et les commentaires (demande de Marcel du 31 octobre 2026). */
+   « en construction » et les commentaires (demande de Marcel du 31 octobre 2026). Onglet Livres sous la clé
+   DEV001 (6 novembre 2026) : les livres numériques achetés, en attendant la liseuse web. */
 /* Jetons des gabarits (Templates\tokens.css). Copiés ici : la composante est un fichier autonome. */
 :root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:none}
 /* Couleurs de l'EDA, rattachées aux jetons. */
@@ -100,6 +101,24 @@ textarea:focus{border-color:var(--or);outline:none}
 .annonce .btn-annonce{margin:18px 0 16px;padding:16px 28px;font-size:1.1rem}
 .annonce .note{margin:0}
 
+/* Clés DEV (backend/devKey.js) : un élément data-cle-dev reste caché tant que le membre n'a pas la clé.
+   La pastille rappelle qu'on teste une fonction encore en développement. */
+.pastille-dev{background:var(--tbl-blue-soft);color:var(--tbl-blue);border-radius:99px;padding:0 7px;font-family:var(--tbl-font-body);font-size:.68rem;font-weight:600;letter-spacing:.02em}
+
+/* Livres : grille de couvertures (Templates\book-grid.html), qui défile dans le panneau. */
+.intro-livres{margin:0 0 14px;flex:0 0 auto}
+.zone-livres{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:2px}
+.grille-livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+.livre{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.livre .couverture{width:100%;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:#2b2f37;margin-bottom:8px;display:block}
+.livre .couverture.sans-image{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;padding:10px}
+.livre .titre-livre{font-family:var(--tbl-font-heading);font-weight:bold;font-size:.95rem;margin:0;line-height:1.25;overflow-wrap:anywhere}
+.livre .auteur-livre{font-size:.82rem;color:var(--muted);margin:0}
+.livre .achat-livre{font-size:.76rem;color:var(--muted);margin:2px 0 0}
+.etat-livres{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;flex:1;padding:20px}
+.etat-livres h2{margin:0 0 10px}
+.etat-livres p{max-width:560px;margin:0 0 14px}
+
 /* Fenêtres (commentaire, confirmation) */
 .fond-fenetre{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;padding:60px 14px;z-index:20;overflow:auto}
 .fenetre{width:min(560px,100%);padding:26px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
@@ -183,8 +202,19 @@ textarea:focus{border-color:var(--or);outline:none}
       <button class="btn petit" type="button" id="btn-voir-reponses">Voir les réponses</button>
     </div>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Lecteur">
+      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1" data-cle-dev="DEV001" hidden>Livres <span class="pastille-dev" title="Fonction en développement, visible seulement par les personnes inscrites sur la clé DEV001">DEV001</span></button>
       <button class="onglet" role="tab" id="onglet-nouveautes" aria-controls="panneau-nouveautes" aria-selected="true" tabindex="0">Nouveautés</button>
       <button class="onglet" role="tab" id="onglet-commentaires" aria-controls="panneau-commentaires" aria-selected="false" tabindex="-1">Commentaires <span class="pastille-nb nouvelles" id="nb-commentaires" aria-hidden="true" hidden>0</span></button>
+    </div>
+
+    <!-- LIVRES (clé DEV001) : les livres numériques achetés par le membre -->
+    <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" data-cle-dev="DEV001" hidden>
+      <p class="sub intro-livres">Les livres numériques que vous avez achetés aux Éditions TBL. Vous pourrez bientôt les lire ici, directement dans votre navigateur.</p>
+      <div class="etat-livres" id="etat-livres" role="status" aria-live="polite">
+        <div class="spin" aria-hidden="true"></div>
+        <p class="sub">Recherche de vos livres…</p>
+      </div>
+      <div class="zone-livres" id="zone-livres" hidden><div class="grille-livres" id="grille-livres"></div></div>
     </div>
 
     <!-- NOUVEAUTÉS : annonce de l'Espace Lecteur en construction -->
@@ -273,7 +303,7 @@ function envoyer(message) {
 
 }
 // Trace d'engagement d'un clic (collection Events) : la page Wix la transmet au serveur. Aucune réponse attendue.
-var NOMS_ONGLETS = { nouveautes: 'Nouveautés', commentaires: 'Commentaires' };
+var NOMS_ONGLETS = { livres: 'Livres', nouveautes: 'Nouveautés', commentaires: 'Commentaires' };
 function tracer(action, infos) {
   envoyer(Object.assign({ type: 'evenement', action: action }, infos || {}));
 }
@@ -296,6 +326,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatModifierCommentaire') { surModifierCommentaire(msg); }
   else if (msg.type === 'resultatSupprimerCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
+  else if (msg.type === 'resultatLivres') { surLivres(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -335,9 +366,18 @@ function demarrer() {
 function surEspace(msg) {
   arreterAttente();
   if (msg.statut === 'ok' && msg.membre) {
+    var premiereFois = !etat.donnees;
     etat.donnees = msg;
+    appliquerClesDev(msg.clesDev);
     rendreEspace();
     montrer('espace');
+    // DEV001 : l'onglet Livres s'ouvre en premier au chargement ; ↻ Actualiser garde l'onglet affiché.
+    if (aLaCle('DEV001')) {
+      if (premiereFois) { choisirOnglet('livres', false); }
+      demanderLivres();
+    } else if (!$('panneau-livres').hidden) {
+      choisirOnglet('nouveautes', false);
+    }
     demanderCommentaires();
   } else if (msg.statut === 'connexion') {
     etat.donnees = null;
@@ -349,9 +389,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 9bfb92f · 2026-11-04 17:04 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 4a304af · 2026-11-06 12:50 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '9bfb92f · 2026-11-04 17:04';
+var VERSION_TBL = '4a304af · 2026-11-06 12:50';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -365,10 +405,26 @@ function afficherVersion(admin) {
   p.hidden = false;
 }
 
+/* ---------- Clés DEV ---------- */
+// Le serveur envoie les clés DEV du membre (msg.clesDev, backend/devKey.js). Tout élément data-cle-dev dont la clé
+// n'est pas dans la liste reste caché. Les panneaux d'onglets portent aussi l'attribut (pour la recherche de la clé
+// à la montée en MAIN), mais c'est l'onglet qui décide s'ils s'affichent.
+etat.clesDev = [];
+function aLaCle(cle) { return etat.clesDev.indexOf(cle) !== -1; }
+function appliquerClesDev(cles) {
+  etat.clesDev = Array.isArray(cles) ? cles : [];
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cle-dev]'), function (e) {
+    if (e.getAttribute('role') !== 'tabpanel') { e.hidden = !aLaCle(e.getAttribute('data-cle-dev')); }
+  });
+}
+
 /* ---------- Onglets ---------- */
-var ONGLETS = ['nouveautes', 'commentaires'];
+// Onglets dans l'ordre d'affichage ; un onglet caché par une clé DEV n'est pas proposé.
+var TOUS_ONGLETS = ['livres', 'nouveautes', 'commentaires'];
+function ongletsVisibles() { return TOUS_ONGLETS.filter(function (n) { return !$('onglet-' + n).hidden; }); }
 function choisirOnglet(nom, focus) {
-  ONGLETS.forEach(function (n) {
+  if ($('onglet-' + nom).hidden) { nom = 'nouveautes'; }
+  TOUS_ONGLETS.forEach(function (n) {
     var actif = (n === nom);
     var bouton = $('onglet-' + n);
     bouton.setAttribute('aria-selected', actif ? 'true' : 'false');
@@ -378,15 +434,17 @@ function choisirOnglet(nom, focus) {
   });
   if (nom === 'commentaires' && etat.commentaires) { reponsesVues(); }
 }
-ONGLETS.forEach(function (nom, i) {
+TOUS_ONGLETS.forEach(function (nom) {
   var bouton = $('onglet-' + nom);
   bouton.addEventListener('click', function () { choisirOnglet(nom, false); tracerOnglet(nom); });
   bouton.addEventListener('keydown', function (e) {
+    var liste = ongletsVisibles();
+    var i = liste.indexOf(nom);
     var cible = null;
-    if (e.key === 'ArrowRight') { cible = ONGLETS[(i + 1) % ONGLETS.length]; }
-    else if (e.key === 'ArrowLeft') { cible = ONGLETS[(i + ONGLETS.length - 1) % ONGLETS.length]; }
-    else if (e.key === 'Home') { cible = ONGLETS[0]; }
-    else if (e.key === 'End') { cible = ONGLETS[ONGLETS.length - 1]; }
+    if (e.key === 'ArrowRight') { cible = liste[(i + 1) % liste.length]; }
+    else if (e.key === 'ArrowLeft') { cible = liste[(i + liste.length - 1) % liste.length]; }
+    else if (e.key === 'Home') { cible = liste[0]; }
+    else if (e.key === 'End') { cible = liste[liste.length - 1]; }
     if (cible) { e.preventDefault(); choisirOnglet(cible, true); tracerOnglet(cible); }
   });
 });
@@ -683,6 +741,83 @@ $('btn-voir-reponses').addEventListener('click', function () { choisirOnglet('co
 $('btn-reessayer').addEventListener('click', demarrer);
 // La page Wix ouvre sa fenêtre de connexion ; après la connexion, elle renvoie l'espace du membre.
 $('btn-connexion').addEventListener('click', function () { envoyer({ type: 'connexion' }); });
+
+/* ---------- Onglet Livres (clé DEV001) ---------- */
+// Livres numériques achetés par le membre. Le serveur lit seulement les commandes passées depuis la dernière
+// ouverture et ajoute les nouveaux livres (backend/lecteurLivres.js). La première lecture peut prendre quelques
+// secondes : elle parcourt tout l'historique du membre.
+var DELAI_LIVRES_MS = 30000;
+var URL_BOUTIQUE = 'https://www.editionstbl.ca/livres';
+var fmtDate = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Toronto' });
+etat.livres = null;
+var minuterieLivres = null;
+function etatLivres(titre, texte, avecSpin, avecBoutique) {
+  var zone = $('etat-livres');
+  vider(zone);
+  if (avecSpin) { zone.appendChild(el('div', 'spin')).setAttribute('aria-hidden', 'true'); }
+  if (titre) { zone.appendChild(el('h2', '', titre)); }
+  zone.appendChild(el('p', 'sub', texte));
+  if (avecBoutique) {
+    var lien = el('a', 'btn', 'Découvrir nos livres');
+    lien.href = URL_BOUTIQUE;
+    lien.target = '_top';
+    zone.appendChild(lien);
+  }
+  zone.hidden = false;
+  $('zone-livres').hidden = true;
+}
+function demanderLivres() {
+  if (etat.livres === null) { etatLivres('', 'Recherche de vos livres…', true, false); }
+  envoyer({ type: 'livres' });
+  clearTimeout(minuterieLivres);
+  minuterieLivres = setTimeout(function () {
+    surLivres({ statut: 'erreur', delai: true });
+  }, DELAI_LIVRES_MS);
+}
+function surLivres(msg) {
+  clearTimeout(minuterieLivres);
+  if (accesBloque(msg)) { return; }
+  if (msg.statut !== 'ok') {
+    // Une liste déjà affichée reste en place ; sinon, un message clair.
+    if (etat.livres === null) {
+      etatLivres('Un petit problème', msg.delai
+        ? 'La recherche de vos livres prend plus de temps que prévu. Utilisez ↻ Actualiser dans un instant.'
+        : 'Vos livres n’ont pas pu être chargés. Utilisez ↻ Actualiser pour réessayer.', false, false);
+    }
+    return;
+  }
+  etat.livres = msg.livres || [];
+  rendreLivres();
+}
+function carteLivre(l) {
+  var carte = el('article', 'livre');
+  if (l.couverture) {
+    var img = el('img', 'couverture');
+    img.src = l.couverture;
+    img.alt = 'Couverture du livre ' + l.titre;
+    img.loading = 'lazy';
+    carte.appendChild(img);
+  } else {
+    carte.appendChild(el('div', 'couverture sans-image', l.titre));
+  }
+  carte.appendChild(el('h3', 'titre-livre', l.titre));
+  if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
+  if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
+  return carte;
+}
+function rendreLivres() {
+  var livres = etat.livres || [];
+  if (!livres.length) {
+    etatLivres('Votre bibliothèque est vide pour l’instant',
+      'Les livres numériques que vous achetez sur notre site apparaîtront ici automatiquement. Il suffit d’utiliser le même courriel que celui de votre compte.', false, true);
+    return;
+  }
+  var grille = $('grille-livres');
+  vider(grille);
+  livres.forEach(function (l) { grille.appendChild(carteLivre(l)); });
+  $('etat-livres').hidden = true;
+  $('zone-livres').hidden = false;
+}
 
 /* ---------- Démonstration ---------- */
 // Commentaires fictifs : 12 messages pour voir la liste défiler dans l'onglet Commentaires. Le premier a une
