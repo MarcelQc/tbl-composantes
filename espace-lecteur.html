@@ -412,9 +412,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 59d7e8f · 2026-11-06 17:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 8793ef5 · 2026-11-06 18:02 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '59d7e8f · 2026-11-06 17:48';
+var VERSION_TBL = '8793ef5 · 2026-11-06 18:02';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -811,7 +811,14 @@ function surLivres(msg) {
     }
     return;
   }
-  etat.livres = msg.livres || [];
+  // Filet de sécurité : un livre n'est jamais affiché deux fois (le serveur regroupe déjà les versions d'un livre).
+  var vus = {};
+  etat.livres = (msg.livres || []).filter(function (l) {
+    var cle = 't:' + String(l.titre || '').trim().toLowerCase();
+    if (vus[l.id] || vus[cle]) { return false; }
+    vus[l.id] = vus[cle] = true;
+    return true;
+  });
   rendreLivres();
 }
 // Livre choisi pour la liseuse (id), ou null : la liseuse ouvrira alors le dernier livre lu.
