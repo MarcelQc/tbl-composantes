@@ -107,8 +107,14 @@ textarea:focus{border-color:var(--or);outline:none}
 
 /* Livres : grille de couvertures (Templates\book-grid.html), qui défile dans le panneau. */
 .intro-livres{margin:0 0 14px;flex:0 0 auto}
-.zone-livres{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:2px}
-.grille-livres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+/* Une seule rangée qui défile de côté, avec une flèche de chaque bout (demande de Marcel du 6 novembre 2026). */
+.zone-livres{display:flex;align-items:center;gap:8px;min-height:0}
+.rangee-livres{flex:1;min-width:0;display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:2px 2px 10px}
+.rangee-livres .livre{flex:0 0 170px;scroll-snap-align:start}
+.fleche-livres{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.fleche-livres:hover:not(:disabled){border-color:var(--red)}
+.fleche-livres:disabled{opacity:.3;cursor:default}
+.livre .btn-lire{margin-top:auto;width:100%}
 .livre{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px}
 .livre .couverture{width:100%;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:#2b2f37;margin-bottom:8px;display:block}
 .livre .couverture.sans-image{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;padding:10px}
@@ -202,8 +208,8 @@ textarea:focus{border-color:var(--or);outline:none}
       <button class="btn petit" type="button" id="btn-voir-reponses">Voir les réponses</button>
     </div>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Lecteur">
-      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1" data-cle-dev="DEV001" hidden>Livres <span class="pastille-dev" title="Fonction en développement, visible seulement par les personnes inscrites sur la clé DEV001">DEV001</span></button>
       <button class="onglet" role="tab" id="onglet-nouveautes" aria-controls="panneau-nouveautes" aria-selected="true" tabindex="0">Nouveautés</button>
+      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1" data-cle-dev="DEV001" hidden>Livres <span class="pastille-dev" title="Fonction en développement, visible seulement par les personnes inscrites sur la clé DEV001">DEV001</span></button>
       <button class="onglet" role="tab" id="onglet-commentaires" aria-controls="panneau-commentaires" aria-selected="false" tabindex="-1">Commentaires <span class="pastille-nb nouvelles" id="nb-commentaires" aria-hidden="true" hidden>0</span></button>
     </div>
 
@@ -214,7 +220,11 @@ textarea:focus{border-color:var(--or);outline:none}
         <div class="spin" aria-hidden="true"></div>
         <p class="sub">Recherche de vos livres…</p>
       </div>
-      <div class="zone-livres" id="zone-livres" hidden><div class="grille-livres" id="grille-livres"></div></div>
+      <div class="zone-livres" id="zone-livres" hidden>
+        <button class="fleche-livres" type="button" id="fleche-gauche" aria-label="Livres précédents">◀</button>
+        <div class="rangee-livres" id="rangee-livres" tabindex="0" aria-label="Vos livres"></div>
+        <button class="fleche-livres" type="button" id="fleche-droite" aria-label="Livres suivants">▶</button>
+      </div>
     </div>
 
     <!-- NOUVEAUTÉS : annonce de l'Espace Lecteur en construction -->
@@ -366,14 +376,12 @@ function demarrer() {
 function surEspace(msg) {
   arreterAttente();
   if (msg.statut === 'ok' && msg.membre) {
-    var premiereFois = !etat.donnees;
     etat.donnees = msg;
     appliquerClesDev(msg.clesDev);
     rendreEspace();
     montrer('espace');
-    // DEV001 : l'onglet Livres s'ouvre en premier au chargement ; ↻ Actualiser garde l'onglet affiché.
+    // DEV001 : l'onglet Livres est chargé tout de suite ; Nouveautés reste l'onglet ouvert au départ.
     if (aLaCle('DEV001')) {
-      if (premiereFois) { choisirOnglet('livres', false); }
       demanderLivres();
     } else if (!$('panneau-livres').hidden) {
       choisirOnglet('nouveautes', false);
@@ -389,9 +397,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 4a304af · 2026-11-06 12:50 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 83e50a2 · 2026-11-06 17:34 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '4a304af · 2026-11-06 12:50';
+var VERSION_TBL = '83e50a2 · 2026-11-06 17:34';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -420,7 +428,7 @@ function appliquerClesDev(cles) {
 
 /* ---------- Onglets ---------- */
 // Onglets dans l'ordre d'affichage ; un onglet caché par une clé DEV n'est pas proposé.
-var TOUS_ONGLETS = ['livres', 'nouveautes', 'commentaires'];
+var TOUS_ONGLETS = ['nouveautes', 'livres', 'commentaires']; // Nouveautés toujours à gauche (demande de Marcel)
 function ongletsVisibles() { return TOUS_ONGLETS.filter(function (n) { return !$('onglet-' + n).hidden; }); }
 function choisirOnglet(nom, focus) {
   if ($('onglet-' + nom).hidden) { nom = 'nouveautes'; }
@@ -433,6 +441,7 @@ function choisirOnglet(nom, focus) {
     if (actif && focus) { bouton.focus(); }
   });
   if (nom === 'commentaires' && etat.commentaires) { reponsesVues(); }
+  if (nom === 'livres') { majFleches(); } // la rangée n'a pas de largeur tant que l'onglet est caché
 }
 TOUS_ONGLETS.forEach(function (nom) {
   var bouton = $('onglet-' + nom);
@@ -803,6 +812,12 @@ function carteLivre(l) {
   carte.appendChild(el('h3', 'titre-livre', l.titre));
   if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
+  // Lire : sans effet pour le moment, la liseuse web s'en vient.
+  var lire = el('button', 'btn petit btn-lire', 'Lire');
+  lire.type = 'button';
+  lire.disabled = true;
+  lire.title = 'Bientôt : la liseuse web s’en vient';
+  carte.appendChild(lire);
   return carte;
 }
 function rendreLivres() {
@@ -812,12 +827,30 @@ function rendreLivres() {
       'Les livres numériques que vous achetez sur notre site apparaîtront ici automatiquement. Il suffit d’utiliser le même courriel que celui de votre compte.', false, true);
     return;
   }
-  var grille = $('grille-livres');
-  vider(grille);
-  livres.forEach(function (l) { grille.appendChild(carteLivre(l)); });
+  var rangee = $('rangee-livres');
+  vider(rangee);
+  livres.forEach(function (l) { rangee.appendChild(carteLivre(l)); });
   $('etat-livres').hidden = true;
   $('zone-livres').hidden = false;
+  majFleches();
 }
+// Flèches : un écran de livres à la fois ; cachées si tout tient sur la largeur, grisées au bout de la rangée.
+function majFleches() {
+  var r = $('rangee-livres');
+  var deborde = r.scrollWidth > r.clientWidth + 2;
+  $('fleche-gauche').hidden = !deborde;
+  $('fleche-droite').hidden = !deborde;
+  $('fleche-gauche').disabled = r.scrollLeft <= 2;
+  $('fleche-droite').disabled = r.scrollLeft + r.clientWidth >= r.scrollWidth - 2;
+}
+function defilerLivres(sens) {
+  var r = $('rangee-livres');
+  r.scrollBy({ left: sens * Math.max(r.clientWidth - 60, 170), behavior: 'smooth' });
+}
+$('fleche-gauche').addEventListener('click', function () { defilerLivres(-1); });
+$('fleche-droite').addEventListener('click', function () { defilerLivres(1); });
+$('rangee-livres').addEventListener('scroll', majFleches, { passive: true });
+window.addEventListener('resize', majFleches);
 
 /* ---------- Démonstration ---------- */
 // Commentaires fictifs : 12 messages pour voir la liste défiler dans l'onglet Commentaires. Le premier a une
