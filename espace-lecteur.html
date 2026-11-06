@@ -118,7 +118,14 @@ textarea:focus{border-color:var(--or);outline:none}
 .fleche-livres{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .fleche-livres:hover:not(:disabled){border-color:var(--red)}
 .fleche-livres:disabled{opacity:.3;cursor:default}
-.livre .btn-lire{margin-top:auto;width:100%}
+/* Choix d'un livre : on touche la carte pour le choisir, on la retouche pour annuler. */
+.rangee-livres .livre{cursor:pointer;position:relative;transition:border-color .2s,box-shadow .2s}
+.rangee-livres .livre:hover{border-color:var(--muted)}
+.rangee-livres .livre[aria-pressed="true"]{border-color:var(--red);box-shadow:0 0 0 2px var(--red)}
+.rangee-livres .livre[aria-pressed="true"]::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-weight:bold;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+/* Un seul bouton pour toute la bibliothèque, sous la rangée. */
+.barre-liseuse{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 18px;margin-top:10px;flex:0 0 auto}
+.barre-liseuse .note{margin:0}
 .livre{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px}
 .livre .couverture{width:100%;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:#2b2f37;margin-bottom:8px;display:block}
 .livre .couverture.sans-image{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;padding:10px}
@@ -228,6 +235,10 @@ textarea:focus{border-color:var(--or);outline:none}
         <button class="fleche-livres" type="button" id="fleche-gauche" aria-label="Livres précédents">◀</button>
         <div class="rangee-livres" id="rangee-livres" tabindex="0" aria-label="Vos livres"></div>
         <button class="fleche-livres" type="button" id="fleche-droite" aria-label="Livres suivants">▶</button>
+      </div>
+      <div class="barre-liseuse" id="barre-liseuse" hidden>
+        <button class="btn" type="button" id="btn-liseuse" disabled title="La liseuse TBL arrive bientôt">📖 La liseuse TBL</button>
+        <p class="note" id="texte-choix-livre" role="status" aria-live="polite"></p>
       </div>
     </div>
 
@@ -401,9 +412,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 8cb24b7 · 2026-11-06 17:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 35a29c0 · 2026-11-06 17:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '8cb24b7 · 2026-11-06 17:37';
+var VERSION_TBL = '35a29c0 · 2026-11-06 17:40';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -778,6 +789,7 @@ function etatLivres(titre, texte, avecSpin, avecBoutique) {
   }
   zone.hidden = false;
   $('zone-livres').hidden = true;
+  $('barre-liseuse').hidden = true;
 }
 function demanderLivres() {
   if (etat.livres === null) { etatLivres('', 'Recherche de vos livres…', true, false); }
@@ -802,8 +814,32 @@ function surLivres(msg) {
   etat.livres = msg.livres || [];
   rendreLivres();
 }
+// Livre choisi pour la liseuse (id), ou null : la liseuse ouvrira alors le dernier livre lu.
+etat.livreChoisi = null;
+function choisirLivre(id) {
+  etat.livreChoisi = etat.livreChoisi === id ? null : id;
+  Array.prototype.forEach.call($('rangee-livres').children, function (c) {
+    c.setAttribute('aria-pressed', c.getAttribute('data-id') === etat.livreChoisi ? 'true' : 'false');
+  });
+  majChoixLivre();
+}
+function majChoixLivre() {
+  var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
+  $('texte-choix-livre').textContent = choisi
+    ? 'Livre choisi : « ' + choisi.titre + ' ». Touchez-le de nouveau pour annuler.'
+    : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
+}
 function carteLivre(l) {
   var carte = el('article', 'livre');
+  carte.setAttribute('data-id', l.id);
+  carte.setAttribute('role', 'button');
+  carte.setAttribute('tabindex', '0');
+  carte.setAttribute('aria-pressed', l.id === etat.livreChoisi ? 'true' : 'false');
+  carte.setAttribute('aria-label', l.titre + (l.auteur ? ', ' + l.auteur : ''));
+  carte.addEventListener('click', function () { choisirLivre(l.id); });
+  carte.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choisirLivre(l.id); }
+  });
   if (l.couverture) {
     var img = el('img', 'couverture');
     img.src = l.couverture;
@@ -816,12 +852,6 @@ function carteLivre(l) {
   carte.appendChild(el('h3', 'titre-livre', l.titre));
   if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
-  // Lire : sans effet pour le moment, la liseuse web s'en vient.
-  var lire = el('button', 'btn petit btn-lire', 'Lire');
-  lire.type = 'button';
-  lire.disabled = true;
-  lire.title = 'Bientôt : la liseuse web s’en vient';
-  carte.appendChild(lire);
   return carte;
 }
 function rendreLivres() {
@@ -833,9 +863,13 @@ function rendreLivres() {
   }
   var rangee = $('rangee-livres');
   vider(rangee);
+  // Un livre choisi qui n'est plus dans la liste (remboursé) n'est plus choisi.
+  if (!livres.some(function (l) { return l.id === etat.livreChoisi; })) { etat.livreChoisi = null; }
   livres.forEach(function (l) { rangee.appendChild(carteLivre(l)); });
   $('etat-livres').hidden = true;
   $('zone-livres').hidden = false;
+  $('barre-liseuse').hidden = false;
+  majChoixLivre();
   majFleches();
 }
 // Flèches : un écran de livres à la fois ; cachées si tout tient sur la largeur, grisées au bout de la rangée.
