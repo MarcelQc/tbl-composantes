@@ -106,10 +106,10 @@ textarea:focus{border-color:var(--or);outline:none}
 .pastille-dev{background:var(--tbl-blue-soft);color:var(--tbl-blue);border-radius:99px;padding:0 7px;font-family:var(--tbl-font-body);font-size:.68rem;font-weight:600;letter-spacing:.02em}
 
 /* Livres : grille de couvertures (Templates\book-grid.html), qui défile dans le panneau. */
-.intro-livres{margin:0 0 14px;flex:0 0 auto}
+.titre-bibliotheque{text-align:center;margin:0 0 14px;flex:0 0 auto;font-size:1.5rem}
 /* Une seule rangée qui défile de côté, avec une flèche de chaque bout (demande de Marcel du 6 novembre 2026). */
 .zone-livres{display:flex;align-items:center;gap:8px;min-height:0}
-.rangee-livres{flex:1;min-width:0;display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:2px 2px 10px}
+.rangee-livres{flex:1;min-width:0;display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:4px 4px 10px}
 .rangee-livres .livre{flex:0 0 156px;scroll-snap-align:start;padding:12px}
 /* Hauteur fixe de la couverture : la carte entière, bouton compris, tient dans le panneau. */
 .rangee-livres .livre .couverture{height:190px;width:auto;max-width:100%;margin:0 auto 8px}
@@ -124,7 +124,7 @@ textarea:focus{border-color:var(--or);outline:none}
 .rangee-livres .livre[aria-pressed="true"]{border-color:var(--red);box-shadow:0 0 0 2px var(--red)}
 .rangee-livres .livre[aria-pressed="true"]::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-weight:bold;font-size:.85rem;display:flex;align-items:center;justify-content:center}
 /* Un seul bouton pour toute la bibliothèque, sous la rangée. */
-.barre-liseuse{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 18px;margin-top:10px;flex:0 0 auto}
+.barre-liseuse{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px;flex:0 0 auto;text-align:center}
 .barre-liseuse .note{margin:0}
 .livre{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius);padding:14px;text-align:center;display:flex;flex-direction:column;gap:4px}
 .livre .couverture{width:100%;aspect-ratio:2/3;border-radius:4px;object-fit:cover;background:#2b2f37;margin-bottom:8px;display:block}
@@ -226,7 +226,7 @@ textarea:focus{border-color:var(--or);outline:none}
 
     <!-- LIVRES (clé DEV001) : les livres numériques achetés par le membre -->
     <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" data-cle-dev="DEV001" hidden>
-      <p class="sub intro-livres">Les livres numériques que vous avez achetés aux Éditions TBL. Vous pourrez bientôt les lire ici, directement dans votre navigateur.</p>
+      <h2 class="titre-bibliotheque">Ma bibliothèque</h2>
       <div class="etat-livres" id="etat-livres" role="status" aria-live="polite">
         <div class="spin" aria-hidden="true"></div>
         <p class="sub">Recherche de vos livres…</p>
@@ -412,9 +412,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 35a29c0 · 2026-11-06 17:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 59d7e8f · 2026-11-06 17:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '35a29c0 · 2026-11-06 17:40';
+var VERSION_TBL = '59d7e8f · 2026-11-06 17:48';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -456,7 +456,7 @@ function choisirOnglet(nom, focus) {
     if (actif && focus) { bouton.focus(); }
   });
   if (nom === 'commentaires' && etat.commentaires) { reponsesVues(); }
-  if (nom === 'livres') { majFleches(); } // la rangée n'a pas de largeur tant que l'onglet est caché
+  if (nom === 'livres') { majFleches(); montrerLivreChoisi(); } // la rangée n'a pas de largeur tant que l'onglet est caché
 }
 TOUS_ONGLETS.forEach(function (nom) {
   var bouton = $('onglet-' + nom);
@@ -822,6 +822,18 @@ function choisirLivre(id) {
     c.setAttribute('aria-pressed', c.getAttribute('data-id') === etat.livreChoisi ? 'true' : 'false');
   });
   majChoixLivre();
+  montrerLivreChoisi();
+}
+// Le livre choisi est toujours vu en entier : la rangée défile juste assez pour le montrer.
+function montrerLivreChoisi() {
+  var r = $('rangee-livres');
+  var carte = etat.livreChoisi ? r.querySelector('[data-id="' + etat.livreChoisi + '"]') : null;
+  if (!carte || !r.clientWidth) { return; }
+  var rr = r.getBoundingClientRect();
+  var cr = carte.getBoundingClientRect();
+  var marge = 6;
+  if (cr.left < rr.left + marge) { r.scrollBy({ left: cr.left - rr.left - marge, behavior: 'smooth' }); }
+  else if (cr.right > rr.right - marge) { r.scrollBy({ left: cr.right - rr.right + marge, behavior: 'smooth' }); }
 }
 function majChoixLivre() {
   var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
@@ -871,6 +883,7 @@ function rendreLivres() {
   $('barre-liseuse').hidden = false;
   majChoixLivre();
   majFleches();
+  montrerLivreChoisi();
 }
 // Flèches : un écran de livres à la fois ; cachées si tout tient sur la largeur, grisées au bout de la rangée.
 function majFleches() {
@@ -888,7 +901,7 @@ function defilerLivres(sens) {
 $('fleche-gauche').addEventListener('click', function () { defilerLivres(-1); });
 $('fleche-droite').addEventListener('click', function () { defilerLivres(1); });
 $('rangee-livres').addEventListener('scroll', majFleches, { passive: true });
-window.addEventListener('resize', majFleches);
+window.addEventListener('resize', function () { majFleches(); montrerLivreChoisi(); });
 
 /* ---------- Démonstration ---------- */
 // Commentaires fictifs : 12 messages pour voir la liste défiler dans l'onglet Commentaires. Le premier a une
