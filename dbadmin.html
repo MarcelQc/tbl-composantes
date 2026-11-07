@@ -2066,10 +2066,11 @@ select:focus { outline: none; border-color: var(--accent); }
   document.getElementById('btn-commentaires').addEventListener('click', comOuvrir);
 
   /* ===================== Journal : « Voir les logs » ===================== */
-  // Fichiers du dossier MEDIA System/Log (backend/journal.js). listerLogs régénère d'abord All.log, Error.log et
-  // Debug.log à partir de la collection Journal : à l'ouverture de la fenêtre et à chaque clic sur Actualiser.
+  // Fichiers du dossier MEDIA System/Log (backend/journal.js). listerLogs régénère d'abord All.txt, Error.txt et
+  // Debug.txt à partir de la collection Journal : à l'ouverture de la fenêtre et à chaque clic sur Actualiser.
+  // (Extension .txt : la médiathèque Wix refuse .log.)
 
-  var logs = { choix: 'All.log', jeton: 0 };
+  var logs = { choix: 'All.txt', jeton: 0 };
 
   function logsTaille(octets) {
     if (!octets) return '';
@@ -2093,7 +2094,7 @@ select:focus { outline: none; border-color: var(--accent); }
     logsActualiser();
   }
 
-  // Régénère les fichiers, remplit la liste, puis relit le fichier choisi (All.log par défaut).
+  // Régénère les fichiers, remplit la liste, puis relit le fichier choisi (All.txt par défaut).
   function logsActualiser() {
     var jeton = ++logs.jeton;
     var bouton = document.getElementById('logs-actualiser');
