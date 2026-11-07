@@ -353,7 +353,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '8793ef5 · 2026-11-06 18:02';
+var VERSION_TBL = '8aad2dc · 2026-11-07 15:07';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -687,7 +687,7 @@ async function envoyer() {
   var sansPaiement = etat.d.admin;
   var corps = el('div');
   corps.appendChild(el('p', null, $('c-lien').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
-  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Vous passez maintenant au paiement sécurisé de Wix. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
+  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture s’ouvre ensuite : vous la payez par carte sur la page sécurisée de Stripe. Vous la recevez aussi par courriel. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
   var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
   if (r !== 'ok') { return; }
   etat.occupe = true;
@@ -704,7 +704,7 @@ async function envoyer() {
     $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  if (rep.checkoutId) { toast('Ouverture de la page de paiement…', 'ok'); return; }
+  if (rep.lienPaiement || rep.checkoutId) { toast('Ouverture de votre facture…', 'ok'); return; }
   if (rep.demandes) { etat.d.demandes = rep.demandes; rendreAnciennes(); }
   reinitialiser();
   await modale({ titre: 'Demande envoyée', corps: 'Merci ! L’équipe TBL prépare l’annonce et vous la soumettra pour approbation.' + (rep.facture ? ' Votre facture ' + rep.facture + ' est dans l’onglet Documents de l’Espace Auteurs.' : '') });
