@@ -361,7 +361,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'fe5294a · 2026-11-08 06:59';
+var VERSION_TBL = 'd5860fa · 2026-11-08 07:05';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -720,30 +720,113 @@ async function envoyer() {
   await modale({ titre: 'Demande envoyée', corps: 'Merci ! L’équipe TBL prépare l’annonce et vous la soumettra pour approbation.' + (rep.facture ? ' Votre facture ' + rep.facture + ' est dans l’onglet Documents de l’Espace Auteurs.' : '') });
 }
 
-// Facture Stripe : la page de paiement de Stripe ne ramène pas au site. On l'ouvre dans un nouvel onglet (lien,
-// donc jamais bloqué comme une fenêtre surgissante) et cette fenêtre demande l'état du paiement toutes les
-// 4 secondes, et dès que l'onglet TBL redevient visible, jusqu'à « Paiement réussi » (30 minutes au plus).
+// Stripe.js, chargé seulement au moment de payer (toujours depuis js.stripe.com, jamais copié).
+var promesseStripe = null;
+function chargerStripe() {
+  if (!promesseStripe) {
+    promesseStripe = new Promise(function (ok, ko) {
+      if (window.Stripe) { ok(window.Stripe); return; }
+      var s = document.createElement('script');
+      s.src = 'https://js.stripe.com/v3/';
+      s.onload = function () { if (window.Stripe) { ok(window.Stripe); } else { ko(new Error('Stripe.js absent')); } };
+      s.onerror = function () { promesseStripe = null; ko(new Error('Stripe.js non chargé')); };
+      document.head.appendChild(s);
+    });
+  }
+  return promesseStripe;
+}
+function couleurCss(nom, defaut) {
+  var v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim();
+  return v || defaut;
+}
+
+// Facture Stripe payée sans quitter le site (demande de Marcel du 8 novembre 2026) : le formulaire de carte de
+// Stripe (Payment Element) est intégré à cette fenêtre ; le numéro de carte reste dans le cadre sécurisé de Stripe.
+// Après le paiement, cette fenêtre demande l'état au serveur (qui le vérifie chez Stripe) jusqu'à « Paiement
+// réussi ». Sans clé publiable ou si Stripe.js ne se charge pas : lien vers la page de la facture, nouvel onglet.
 function attendrePaiement(rep) {
   var m = el('div'); m.id = 'modal';
   var voile = el('div', 'voile');
   var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
   var titre = el('h2', null, 'Votre facture est prête');
   var corps = el('div', 'corps');
-  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Le paiement se fait par carte dans un nouvel onglet, sur la page sécurisée de Stripe. Vous avez aussi reçu la facture par courriel.'));
-  var payer = el('a', 'btn', 'Payer ma facture');
-  payer.href = rep.lienPaiement; payer.target = '_blank'; payer.rel = 'noopener';
-  var zone = el('p'); zone.appendChild(payer);
-  corps.appendChild(zone);
-  var etatP = el('p', 'sub', 'En attente de votre paiement… Revenez ensuite à cet onglet : il se met à jour tout seul.');
+  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Vous avez aussi reçu la facture par courriel.'));
+  var formulaire = el('div'); formulaire.id = 'carte-stripe'; formulaire.style.margin = '12px 0';
+  corps.appendChild(formulaire);
+  var payerBt = el('button', 'btn', 'Payer ' + argent(rep.total || 0)); payerBt.type = 'button'; payerBt.hidden = true;
+  var zonePayer = el('p'); zonePayer.appendChild(payerBt);
+  corps.appendChild(zonePayer);
+  var etatP = el('p', 'sub', 'Chargement du formulaire de paiement…');
   etatP.setAttribute('role', 'status'); etatP.setAttribute('aria-live', 'polite');
   corps.appendChild(etatP);
+  var secours = el('p', 'sub');
+  var lienSecours = el('a', null, 'payer sur la page de Stripe (nouvel onglet)');
+  lienSecours.href = rep.lienPaiement; lienSecours.target = '_blank'; lienSecours.rel = 'noopener';
+  secours.appendChild(document.createTextNode('Ou '));
+  secours.appendChild(lienSecours);
+  secours.appendChild(document.createTextNode('.'));
+  corps.appendChild(secours);
   var btns = el('div', 'btns');
   var fermerBt = el('button', 'btn sec', 'Fermer'); fermerBt.type = 'button';
   btns.appendChild(fermerBt);
   b.appendChild(titre); b.appendChild(corps); b.appendChild(btns);
   m.appendChild(voile); m.appendChild(b);
   document.body.appendChild(m);
-  payer.focus();
+
+  // Formulaire de carte intégré, si le serveur a remis le secret de paiement et la clé publiable.
+  function sansFormulaire() {
+    formulaire.hidden = true;
+    payerBt.hidden = true;
+    etatP.textContent = 'Le formulaire de paiement n’a pas pu s’afficher.';
+    lienSecours.textContent = 'Payer ma facture sur la page de Stripe (nouvel onglet)';
+    secours.firstChild.textContent = '';
+    secours.lastChild.textContent = '';
+    lienSecours.className = 'btn';
+    lienSecours.focus();
+  }
+  if (rep.secretPaiement && rep.clePublique) {
+    chargerStripe().then(function (Stripe) {
+      if (fini) { return; }
+      var stripe = Stripe(rep.clePublique, { locale: 'fr-CA' });
+      var elements = stripe.elements({
+        clientSecret: rep.secretPaiement,
+        locale: 'fr-CA',
+        appearance: {
+          theme: 'night',
+          variables: {
+            colorPrimary: couleurCss('--tbl-accent', '#e3222f'),
+            colorBackground: couleurCss('--tbl-paper-2', '#202228'),
+            colorText: couleurCss('--tbl-ink', '#f2f2f2'),
+            borderRadius: '8px',
+          },
+        },
+      });
+      var carte = elements.create('payment', { layout: 'tabs' });
+      carte.on('ready', function () { payerBt.hidden = false; etatP.textContent = ''; });
+      carte.mount(formulaire);
+      payerBt.addEventListener('click', async function () {
+        payerBt.disabled = true;
+        fermerBt.disabled = true;
+        etatP.textContent = 'Paiement en cours…';
+        var r = await stripe.confirmPayment({
+          elements: elements,
+          redirect: 'if_required',
+          confirmParams: { return_url: 'https://www.editionstbl.ca/editeurfacebook' },
+        });
+        fermerBt.disabled = false;
+        if (r.error) {
+          payerBt.disabled = false;
+          etatP.textContent = r.error.message || 'Le paiement a été refusé. Vérifiez la carte ou essayez-en une autre.';
+          return;
+        }
+        payerBt.hidden = true;
+        etatP.textContent = 'Paiement accepté. Confirmation en cours…';
+        verifier();
+      });
+    }).catch(sansFormulaire);
+  } else {
+    sansFormulaire();
+  }
 
   var fini = false, enCours = false, debut = Date.now(), minuterie = null;
   function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
