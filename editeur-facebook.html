@@ -361,7 +361,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'd5860fa · 2026-11-08 07:05';
+var VERSION_TBL = 'ec63b6f · 2026-11-08 07:14';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -578,7 +578,7 @@ function rendreAnciennes() {
   var zone = $('anciennes'); zone.textContent = '';
   var liste = etat.d.demandes || [];
   $('titre-anciennes').textContent = etat.d.pourAutre ? 'Publicités précédentes de l’auteur' : 'Mes publicités précédentes';
-  if (!liste.length) { zone.appendChild(el('div', 'lg-vide', 'Aucune publicité pour le moment.')); return; }
+  if (!liste.length) { zone.style.height = ''; zone.appendChild(el('div', 'lg-vide', 'Aucune publicité pour le moment.')); return; }
   // Sans colonne Image (demande de Marcel du 8 novembre 2026) : la grille tient dans la largeur, sans défilement
   // horizontal. Le bouton Répéter reprend quand même l'image de la publicité.
   var colonnes = ['Demande', 'Diffusion', 'Page annoncée', 'Budget', 'Jours', 'Région', 'Statut', ''];
@@ -606,20 +606,34 @@ function rendreAnciennes() {
   });
   zone.appendChild(grille);
   ajusterHauteurAnciennes();
+  observerAnciennes();
 }
-// Trois publicités visibles, puis défilement dans la grille (demande de Marcel du 2 novembre 2026). La hauteur se
-// mesure : une ligne est plus haute sur un téléphone, où les colonnes s'empilent.
+// Hauteur FIXE de trois lignes, défilement vertical dès la 4e publicité (demandes de Marcel du 2 et du 8 novembre
+// 2026). La hauteur se mesure (une ligne est plus haute sur un téléphone, où les colonnes s'empilent) et se refait
+// dès que la grille change de taille : la composante peut être encore cachée au premier affichage (mesure à 0).
 var VISIBLES = 3;
+var observateurAnciennes = null;
 function hauteurLigne(l) { return l.offsetHeight || (l.firstElementChild ? l.firstElementChild.offsetHeight : 0); }
 function ajusterHauteurAnciennes() {
   var zone = $('anciennes');
   var lignes = zone.querySelectorAll('.lg-ligne');
-  if (lignes.length <= VISIBLES) { zone.style.maxHeight = ''; return; }
+  if (!lignes.length) { zone.style.height = ''; return; } // « Aucune publicité pour le moment »
   var entete = zone.querySelector('.lg-entete');
   var h = entete && entete.firstElementChild ? entete.firstElementChild.offsetHeight : 0;
-  for (var i = 0; i < VISIBLES; i += 1) { h += hauteurLigne(lignes[i]); }
-  if (!h) { return; } // page encore cachée
-  zone.style.maxHeight = (h + 2) + 'px'; // + 2 : bordure de la zone
+  var premiere = hauteurLigne(lignes[0]);
+  if (!premiere) { return; } // grille encore cachée : l'observateur refera la mesure
+  // Moins de trois publicités : les lignes manquantes comptent comme la première.
+  for (var i = 0; i < VISIBLES; i += 1) { h += i < lignes.length ? hauteurLigne(lignes[i]) : premiere; }
+  zone.style.maxHeight = '';
+  zone.style.height = (h + 2) + 'px'; // + 2 : bordure de la zone
+}
+function observerAnciennes() {
+  var grille = $('anciennes').querySelector('.lg-grille');
+  if (observateurAnciennes) { observateurAnciennes.disconnect(); }
+  if (grille && window.ResizeObserver) {
+    observateurAnciennes = new ResizeObserver(function () { ajusterHauteurAnciennes(); });
+    observateurAnciennes.observe(grille);
+  }
 }
 window.addEventListener('resize', function () { if (etat.d) { ajusterHauteurAnciennes(); } });
 
