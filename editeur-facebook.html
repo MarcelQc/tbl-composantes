@@ -364,7 +364,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '0952b49 · 2026-11-08 09:38';
+var VERSION_TBL = '2e161c6 · 2026-11-08 09:44';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -661,9 +661,15 @@ function repeter(x) {
   retirerImage();
   if (x.aImage) {
     etat.imageReprise = x.id;
-    montrerImage('', 'Image de la publicité du ' + dateCourte(x.date));
+    montrerImage('', 'Chargement de l’image de la publicité du ' + dateCourte(x.date) + '…');
     $('etat-image').textContent = 'L’image de la publicité précédente sera réutilisée.';
     $('b-retirer').hidden = false;
+    // L'image est privée : le serveur donne un lien temporaire pour l'afficher (demande de Marcel du 8 novembre 2026).
+    appeler('image', { demandeId: x.id }, 15000).then(function (r) {
+      if (etat.imageReprise !== x.id) { return; } // une autre image a été choisie entre-temps
+      if (r && r.ok && r.url) { montrerImage(r.url); }
+      else { montrerImage('', 'Image de la publicité du ' + dateCourte(x.date) + ' (aperçu indisponible, elle sera quand même réutilisée)'); }
+    });
   } else if (x.imageChoix === 'tbl') {
     $('etat-image').textContent = 'L’image produite par TBL pour cette publicité peut être réutilisée sans frais : précisez-le dans le texte de l’annonce, ou téléversez-la.';
   }
