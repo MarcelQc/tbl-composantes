@@ -364,7 +364,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '41bf7db · 2026-11-08 09:31';
+var VERSION_TBL = '0952b49 · 2026-11-08 09:38';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -732,7 +732,9 @@ async function envoyer() {
   etat.occupe = false;
   $('b-envoyer').disabled = false;
   $('b-envoyer').textContent = ancien;
-  if (rep && rep.ok && rep.lienPaiement && fenetre) { reinitialiser(); fenetre.demarrer(rep); return; }
+  // Le formulaire reste rempli tant que la facture n'est pas payée : après une annulation, l'auteur peut repayer
+  // sans tout ressaisir. Il est vidé au paiement réussi.
+  if (rep && rep.ok && rep.lienPaiement && fenetre) { fenetre.demarrer(rep); return; }
   if (fenetre) { fenetre.fermer(); }
   if (!rep || !rep.ok) {
     $('msg-global').textContent = (rep && rep.message) || 'La demande n’a pas pu être envoyée. Réessayez dans un instant.';
@@ -790,9 +792,8 @@ function ouvrirPaiement(totalAffiche) {
   var formulaire = el('div'); formulaire.id = 'carte-stripe';
   zone.appendChild(formulaire);
   corps.appendChild(zone);
+  // Payer : à droite, sur la ligne de Fermer (demande de Marcel du 8 novembre 2026).
   var payerBt = el('button', 'btn', 'Payer'); payerBt.type = 'button'; payerBt.hidden = true;
-  var zonePayer = el('p'); zonePayer.appendChild(payerBt);
-  corps.appendChild(zonePayer);
   var etatP = el('p', 'sub', '');
   etatP.setAttribute('role', 'status'); etatP.setAttribute('aria-live', 'polite');
   corps.appendChild(etatP);
@@ -807,6 +808,7 @@ function ouvrirPaiement(totalAffiche) {
   var fermerBt = el('button', 'btn sec', 'Fermer'); fermerBt.type = 'button';
   fermerBt.disabled = true; // pendant la préparation de la facture
   btns.appendChild(fermerBt);
+  btns.appendChild(payerBt);
   b.appendChild(titre); b.appendChild(corps); b.appendChild(btns);
   m.appendChild(voile); m.appendChild(b);
   document.body.appendChild(m);
@@ -891,31 +893,38 @@ function ouvrirPaiement(totalAffiche) {
 
   // Fermer sans avoir payé : la facture Stripe est annulée, sans courriel (décision de Marcel du 8 novembre 2026).
   // Si elle a été payée entre-temps (par exemple dans l'onglet de Stripe), le serveur la confirme au lieu de l'annuler.
+  var confirmationOuverte = false;
   fermerBt.addEventListener('click', async function () {
     if (regle || !rep) { fermer(); return; }
+    if (confirmationOuverte) { return; }
+    confirmationOuverte = true;
     var choix = await modale({
       titre: 'Fermer sans payer ?',
       corps: 'La facture ' + (rep.facture || '') + ' sera annulée et vous ne recevrez aucun courriel. Vous pourrez envoyer une nouvelle demande quand vous le voudrez.',
       boutons: [{ id: 'non', libelle: 'Continuer le paiement' }, { id: 'ok', libelle: 'Annuler la facture', principal: true }]
     });
+    confirmationOuverte = false;
     if (choix !== 'ok') { return; }
     fermerBt.disabled = true; payerBt.disabled = true;
     etatP.textContent = 'Annulation de la facture…';
     var r = await appeler('annuler', { demandeId: rep.demandeId }, 20000);
     fermerBt.disabled = false;
+    payerBt.disabled = false;
     if (r && r.ok && r.paye) { reussi(r); return; }
     if (r && r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
     if (!r || !r.ok) {
-      payerBt.disabled = false;
       etatP.textContent = (r && r.message) || 'L’annulation n’a pas pu être faite. Réessayez dans un instant.';
       return;
     }
     fermer();
-    toast('Facture ' + (rep.facture || '') + ' annulée', 'ok');
+    toast('Facture ' + (rep.facture || '') + ' annulée. Votre formulaire est toujours rempli : vous pouvez repayer.', 'ok');
   });
   function reussi(r) {
     regle = true;
     arreter();
+    payerBt.hidden = true;
+    reinitialiser();
+    $('msg-global').hidden = true;
     titre.textContent = 'Paiement réussi';
     corps.innerHTML = '';
     corps.appendChild(el('p', null, 'Merci ! Votre facture ' + (r.facture || rep.facture || '') + ' est payée. L’équipe TBL prépare votre annonce et vous la soumettra pour approbation.'));
