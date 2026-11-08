@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>La liseuse TBL</title>
+<!-- Liseuse web des Éditions TBL (version 1, 8 novembre 2026), sous la clé DEV001. Ouverte dans le cadre de l'Espace
+     Lecteur (page Wix /dashboardlecteurs) par le bouton « La liseuse TBL » de l'onglet Livres : liseuse.html?livre=<id>.
+     Trois ambiances (le salon, le chalet, l'enquêteur), une ou deux pages, réglages et position gardés au serveur.
+     Plan : .claude\Plans\5-ELC-liseuse-web-production.md. Prototypes : Prototype\Liseuse\.
+     Aucun texte de livre dans ce fichier public : le texte vient du serveur (backend/lecteurLivres.js), par lots, après
+     vérification de l'achat. Hors du site (ouverture directe), un court texte de démonstration. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Figtree:wght@400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{overflow:hidden;display:flex;flex-direction:column;align-items:center;font-family:'Figtree',system-ui,sans-serif;background:var(--fond-page);color:var(--texte-decor)}
+
+/* ---------- Texte du livre (moteur) ---------- */
+.mo-colonnes{--mo-taille:1;--mo-interligne:1;height:100%;font-family:var(--mo-police);font-size:calc(var(--mo-base) * var(--mo-taille));line-height:calc(var(--mo-ligne) * var(--mo-interligne));color:var(--encre);text-align:justify;hyphens:auto;-webkit-hyphens:auto;column-fill:auto;will-change:transform}
+.mo-colonnes.mo-anime{transition:transform .55s cubic-bezier(.22,.7,.2,1)}
+@media (prefers-reduced-motion:reduce){.mo-colonnes.mo-anime{transition:none}}
+.mo-colonnes p{margin:0;text-indent:1.5em;orphans:2;widows:2}
+.mo-colonnes p.mo-premier,.mo-colonnes p.mo-pause,.mo-colonnes p.mo-intertitre{text-indent:0}
+.mo-colonnes p.mo-premier::first-letter{float:left;font-size:3.2em;line-height:.82;padding:.06em .08em 0 0;color:var(--accent-texte);font-weight:600}
+.mo-colonnes p.mo-pause{text-align:center;letter-spacing:.6em;margin:.8em 0;color:var(--accent-texte)}
+.mo-colonnes p.mo-intertitre{font-weight:600;margin:1em 0 .4em}
+.mo-titre-livre{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;break-after:column}
+.mo-titre-livre h1{font-size:2.5em;line-height:1.1;margin:.3em 0;font-weight:500}
+.mo-titre-livre .mo-auteur{text-indent:0;letter-spacing:.25em;text-transform:uppercase;font-size:.8em;opacity:.75}
+.mo-titre-livre .mo-maison{text-indent:0;font-style:italic;opacity:.6;margin-top:2em}
+.mo-partie{break-before:column;height:100%;display:flex;flex-direction:column;justify-content:center;text-align:center;break-after:column}
+.mo-partie h2{font-weight:500;font-size:1.9em;margin:0;color:var(--accent-texte)}
+.mo-partie p{text-indent:0!important;font-style:italic;font-size:1.2em;margin-top:.6em!important}
+.mo-chapitre{break-before:column;text-align:center;font-weight:500;font-size:1.6em;line-height:1.2;margin:2em 0 .9em;font-family:var(--police-titre-chapitre, inherit)}
+.mo-sans-titre{break-before:column;height:0;margin:0}
+.mo-exergue{text-indent:0!important;text-align:center;font-style:italic;opacity:.8;margin:0 1.5em 2em!important;font-size:.95em}
+.mo-fin{text-indent:0!important;text-align:center;font-style:italic;margin-top:2.5em!important;opacity:.7;letter-spacing:.1em}
+
+/* ---------- Décor commun ---------- */
+.decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.fond-interieur{position:absolute;inset:-4%;background:url("liseuse-fond.jpg") center/cover no-repeat;filter:var(--fond-filtre);opacity:0;transform:scale(1.03);transition:opacity 3s ease}
+.fond-interieur.visible{opacity:var(--fond-opacite,1);animation:respire 60s ease-in-out infinite alternate}
+@keyframes respire{from{transform:scale(1.03)}to{transform:scale(1.12) translate(-1.5%,-1%)}}
+body.sans-fond .fond-interieur{display:none}
+.voile-ambiance{position:absolute;inset:0}
+#pluie{position:absolute;inset:0;width:100%;height:100%;display:none}
+@media (prefers-reduced-motion:reduce){.fond-interieur.visible,.voile-ambiance{animation:none!important}}
+
+.entete{position:relative;z-index:2;width:min(1220px,92vw);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 4px 8px}
+.marque{display:flex;align-items:center;gap:12px}
+.marque h1{margin:0;font-family:var(--police-marque);font-weight:600;font-size:1.55rem;letter-spacing:.06em;color:var(--couleur-marque)}
+.ou{text-align:right;font-size:.86rem;color:var(--texte-doux);line-height:1.35;min-width:0}
+.ou strong{display:block;font-family:var(--police-marque);font-size:1.1rem;font-weight:600;color:var(--texte-decor);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.cadre{position:relative;z-index:1;flex:1;min-height:0;width:min(1220px,92vw);border-radius:var(--rayon-cadre);padding:var(--marge-cadre);background:var(--bois);background-size:700px 500px;box-shadow:var(--ombre-cadre)}
+.cadre::before{content:"";position:absolute;inset:11px;border-radius:calc(var(--rayon-cadre) - 9px);pointer-events:none;box-shadow:var(--filet-cadre)}
+body[data-pages="1"] .cadre{width:min(900px,92vw)}
+.papier{position:relative;height:100%;border-radius:var(--rayon-papier);overflow:hidden;background:var(--fond-papier);box-shadow:inset 0 0 40px rgba(120,80,30,.22)}
+.papier.double::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:64px;transform:translateX(-50%);pointer-events:none;background:linear-gradient(90deg,transparent,rgba(60,35,10,.22) 50%,transparent)}
+.fenetre{position:absolute;inset:56px 64px 54px;overflow:hidden}
+.entete,.haut-page,.folio,.commandes{user-select:none;-webkit-user-select:none}
+.haut-page{position:absolute;top:20px;left:64px;right:64px;text-align:center;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--texte-folio);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--police-folio)}
+.folio{position:absolute;bottom:18px;font-size:.82rem;color:var(--texte-folio);font-family:var(--police-folio);font-style:italic}
+.folio.g{left:64px}.folio.d{right:64px}
+.chargement-livre{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--texte-folio);text-align:center;padding:20px}
+.roue{width:38px;height:38px;border:3px solid rgba(0,0,0,.15);border-top-color:var(--accent-texte);border-radius:50%;animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+
+.commandes{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 14px 14px;flex-wrap:wrap}
+.btn{appearance:none;border:0;cursor:pointer;height:44px;min-width:44px;padding:0 15px;border-radius:var(--rayon-btn);font:600 .9rem 'Figtree',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:7px;color:var(--btn-texte);background:var(--btn-fond);box-shadow:var(--btn-ombre);transition:transform .1s,filter .1s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.btn.rond{width:50px;padding:0;font-size:1.2rem}
+.progression{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:200px;margin:0 6px}
+.barre{width:200px;height:5px;border-radius:3px;background:var(--barre-fond);overflow:hidden}
+.barre i{display:block;height:100%;width:0;background:var(--accent);transition:width .5s}
+.progression small{font-size:.76rem;color:var(--texte-doux);text-align:center}
+
+/* ---------- Panneaux (Chapitres, Ma bibliothèque, Réglages) ---------- */
+.voile{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .3s}
+.voile.ouvert{opacity:1;pointer-events:auto}
+.panneau{position:fixed;z-index:21;top:0;bottom:0;width:min(400px,92vw);overflow:auto;padding:20px 20px 28px;background:var(--pn-fond);color:var(--pn-texte);box-shadow:0 0 50px rgba(0,0,0,.5);transition:transform .35s ease;scrollbar-width:thin}
+.panneau.gauche{left:0;transform:translateX(-105%);border-radius:0 24px 24px 0}
+.panneau.droite{right:0;transform:translateX(105%);border-radius:24px 0 0 24px}
+.panneau.ouvert{transform:none}
+.pn-tete{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pn-tete h2{margin:0;font-family:var(--police-marque);font-size:1.5rem;color:var(--accent)}
+.pn-fermer{appearance:none;border:1px solid var(--pn-bord);background:transparent;color:inherit;width:36px;height:36px;border-radius:50%;cursor:pointer}
+.pn-aide{margin:0 0 14px;color:var(--pn-doux);font-size:.88rem}
+.liste-chapitres{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.liste-chapitres .partie{margin:12px 0 2px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pn-doux)}
+.liste-chapitres button{width:100%;text-align:left;border:1px solid var(--pn-bord);border-radius:12px;padding:10px 12px;cursor:pointer;font:500 .98rem var(--mo-police);color:inherit;background:var(--pn-controle)}
+.liste-chapitres button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.livres-grille{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.pn-livre{appearance:none;border:1px solid var(--pn-bord);background:var(--pn-controle);color:inherit;border-radius:14px;padding:10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:4px}
+.pn-livre img,.pn-livre .sans-image{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:rgba(0,0,0,.2);margin-bottom:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;padding:6px}
+.pn-livre strong{font-size:.84rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pn-livre span{font-size:.74rem;color:var(--pn-doux)}
+.pn-livre.en-lecture{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.pn-livre.indisponible{opacity:.55;cursor:default}
+.pn-lien{display:block;margin-top:18px;text-align:center;color:var(--accent);font-weight:600;cursor:pointer;background:none;border:0;font-size:.95rem;width:100%}
+.section{padding:12px 0;border-top:1px solid var(--pn-bord)}
+.section h3{margin:0 0 9px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pn-doux);font-weight:600}
+.choix{display:flex;flex-wrap:wrap;gap:7px}
+.choix button{appearance:none;flex:1 1 auto;min-height:40px;padding:0 11px;border-radius:11px;border:1px solid var(--pn-bord);background:var(--pn-controle);color:inherit;cursor:pointer;font-size:.9rem}
+.choix button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--sur-accent);font-weight:600}
+.pastilles button::before{content:"";display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:6px;vertical-align:-2px;background:var(--pastille);box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+.ambiances{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ambiances button{appearance:none;border:1px solid transparent;background:none;color:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.8rem;border-radius:11px;padding:5px}
+.ambiances button span:first-child{width:100%;aspect-ratio:4/3;border-radius:9px;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.ambiances button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.taille{display:flex;align-items:center;gap:10px}
+.taille button{appearance:none;width:50px;height:40px;border-radius:11px;border:1px solid var(--pn-bord);background:var(--pn-controle);color:inherit;cursor:pointer;font-weight:600}
+.taille output{flex:1;text-align:center}
+.avis{position:fixed;z-index:30;left:50%;bottom:90px;transform:translate(-50%,20px);max-width:min(520px,90vw);padding:12px 18px;border-radius:14px;background:rgba(20,16,12,.94);color:#f3e9d6;font:500 .9rem 'Figtree',sans-serif;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+.avis.visible{opacity:1;transform:translate(-50%,0)}
+.ecran-message{position:relative;z-index:2;margin:auto;max-width:520px;text-align:center;padding:28px;border-radius:18px;background:rgba(15,12,10,.82);color:#f3e9d6}
+.ecran-message h2{font-family:var(--police-marque);margin:0 0 10px}
+.ecran-message p{margin:0 0 16px;color:#d8ccb8}
+
+/* ---------- Ambiance 1 : le salon (noyer, lampe chaude) ---------- */
+body.theme-salon{
+  --fond-page:#0d0907;--texte-decor:#efe3cf;--texte-doux:#cdbb9c;--couleur-marque:#ecd29a;--police-marque:'Cormorant Garamond',serif;
+  --bois:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='500'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0035 0.11' numOctaves='4' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.08 0 0 0 0 0.03 0 0 0 -2.2 1.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%235a3520'/%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E");
+  --rayon-cadre:34px;--marge-cadre:24px;--rayon-papier:14px;--ombre-cadre:0 30px 80px rgba(0,0,0,.75),inset 0 2px 1px rgba(255,220,170,.22),inset 0 -3px 6px rgba(0,0,0,.45);--filet-cadre:inset 0 0 0 1px rgba(255,210,150,.12),inset 0 2px 8px rgba(0,0,0,.55);
+  --papier:#f4ead6;--fond-papier:linear-gradient(180deg,var(--papier),#e3d4b6);--encre:#2b211a;--accent-texte:#8a4b1f;--texte-folio:#8b7556;--police-folio:'Newsreader',serif;
+  --mo-police:'Newsreader',Georgia,serif;--mo-base:1.12rem;--mo-ligne:1.68;
+  --accent:#d9b56c;--sur-accent:#2e1d0c;--btn-texte:#3a2412;--btn-fond:linear-gradient(180deg,#ecd29a,#c9a15a 55%,#9b7a3c);--btn-ombre:0 4px 12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.55);--rayon-btn:22px;--barre-fond:rgba(255,230,190,.15);
+  --pn-fond:#24170f;--pn-texte:#f1e4cc;--pn-doux:#c4b08f;--pn-bord:rgba(217,181,108,.22);--pn-controle:rgba(255,230,190,.06);
+  --fond-filtre:blur(2.5px) brightness(.5) saturate(.95) sepia(.15);
+}
+body.theme-salon .voile-ambiance{background:radial-gradient(1200px 800px at 12% -5%,rgba(255,176,92,.22),transparent 60%),radial-gradient(ellipse at center,rgba(13,9,7,.15) 35%,rgba(0,0,0,.78) 100%);animation:vacille 7s ease-in-out infinite}
+@keyframes vacille{0%,100%{opacity:1}22%{opacity:.93}40%{opacity:.98}63%{opacity:.9}80%{opacity:.97}}
+body.theme-salon .marque::before{content:"T";width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:'Cormorant Garamond',serif;font-weight:600;color:#3a2412;background:radial-gradient(circle at 35% 30%,#ecd29a,#c9a15a 60%,#8a6a30);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+body.theme-salon.sombre{--papier:#2a231d;--fond-papier:linear-gradient(180deg,#2a231d,#211b16);--encre:#e7dccb;--accent-texte:#d9a86a;--texte-folio:#a8957a;--fond-filtre:blur(3px) brightness(.28) saturate(.8)}
+
+/* ---------- Ambiance 2 : le chalet au petit matin (érable, lumière) ---------- */
+body.theme-chalet{
+  --fond-page:#f3dcbd;--texte-decor:#3b2c1c;--texte-doux:#6e4c2a;--couleur-marque:#6b4220;--police-marque:'Cormorant Garamond',serif;
+  --bois:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='420'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.16' numOctaves='3' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.36 0 0 0 0 0.16 0 0 0 -1.9 1.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%23d9ad72'/%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E");
+  --rayon-cadre:42px;--marge-cadre:28px;--rayon-papier:22px;--ombre-cadre:0 40px 90px rgba(90,50,20,.45),inset 0 2px 2px rgba(255,245,220,.7),inset 0 -4px 8px rgba(110,60,20,.35);--filet-cadre:inset 0 0 0 1px rgba(120,70,25,.25),inset 0 3px 10px rgba(110,60,20,.35);
+  --papier:#fffaf0;--fond-papier:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.55),transparent 60%),var(--papier);--encre:#33291f;--accent-texte:#b0622a;--texte-folio:#a07d55;--police-folio:'Alegreya',serif;
+  --mo-police:'Alegreya',Georgia,serif;--mo-base:1.18rem;--mo-ligne:1.72;
+  --accent:#a85a24;--sur-accent:#fff6e6;--btn-texte:#5a361a;--btn-fond:linear-gradient(180deg,#fff7e8,#f0dcbc);--btn-ombre:0 2px 0 #b98a52,0 4px 8px rgba(90,50,20,.25);--rayon-btn:14px;--barre-fond:rgba(107,66,32,.18);
+  --pn-fond:#fff8ec;--pn-texte:#3b2c1c;--pn-doux:#8a6a48;--pn-bord:rgba(168,90,36,.22);--pn-controle:#f6ead6;
+  --fond-filtre:blur(3px) brightness(.95) saturate(.85) sepia(.2);
+}
+body.theme-chalet .voile-ambiance{background:linear-gradient(180deg,rgba(246,201,155,.55),rgba(251,233,210,.35) 55%,rgba(233,210,180,.5))}
+body.theme-chalet .voile-ambiance::after{content:"";position:absolute;left:68%;top:22%;width:2400px;height:2400px;margin:-1200px;opacity:.3;background:repeating-conic-gradient(from 0deg,rgba(255,240,205,.55) 0deg 4deg,transparent 4deg 14deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 60%);mask:radial-gradient(circle,#000 0,transparent 60%);animation:rayons 140s linear infinite}
+@keyframes rayons{to{transform:rotate(360deg)}}
+body.theme-chalet .entete{justify-content:center;flex-direction:column;gap:2px;width:auto;margin-bottom:-16px;padding:10px 32px 12px;border-radius:16px;background:var(--bois);background-size:600px 420px;box-shadow:0 10px 24px rgba(90,55,20,.35),inset 0 1px 0 rgba(255,240,210,.6);text-align:center;margin-top:12px}
+body.theme-chalet .marque h1{letter-spacing:.12em;text-shadow:0 1px 0 rgba(255,236,200,.75)}
+body.theme-chalet .ou{text-align:center}
+body.theme-chalet .ou strong{display:inline;font-size:.9rem;font-style:normal;font-family:'Figtree',sans-serif;font-weight:400;color:var(--texte-doux)}
+body.theme-chalet .ou strong::after{content:" · "}
+body.theme-chalet .cadre{width:min(860px,92vw)}
+body.theme-chalet[data-pages="2"] .cadre{width:min(1220px,92vw)}
+body.theme-chalet .commandes{margin:14px 0 14px;border-radius:22px;background:var(--bois);background-size:600px 420px;box-shadow:0 14px 30px rgba(90,50,20,.35),inset 0 1px 0 rgba(255,240,210,.6)}
+body.theme-chalet .btn.rond{background:linear-gradient(180deg,#c9773a,#a85a24);color:#fff6e6;box-shadow:0 2px 0 #7b3f14,0 4px 10px rgba(90,40,10,.35)}
+body.theme-chalet.sombre{--fond-page:#3a2a24;--papier:#2a241e;--fond-papier:var(--papier);--encre:#eadfcb;--accent-texte:#e0a060;--texte-folio:#b89d7a;--fond-filtre:blur(3px) brightness(.45) saturate(.8)}
+body.theme-chalet.sombre .voile-ambiance{background:linear-gradient(180deg,rgba(44,36,64,.6),rgba(74,53,80,.45) 40%,rgba(58,42,36,.6))}
+
+/* ---------- Ambiance 3 : le bureau de l'enquêteur (acajou, pluie, machine à écrire) ---------- */
+body.theme-enqueteur{
+  --fond-page:#07090d;--texte-decor:#e5dcc7;--texte-doux:#bdb39d;--couleur-marque:#4a3410;--police-marque:'Libre Baskerville',serif;
+  --bois:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='500'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 0.13' numOctaves='5' seed='21'/%3E%3CfeColorMatrix values='0 0 0 0 0.10 0 0 0 0 0.02 0 0 0 0 0.01 0 0 0 -2.6 1.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%234a1d12'/%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E");
+  --rayon-cadre:28px;--marge-cadre:22px;--rayon-papier:12px;--ombre-cadre:0 40px 90px rgba(0,0,0,.85),inset 0 2px 1px rgba(255,190,150,.18),inset 0 -3px 6px rgba(0,0,0,.6);--filet-cadre:inset 0 0 0 2px rgba(214,178,104,.55);
+  --papier:#efe6d2;--fond-papier:radial-gradient(70% 85% at 50% -12%,rgba(255,244,214,.55),transparent 70%),linear-gradient(180deg,var(--papier),#e2d5ba);--encre:#24201b;--accent-texte:#9c1f26;--texte-folio:#7d6a50;--police-folio:'Special Elite',monospace;--police-titre-chapitre:'Special Elite',monospace;
+  --mo-police:'Libre Baskerville',Georgia,serif;--mo-base:1rem;--mo-ligne:1.8;
+  --accent:#d6b268;--sur-accent:#21180a;--btn-texte:#efe8d6;--btn-fond:radial-gradient(circle at 40% 35%,#3a3833,#141311 75%);--btn-ombre:0 0 0 3px #b9b2a3,0 5px 0 #4a463e,0 8px 14px rgba(0,0,0,.6);--rayon-btn:26px;--barre-fond:#211f1b;
+  --pn-fond:#16130f;--pn-texte:#e7dcc6;--pn-doux:#a99d86;--pn-bord:rgba(214,178,104,.25);--pn-controle:rgba(255,255,255,.05);
+  --fond-filtre:blur(3px) brightness(.32) saturate(.85) hue-rotate(-8deg);
+}
+body.theme-enqueteur #pluie{display:block}
+body.theme-enqueteur .voile-ambiance{background:radial-gradient(900px 500px at 50% -10%,rgba(120,200,140,.2),transparent 65%),radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.8) 100%)}
+body.theme-enqueteur .entete{justify-content:center;flex-direction:column;gap:4px;padding-top:8px}
+body.theme-enqueteur .marque{padding:6px 24px;border-radius:8px;background:linear-gradient(180deg,#e6cd8e,#b8924a 55%,#8c6a2c);box-shadow:0 6px 16px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.6)}
+body.theme-enqueteur .marque h1{font-size:1.05rem;letter-spacing:.28em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,240,200,.7)}
+body.theme-enqueteur .ou{text-align:center;font-family:'Special Elite',monospace}
+body.theme-enqueteur .ou strong{display:inline;font-family:'Special Elite',monospace;font-style:normal;font-weight:400;font-size:.9rem}
+body.theme-enqueteur .ou strong::after{content:" — "}
+body.theme-enqueteur .btn{font-family:'Special Elite',monospace;font-weight:400}
+body.theme-enqueteur .barre i{background:linear-gradient(90deg,#7a1018,#c8323a)}
+body.theme-enqueteur.sombre{--papier:#1d1b18;--fond-papier:linear-gradient(180deg,#22201c,#171512);--encre:#e7dcc6;--accent-texte:#e0a85a;--fond-filtre:blur(3.5px) brightness(.2) saturate(.7)}
+
+/* Couleur de page Sépia (toutes les ambiances) */
+body.papier-sepia{--papier:#efdfbd;--fond-papier:linear-gradient(180deg,#efdfbd,#e2cb9d);--encre:#3d2b18}
+
+/* Mode immersif (plein écran refusé par le cadre) et écrans bas (téléphone couché) */
+body.immersif .entete{display:none}
+@media (max-height:560px){
+  .entete{display:none}
+  .cadre{margin-top:6px;padding:10px!important;border-radius:18px!important}
+  .cadre::before{display:none}
+  .fenetre{inset:16px 28px 22px}
+  .haut-page{display:none}
+  .folio{bottom:4px;font-size:.7rem}
+  .commandes{padding:6px 8px!important;margin:6px 0 8px!important;gap:6px;flex-wrap:nowrap}
+  .btn{height:36px;min-width:36px;padding:0 10px}
+  .txt{display:none}
+  .progression{min-width:120px}.barre{width:120px}
+}
+@media (max-width:760px){
+  .cadre{padding:12px;border-radius:22px}
+  .fenetre{inset:42px 22px 42px}
+  .folio.g{left:22px}.folio.d{right:22px}.haut-page{left:22px;right:22px}
+  .ou{display:none}
+  .txt{display:none}
+  .btn{padding:0 11px}.btn.rond{width:44px}
+  .progression{order:-1;width:100%}
+  .commandes{gap:6px}
+}
+</style>
+</head>
+<body class="theme-salon">
+<div class="decor" aria-hidden="true"><div class="fond-interieur" id="fond"></div><div class="voile-ambiance"></div><canvas id="pluie"></canvas></div>
+
+<header class="entete">
+  <div class="marque"><h1>La liseuse TBL</h1></div>
+  <div class="ou"><strong id="titre-livre"></strong><span id="titre-chapitre"></span></div>
+</header>
+
+<main class="cadre" id="cadre">
+  <div class="papier" id="papier">
+    <div class="haut-page" id="haut-page"></div>
+    <div class="fenetre" id="fenetre" aria-live="polite"></div>
+    <div class="chargement-livre" id="chargement"><div class="roue" aria-hidden="true"></div><p id="texte-chargement">Ouverture de votre livre…</p></div>
+    <div class="folio g" id="folio-g"></div><div class="folio d" id="folio-d"></div>
+  </div>
+</main>
+
+<nav class="commandes" aria-label="Commandes de lecture">
+  <button class="btn rond" type="button" id="precedent" aria-label="Page précédente">◀</button>
+  <button class="btn" type="button" id="b-chapitres">☰ <span class="txt">Chapitres</span></button>
+  <button class="btn" type="button" id="b-bibliotheque">📚 <span class="txt">Ma bibliothèque</span></button>
+  <div class="progression"><div class="barre"><i id="barre"></i></div><small id="ou-suis-je"></small></div>
+  <button class="btn" type="button" id="b-reglages">⚙ <span class="txt">Réglages</span></button>
+  <button class="btn" type="button" id="b-plein" data-plein-ecran>⛶ <span class="txt">Plein écran</span></button>
+  <button class="btn rond" type="button" id="suivant" aria-label="Page suivante">▶</button>
+</nav>
+
+<div class="voile" id="voile"></div>
+<aside class="panneau gauche" id="pn-chapitres" aria-label="Chapitres"><div class="pn-tete"><h2>Chapitres</h2><button class="pn-fermer" type="button" aria-label="Fermer">✕</button></div><ol class="liste-chapitres" id="liste-chapitres"></ol></aside>
+<aside class="panneau gauche" id="pn-bibliotheque" aria-label="Ma bibliothèque"><div class="pn-tete"><h2>Ma bibliothèque</h2><button class="pn-fermer" type="button" aria-label="Fermer">✕</button></div><p class="pn-aide">Touchez un livre pour l’ouvrir. Votre page est gardée pour chacun.</p><div class="livres-grille" id="livres-grille"></div><button class="pn-lien" type="button" id="b-retour">← Retour à l’Espace Lecteur</button></aside>
+<aside class="panneau droite" id="pn-reglages" aria-label="Réglages"><div class="pn-tete"><h2>Réglages</h2><button class="pn-fermer" type="button" aria-label="Fermer">✕</button></div><div id="reglages"></div></aside>
+<div class="avis" id="avis" role="status"></div>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------- Utilitaires ---------- */
+function $(id) { return document.getElementById(id); }
+function el(tag, classe, texte) { var e = document.createElement(tag); if (classe) { e.className = classe; } if (texte !== undefined && texte !== null) { e.textContent = texte; } return e; }
+var EN_WIX = window.parent !== window;
+var ORIGINES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+var VERSION_TBL = 'e1838ce · 2026-11-08 18:37';
+console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
+var minuterieAvis = null;
+function annoncer(texte) {
+  var a = $('avis'); a.textContent = texte; a.classList.add('visible');
+  clearTimeout(minuterieAvis); minuterieAvis = setTimeout(function () { a.classList.remove('visible'); }, 4200);
+}
+function lire(cle) { try { return JSON.parse(localStorage.getItem(cle) || 'null'); } catch (e) { return null; } }
+function ecrire(cle, v) { try { localStorage.setItem(cle, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } }
+
+/* ---------- Pont avec la page Wix (même code de page que l'Espace Lecteur) ---------- */
+var attentes = {};
+function demander(type, params, typeReponse, delai) {
+  return new Promise(function (ok) {
+    if (!EN_WIX) { ok(demo(type, params)); return; }
+    var cle = typeReponse + ':' + (params && params.depuis !== undefined ? params.depuis : '');
+    attentes[cle] = ok;
+    window.parent.postMessage(Object.assign({ type: type }, params || {}), '*');
+    setTimeout(function () { if (attentes[cle]) { delete attentes[cle]; ok({ statut: 'erreur', delai: true }); } }, delai || 20000);
+  });
+}
+window.addEventListener('message', function (e) {
+  if (!EN_WIX || e.source !== window.parent || !ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
+  var m = e.data || {};
+  var cle = m.type + ':' + (m.type === 'resultatLiseuseFragments' && m.depuis !== undefined ? m.depuis : '');
+  if (attentes[cle]) { var f = attentes[cle]; delete attentes[cle]; f(m); }
+});
+function retourEspace() {
+  // La liseuse et l'Espace Lecteur sont servis au même endroit : on revient dans le même cadre.
+  location.href = 'espace-lecteur.html?v=' + Date.now();
+}
+
+/* ---------- Démonstration (ouverture hors du site) : texte inventé, jamais un vrai livre ---------- */
+function demo(type, p) {
+  var phrases = 'La pluie tapait doucement contre la vitre du bureau. Sur la table, le dossier attendait depuis le matin, ouvert à la même page. Il relut la première ligne pour la dixième fois, sans en saisir le sens. Dehors, la ville s’allumait une fenêtre à la fois, comme un livre qu’on feuillette lentement.';
+  if (type === 'liseuseOuvrir') {
+    var chap = [];
+    for (var i = 0; i < 8; i += 1) { chap.push({ chapitre: i, partie: i < 4 ? 'Première partie : Le dossier' : 'Deuxième partie : La piste', titre: 'Chapitre ' + (i + 1), afficherTitre: true, exergue: i % 2 ? 'Une phrase d’exergue de démonstration.' : '' }); }
+    return { statut: 'ok', livre: { id: 'demo', titre: 'Livre de démonstration', auteur: 'Les Éditions TBL', couverture: '' }, chapitres: chap, nbChapitres: 8, position: null, reglages: null,
+      bibliotheque: [{ id: 'demo', titre: 'Livre de démonstration', auteur: 'Les Éditions TBL', couverture: '', liseuse: true }, { id: 'x', titre: 'Un autre livre', auteur: 'Auteur', couverture: '', liseuse: false }] };
+  }
+  if (type === 'liseuseFragments') {
+    var fr = [];
+    for (var c = p.depuis; c < Math.min(8, p.depuis + p.nombre); c += 1) {
+      var t = []; for (var k = 0; k < 7; k += 1) { t.push('<p>' + phrases + (k === 3 ? ' <em>Il le savait déjà.</em>' : '') + '</p>'); }
+      fr.push({ chapitre: c, fragment: 0, contenu: t.join('\n') });
+    }
+    return { statut: 'ok', fragments: fr, fin: p.depuis + p.nombre >= 8 };
+  }
+  return { statut: 'ok' };
+}
+
+/* ---------- État ---------- */
+var etat = { livre: null, chapitres: [], position: null, reglages: null, bibliotheque: [], page: 0, total: 1, pas: 1, double: false, titres: [], paragraphes: [], pret: false };
+var REGLAGES_DEFAUT = { ambiance: 'salon', pages: 'auto', papier: 'clair', police: '', taille: 1, interligne: 1, fond: true };
+var R = Object.assign({}, REGLAGES_DEFAUT, lire('liseuse-tbl-reglages') || {});
+var ECART = 128;
+
+/* ---------- Mise en page (moteur des prototypes) ---------- */
+var fenetre = $('fenetre');
+var colonnes = el('div', 'mo-colonnes');
+fenetre.appendChild(colonnes);
+
+function construireLivre(fragments) {
+  colonnes.textContent = '';
+  etat.titres = []; etat.paragraphes = [];
+  var page1 = el('section', 'mo-titre-livre');
+  page1.appendChild(el('p', 'mo-auteur', etat.livre.auteur));
+  page1.appendChild(el('h1', '', etat.livre.titre));
+  page1.appendChild(el('p', 'mo-maison', 'Les Éditions TBL'));
+  colonnes.appendChild(page1);
+  var parChapitre = {};
+  fragments.forEach(function (f) { (parChapitre[f.chapitre] = parChapitre[f.chapitre] || []).push(f); });
+  var partiePrecedente = null;
+  etat.chapitres.forEach(function (c, i) {
+    if (c.partie && c.partie !== partiePrecedente) {
+      var morceaux = c.partie.split(' : ');
+      var pp = el('section', 'mo-partie');
+      pp.appendChild(el('h2', '', morceaux[0]));
+      if (morceaux[1]) { pp.appendChild(el('p', '', morceaux.slice(1).join(' : '))); }
+      colonnes.appendChild(pp);
+    }
+    partiePrecedente = c.partie || partiePrecedente;
+    var h = c.afficherTitre === false ? el('div', 'mo-sans-titre') : el('h2', 'mo-chapitre', c.titre);
+    h.dataset.c = i;
+    colonnes.appendChild(h);
+    etat.titres[i] = h;
+    if (c.exergue) { colonnes.appendChild(el('p', 'mo-exergue', c.exergue)); }
+    var bloc = el('div');
+    bloc.innerHTML = (parChapitre[i] || []).sort(function (a, b) { return a.fragment - b.fragment; }).map(function (f) { return f.contenu; }).join('\n');
+    var n = 0;
+    Array.prototype.forEach.call(bloc.querySelectorAll('p'), function (p) {
+      if (!p.className && n === 0 && c.afficherTitre !== false) { p.className = 'mo-premier'; }
+      p.dataset.c = i; p.dataset.p = n; n += 1;
+      etat.paragraphes.push(p);
+    });
+    while (bloc.firstChild) { colonnes.appendChild(bloc.firstChild); }
+  });
+  colonnes.appendChild(el('p', 'mo-fin', 'Fin'));
+}
+
+function chapitreDe(p) { var d = -1; etat.titres.forEach(function (h, i) { if (h && h._page <= p) { d = i; } }); return d; }
+// Premier paragraphe visible de la page en cours : c'est la position gardée (chapitre et paragraphe).
+// Page sans paragraphe (page titre, page de partie) : repérée par sa place dans le livre (fraction).
+function positionCourante() {
+  for (var i = 0; i < etat.paragraphes.length; i += 1) {
+    if (etat.paragraphes[i]._page === etat.page) { return { chapitre: Number(etat.paragraphes[i].dataset.c), paragraphe: Number(etat.paragraphes[i].dataset.p) }; }
+    if (etat.paragraphes[i]._page > etat.page) { break; }
+  }
+  return { chapitre: -1, paragraphe: 0, fraction: etat.total > 1 ? etat.page / (etat.total - 1) : 0 };
+}
+function pageDe(pos) {
+  if (!pos) { return 0; }
+  if (pos.chapitre < 0) { return Math.round((pos.fraction || 0) * (etat.total - 1)); }
+  for (var i = 0; i < etat.paragraphes.length; i += 1) {
+    var p = etat.paragraphes[i];
+    if (Number(p.dataset.c) === pos.chapitre && Number(p.dataset.p) >= pos.paragraphe) { return p._page; }
+    if (Number(p.dataset.c) > pos.chapitre) { return p._page; }
+  }
+  return etat.titres[pos.chapitre] ? etat.titres[pos.chapitre]._page : 0;
+}
+function remettreEnPage() {
+  if (!etat.pret) { return; }
+  var garde = etat.total > 1 ? positionCourante() : etat.position;
+  var L = fenetre.clientWidth, H = fenetre.clientHeight;
+  var largeurDouble = R.ambiance === 'chalet' ? 99999 : 860;
+  etat.double = R.pages === 2 ? L >= 600 : (R.pages === 1 ? false : L >= largeurDouble);
+  colonnes.style.setProperty('--mo-taille', R.taille);
+  colonnes.style.setProperty('--mo-interligne', R.interligne);
+  colonnes.style.fontFamily = R.police || '';
+  colonnes.style.height = H + 'px';
+  colonnes.style.columnWidth = (etat.double ? (L - ECART) / 2 : L) + 'px';
+  colonnes.style.columnGap = ECART + 'px';
+  colonnes.classList.remove('mo-anime');
+  colonnes.style.transform = 'none';
+  etat.pas = L + ECART;
+  etat.total = Math.max(1, Math.ceil((colonnes.scrollWidth + ECART) / etat.pas));
+  var gauche = colonnes.getBoundingClientRect().left;
+  var pageEl = function (e) { return Math.floor((e.getBoundingClientRect().left - gauche + 2) / etat.pas); };
+  etat.titres.forEach(function (h) { if (h) { h._page = pageEl(h); } });
+  etat.paragraphes.forEach(function (p) { p._page = pageEl(p); });
+  etat.page = Math.min(etat.total - 1, pageDe(garde));
+  afficher(false);
+}
+var minuterieEnregistrer = null;
+function afficher(anime) {
+  colonnes.classList.toggle('mo-anime', !!anime);
+  colonnes.style.transform = 'translateX(' + (-etat.page * etat.pas) + 'px)';
+  $('papier').classList.toggle('double', etat.double);
+  var ch = chapitreDe(etat.page);
+  var c = etat.chapitres[ch];
+  var pct = etat.total > 1 ? Math.round(etat.page / (etat.total - 1) * 100) : 100;
+  $('titre-chapitre').textContent = c ? c.titre : '';
+  $('haut-page').textContent = c && c.partie ? c.partie : (etat.livre ? etat.livre.auteur + '  ·  ' + etat.livre.titre : '');
+  $('barre').style.width = pct + '%';
+  $('ou-suis-je').textContent = 'Page ' + (etat.page + 1) + ' sur ' + etat.total + ' · ' + pct + ' %';
+  var n = etat.double ? etat.page * 2 + 1 : etat.page + 1;
+  $('folio-g').textContent = etat.page ? n : '';
+  $('folio-d').textContent = etat.double && etat.page ? n + 1 : '';
+  Array.prototype.forEach.call($('liste-chapitres').querySelectorAll('button'), function (b) { b.setAttribute('aria-current', Number(b.dataset.c) === ch ? 'true' : 'false'); });
+  // Position gardée au serveur, 2 secondes après le dernier changement de page.
+  clearTimeout(minuterieEnregistrer);
+  minuterieEnregistrer = setTimeout(function () {
+    var pos = positionCourante();
+    etat.position = pos;
+    ecrire('liseuse-tbl-position-' + etat.livre.id, pos);
+    demander('liseuseEnregistrer', { livreId: etat.livre.id, chapitre: pos.chapitre, paragraphe: pos.paragraphe, pourcentage: pct }, 'resultatLiseuseEnregistrer');
+  }, 2000);
+}
+function aller(p) {
+  if (!etat.pret) { return; }
+  p = Math.max(0, Math.min(etat.total - 1, p));
+  if (p === etat.page) { if (p === etat.total - 1) { annoncer('Vous êtes à la fin du livre.'); } return; }
+  etat.page = p;
+  afficher(true);
+}
+
+/* ---------- Ouverture du livre ---------- */
+function messageEcran(titre, texte, bouton) {
+  $('chargement').hidden = true;
+  var m = el('div', 'ecran-message');
+  m.appendChild(el('h2', '', titre));
+  m.appendChild(el('p', '', texte));
+  var b = el('button', 'btn', bouton || '← Retour à l’Espace Lecteur'); b.type = 'button'; b.addEventListener('click', retourEspace);
+  m.appendChild(b);
+  document.querySelector('.cadre').hidden = true;
+  document.querySelector('.commandes').hidden = true;
+  document.body.appendChild(m);
+}
+async function ouvrir(livreId) {
+  etat.pret = false;
+  $('chargement').hidden = false;
+  $('texte-chargement').textContent = 'Ouverture de votre livre…';
+  var r = await demander('liseuseOuvrir', { livreId: livreId || '' }, 'resultatLiseuseOuvrir', 30000);
+  if (r.statut === 'connexion') { messageEcran('Connectez-vous', 'La liseuse est réservée aux membres du site.'); return; }
+  if (r.statut === 'aucun') {
+    etat.bibliotheque = r.bibliotheque || [];
+    messageEcran('Aucun livre à lire pour l’instant', 'Vos livres achetés arriveront dans la liseuse au fur et à mesure qu’ils y seront préparés.');
+    return;
+  }
+  if (r.statut !== 'ok') { messageEcran('Un petit problème', 'La liseuse n’a pas pu s’ouvrir. Réessayez dans un instant.'); return; }
+  etat.livre = r.livre; etat.chapitres = r.chapitres || []; etat.bibliotheque = r.bibliotheque || [];
+  etat.position = r.position || lire('liseuse-tbl-position-' + r.livre.id);
+  if (r.reglages) { R = Object.assign({}, REGLAGES_DEFAUT, r.reglages); ecrire('liseuse-tbl-reglages', R); appliquerApparence(); rendreReglages(); }
+  $('titre-livre').textContent = etat.livre.titre;
+  document.title = etat.livre.titre + ' | La liseuse TBL';
+  rendreChapitres(); rendreBibliotheque();
+  // Fragments par lots de 12 chapitres
+  var fragments = [];
+  var total = r.nbChapitres || etat.chapitres.length;
+  for (var depuis = 0; depuis < total; depuis += 12) {
+    $('texte-chargement').textContent = 'Ouverture de votre livre… ' + Math.round(depuis / total * 100) + ' %';
+    var lot = await demander('liseuseFragments', { livreId: etat.livre.id, depuis: depuis, nombre: 12 }, 'resultatLiseuseFragments', 30000);
+    if (lot.statut !== 'ok') { messageEcran('Un petit problème', 'Le livre n’a pas pu être chargé. Réessayez dans un instant.'); return; }
+    fragments = fragments.concat(lot.fragments || []);
+  }
+  construireLivre(fragments);
+  $('chargement').hidden = true;
+  etat.pret = true;
+  etat.total = 1;
+  if (document.fonts && document.fonts.ready) { await document.fonts.ready; }
+  remettreEnPage();
+  if (etat.position && (etat.position.chapitre || etat.position.paragraphe)) { annoncer('Reprise à « ' + ((etat.chapitres[etat.position.chapitre] || {}).titre || '') + ' ».'); }
+}
+
+/* ---------- Panneaux ---------- */
+var ouvert = null;
+function ouvrirPanneau(id) { fermerPanneau(); $(id).classList.add('ouvert'); $('voile').classList.add('ouvert'); ouvert = $(id); }
+function fermerPanneau() { if (ouvert) { ouvert.classList.remove('ouvert'); } $('voile').classList.remove('ouvert'); ouvert = null; }
+$('voile').addEventListener('click', fermerPanneau);
+Array.prototype.forEach.call(document.querySelectorAll('.pn-fermer'), function (b) { b.addEventListener('click', fermerPanneau); });
+$('b-chapitres').addEventListener('click', function () { ouvrirPanneau('pn-chapitres'); });
+$('b-bibliotheque').addEventListener('click', function () { ouvrirPanneau('pn-bibliotheque'); });
+$('b-reglages').addEventListener('click', function () { ouvrirPanneau('pn-reglages'); });
+$('b-retour').addEventListener('click', retourEspace);
+
+function rendreChapitres() {
+  var liste = $('liste-chapitres'); liste.textContent = '';
+  var partie = null;
+  etat.chapitres.forEach(function (c, i) {
+    if (c.partie && c.partie !== partie) { partie = c.partie; liste.appendChild(el('li', 'partie', c.partie)); }
+    var li = el('li'), b = el('button', '', c.titre); b.type = 'button'; b.dataset.c = i;
+    b.addEventListener('click', function () { if (etat.titres[i]) { aller(etat.titres[i]._page); } fermerPanneau(); });
+    li.appendChild(b); liste.appendChild(li);
+  });
+}
+function rendreBibliotheque() {
+  var g = $('livres-grille'); g.textContent = '';
+  etat.bibliotheque.forEach(function (l) {
+    var enLecture = etat.livre && l.id === etat.livre.id;
+    var b = el('button', 'pn-livre' + (enLecture ? ' en-lecture' : '') + (l.liseuse ? '' : ' indisponible')); b.type = 'button';
+    if (l.couverture) { var img = el('img'); img.src = l.couverture; img.alt = ''; img.loading = 'lazy'; b.appendChild(img); } else { b.appendChild(el('div', 'sans-image', l.titre)); }
+    b.appendChild(el('strong', '', l.titre));
+    b.appendChild(el('span', '', enLecture ? 'En lecture' : (l.liseuse ? l.auteur : 'Bientôt dans la liseuse')));
+    b.addEventListener('click', function () {
+      if (enLecture) { fermerPanneau(); return; }
+      if (!l.liseuse) { annoncer('« ' + l.titre + ' » n’est pas encore préparé pour la liseuse. Il le sera bientôt.'); return; }
+      fermerPanneau();
+      location.href = 'liseuse.html?livre=' + encodeURIComponent(l.id) + '&v=' + Date.now();
+    });
+    g.appendChild(b);
+  });
+}
+
+/* ---------- Réglages ---------- */
+var AMBIANCES = [
+  { id: 'salon', nom: 'Le salon', apercu: 'radial-gradient(circle at 20% 0,rgba(255,176,92,.6),transparent 60%),linear-gradient(160deg,#5a3520,#1e1009)' },
+  { id: 'chalet', nom: 'Le chalet', apercu: 'linear-gradient(180deg,#f6c99b,#fbe9d2 55%,#c98f66)' },
+  { id: 'enqueteur', nom: 'L’enquêteur', apercu: 'radial-gradient(circle at 50% 0,rgba(120,200,140,.5),transparent 60%),linear-gradient(160deg,#4a1d12,#07090d)' }
+];
+var POLICES = [{ nom: 'De l’ambiance', valeur: '' }, { nom: 'Garamond', valeur: '"EB Garamond", Garamond, serif' }, { nom: 'Très lisible', valeur: '"Atkinson Hyperlegible", Verdana, sans-serif' }];
+var minuterieReglages = null;
+function changer(nom, valeur) {
+  R[nom] = valeur;
+  ecrire('liseuse-tbl-reglages', R);
+  appliquerApparence();
+  remettreEnPage();
+  clearTimeout(minuterieReglages);
+  minuterieReglages = setTimeout(function () { demander('liseuseEnregistrer', { reglages: R }, 'resultatLiseuseEnregistrer'); }, 1500);
+}
+function appliquerApparence() {
+  document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+  document.body.classList.add('theme-' + R.ambiance);
+  document.body.classList.toggle('sombre', R.papier === 'sombre');
+  document.body.classList.toggle('papier-sepia', R.papier === 'sepia');
+  document.body.classList.toggle('sans-fond', !R.fond);
+  document.body.setAttribute('data-pages', String(R.pages));
+  pluie(R.ambiance === 'enqueteur');
+}
+function groupe(parent, titre, options, actuel, surChoix, classe) {
+  var s = el('section', 'section'); s.appendChild(el('h3', '', titre));
+  var g = el('div', classe || 'choix');
+  options.forEach(function (op) {
+    var b = el('button'); b.type = 'button';
+    if (classe === 'ambiances') { var ap = el('span'); ap.style.background = op.apercu; b.appendChild(ap); b.appendChild(el('span', '', op.nom)); } else { b.textContent = op.nom; }
+    if (op.style) { b.setAttribute('style', op.style); }
+    b.setAttribute('aria-pressed', String(op.valeur) === String(actuel) ? 'true' : 'false');
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(g.children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true'); surChoix(op.valeur);
+    });
+    g.appendChild(b);
+  });
+  s.appendChild(g); parent.appendChild(s);
+  return g;
+}
+function rendreReglages() {
+  var z = $('reglages'); z.textContent = '';
+  groupe(z, 'Ambiance', AMBIANCES.map(function (a) { return { nom: a.nom, valeur: a.id, apercu: a.apercu }; }), R.ambiance, function (v) { changer('ambiance', v); }, 'ambiances');
+  groupe(z, 'Pages affichées', [{ nom: '1 page', valeur: 1 }, { nom: '2 pages', valeur: 2 }, { nom: 'Automatique', valeur: 'auto' }], R.pages, function (v) {
+    changer('pages', v);
+    if (v === 2 && !etat.double) { annoncer('L’écran est trop étroit pour deux pages : une seule page est affichée.'); }
+  });
+  var p = groupe(z, 'Couleur de la page', [{ nom: 'Clair', valeur: 'clair', style: '--pastille:#f7f0e2' }, { nom: 'Sépia', valeur: 'sepia', style: '--pastille:#e8d3a8' }, { nom: 'Sombre', valeur: 'sombre', style: '--pastille:#24201b' }], R.papier, function (v) { changer('papier', v); });
+  p.classList.add('pastilles');
+  groupe(z, 'Police', POLICES.map(function (x) { return { nom: x.nom, valeur: x.valeur, style: x.valeur ? 'font-family:' + x.valeur : '' }; }), R.police, function (v) {
+    if (v && document.fonts && document.fonts.load) { document.fonts.load('1em ' + v).then(function () { changer('police', v); }); } else { changer('police', v); }
+  });
+  var s = el('section', 'section'); s.appendChild(el('h3', '', 'Taille du texte'));
+  var t = el('div', 'taille');
+  var moins = el('button', '', 'A−'); moins.type = 'button'; moins.setAttribute('aria-label', 'Texte plus petit');
+  var val = el('output', '', Math.round(R.taille * 100) + ' %');
+  var plus = el('button', '', 'A+'); plus.type = 'button'; plus.setAttribute('aria-label', 'Texte plus grand');
+  function regler(d) { var v = Math.max(0.8, Math.min(1.5, Math.round((R.taille + d) * 100) / 100)); val.textContent = Math.round(v * 100) + ' %'; changer('taille', v); }
+  moins.addEventListener('click', function () { regler(-0.06); }); plus.addEventListener('click', function () { regler(0.06); });
+  t.appendChild(moins); t.appendChild(val); t.appendChild(plus); s.appendChild(t); z.appendChild(s);
+  groupe(z, 'Interligne', [{ nom: 'Serré', valeur: 0.9 }, { nom: 'Normal', valeur: 1 }, { nom: 'Aéré', valeur: 1.2 }], R.interligne, function (v) { changer('interligne', v); });
+  groupe(z, 'Fond de la librairie', [{ nom: 'Affiché', valeur: true }, { nom: 'Masqué', valeur: false }], R.fond, function (v) { changer('fond', v); });
+}
+
+/* ---------- Pluie (ambiance de l'enquêteur) ---------- */
+var pluieActive = false, gouttes = [];
+function pluie(active) {
+  var c = $('pluie');
+  if (active === pluieActive) { return; }
+  pluieActive = active;
+  if (!active || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { return; }
+  var ctx = c.getContext('2d');
+  c.width = innerWidth; c.height = innerHeight;
+  gouttes = [];
+  for (var i = 0; i < 220; i += 1) { gouttes.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, l: 10 + Math.random() * 22, v: 9 + Math.random() * 9 }); }
+  (function dessiner() {
+    if (!pluieActive) { ctx.clearRect(0, 0, c.width, c.height); return; }
+    if (!document.hidden) {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.strokeStyle = 'rgba(170,190,220,.22)'; ctx.lineWidth = 1; ctx.beginPath();
+      gouttes.forEach(function (g) { ctx.moveTo(g.x, g.y); ctx.lineTo(g.x - g.l * .18, g.y + g.l); g.y += g.v; g.x -= g.v * .18; if (g.y > c.height) { g.y = -20; g.x = Math.random() * (c.width + 200); } });
+      ctx.stroke();
+    }
+    requestAnimationFrame(dessiner);
+  })();
+}
+
+/* ---------- Plein écran (mode immersif si le cadre le refuse) ---------- */
+function plein() {
+  var r = document.documentElement;
+  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  if (document.body.classList.contains('immersif')) { document.body.classList.remove('immersif'); majPlein(); return; }
+  var p = null;
+  try { p = r.requestFullscreen ? r.requestFullscreen({ navigationUI: 'hide' }) : null; } catch (e) { p = null; }
+  Promise.resolve(p).then(function () { if (!document.fullscreenElement) { throw new Error('refusé'); } }).catch(function () {
+    document.body.classList.add('immersif');
+    annoncer('Le plein écran n’est pas permis ici : la liseuse prend toute la place. Pour le vrai plein écran, appuyez sur F11.');
+  }).then(majPlein);
+}
+function majPlein() {
+  var actif = !!document.fullscreenElement || document.body.classList.contains('immersif');
+  $('b-plein').querySelector('.txt').textContent = actif ? 'Quitter le plein écran' : 'Plein écran';
+}
+document.addEventListener('fullscreenchange', majPlein);
+$('b-plein').addEventListener('click', plein);
+
+/* ---------- Pages : boutons, clavier, bords, glissement ---------- */
+$('precedent').addEventListener('click', function () { aller(etat.page - 1); });
+$('suivant').addEventListener('click', function () { aller(etat.page + 1); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') { fermerPanneau(); return; }
+  if (ouvert) { return; }
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); aller(etat.page + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); aller(etat.page - 1); }
+  else if (e.key === 'f' || e.key === 'F') { plein(); }
+});
+var depX = null, depY = 0;
+fenetre.addEventListener('pointerdown', function (e) { depX = e.clientX; depY = e.clientY; });
+fenetre.addEventListener('pointerup', function (e) {
+  if (depX === null) { return; }
+  var dx = e.clientX - depX, dy = e.clientY - depY; depX = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) { aller(etat.page + (dx < 0 ? 1 : -1)); return; }
+  if (Math.abs(dx) < 6 && Math.abs(dy) < 6 && !String(window.getSelection())) {
+    var r = fenetre.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+    if (x < 0.25) { aller(etat.page - 1); } else if (x > 0.75) { aller(etat.page + 1); }
+  }
+});
+var derniereTaille = '', minuterieTaille = null;
+function surTaille() { var t = fenetre.clientWidth + 'x' + fenetre.clientHeight; if (t === derniereTaille) { return; } derniereTaille = t; clearTimeout(minuterieTaille); minuterieTaille = setTimeout(remettreEnPage, 80); }
+if (window.ResizeObserver) { new ResizeObserver(surTaille).observe(fenetre); } else { window.addEventListener('resize', surTaille); }
+
+/* ---------- Démarrage ---------- */
+appliquerApparence();
+rendreReglages();
+var img = new Image();
+img.onload = function () { requestAnimationFrame(function () { $('fond').classList.add('visible'); }); };
+img.src = 'liseuse-fond.jpg';
+var params = new URLSearchParams(location.search);
+ouvrir(params.get('livre') || '');
+})();
+</script>
+</body>
+</html>

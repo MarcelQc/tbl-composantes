@@ -237,7 +237,7 @@ textarea:focus{border-color:var(--or);outline:none}
         <button class="fleche-livres" type="button" id="fleche-droite" aria-label="Livres suivants">▶</button>
       </div>
       <div class="barre-liseuse" id="barre-liseuse" hidden>
-        <button class="btn" type="button" id="btn-liseuse" disabled title="La liseuse TBL arrive bientôt">📖 La liseuse TBL</button>
+        <button class="btn" type="button" id="btn-liseuse" title="Ouvrir la liseuse TBL">📖 La liseuse TBL</button>
         <p class="note" id="texte-choix-livre" role="status" aria-live="polite"></p>
       </div>
     </div>
@@ -412,9 +412,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 60382b5 · 2026-11-08 10:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// e1838ce · 2026-11-08 18:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '60382b5 · 2026-11-08 10:46';
+var VERSION_TBL = 'e1838ce · 2026-11-08 18:37';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -845,9 +845,19 @@ function montrerLivreChoisi() {
 function majChoixLivre() {
   var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
   $('texte-choix-livre').textContent = choisi
-    ? 'Livre choisi : « ' + choisi.titre + ' ». Touchez-le de nouveau pour annuler.'
+    ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas encore préparé pour la liseuse' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
 }
+// La liseuse TBL (clé DEV001) : Webliseuse.html s'ouvre dans ce même cadre ; son bouton Retour ramène ici.
+$('btn-liseuse').addEventListener('click', function () {
+  var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
+  if (choisi && choisi.liseuse === false) {
+    $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas encore préparé pour la liseuse. Il le sera bientôt.';
+    return;
+  }
+  tracer('liseuse', { livre: choisi ? choisi.titre : '' });
+  location.href = 'liseuse.html?' + (choisi ? 'livre=' + encodeURIComponent(choisi.id) + '&' : '') + 'v=' + Date.now();
+});
 function carteLivre(l) {
   var carte = el('article', 'livre');
   carte.setAttribute('data-id', l.id);
@@ -871,6 +881,7 @@ function carteLivre(l) {
   carte.appendChild(el('h3', 'titre-livre', l.titre));
   if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
+  if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Bientôt dans la liseuse')); }
   return carte;
 }
 function rendreLivres() {
