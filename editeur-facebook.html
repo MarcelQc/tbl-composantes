@@ -364,7 +364,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'a058806 · 2026-11-08 09:10';
+var VERSION_TBL = '41bf7db · 2026-11-08 09:31';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -725,15 +725,15 @@ async function envoyer() {
   $('b-envoyer').disabled = true;
   var ancien = $('b-envoyer').textContent;
   $('b-envoyer').textContent = sansPaiement ? 'Envoi en cours…' : 'Préparation du paiement…';
+  // Fenêtre de paiement ouverte tout de suite, en « Traitement en cours » (demande de Marcel du 8 novembre 2026).
+  var fenetre = sansPaiement ? null : ouvrirPaiement('');
   var rep = await appeler('envoyer', { champs: champs() }, 60000);
   tracePaiement('réponse du serveur' + (rep && rep.facture ? ' (facture ' + rep.facture + ')' : '') + (rep && rep.ok ? '' : ' : erreur'));
-  var remettreBouton = function () {
-    etat.occupe = false;
-    $('b-envoyer').disabled = false;
-    $('b-envoyer').textContent = ancien;
-  };
-  if (rep && rep.ok && rep.lienPaiement) { reinitialiser(); attendrePaiement(rep, remettreBouton); return; }
-  remettreBouton();
+  etat.occupe = false;
+  $('b-envoyer').disabled = false;
+  $('b-envoyer').textContent = ancien;
+  if (rep && rep.ok && rep.lienPaiement && fenetre) { reinitialiser(); fenetre.demarrer(rep); return; }
+  if (fenetre) { fenetre.fermer(); }
   if (!rep || !rep.ok) {
     $('msg-global').textContent = (rep && rep.message) || 'La demande n’a pas pu être envoyée. Réessayez dans un instant.';
     $('msg-global').hidden = false;
@@ -765,63 +765,86 @@ function couleurCss(nom, defaut) {
   return v || defaut;
 }
 
-// Facture Stripe payée sans quitter le site (demande de Marcel du 8 novembre 2026) : le formulaire de carte de
-// Stripe (Payment Element) est intégré à cette fenêtre ; le numéro de carte reste dans le cadre sécurisé de Stripe.
-// Après le paiement, cette fenêtre demande l'état au serveur (qui le vérifie chez Stripe) jusqu'à « Paiement
-// réussi ». Sans clé publiable ou si Stripe.js ne se charge pas : lien vers la page de la facture, nouvel onglet.
-function attendrePaiement(rep, quandAffichee) {
+// Fenêtre de paiement (demande de Marcel du 8 novembre 2026) : ouverte dès le clic sur « Passer au paiement », avec
+// « Traitement en cours » pendant que le serveur prépare la facture, puis complétée sur place (numéro, montant,
+// formulaire de carte de Stripe). L'espace du formulaire est réservé dès le départ : la fenêtre ne change pas de
+// taille. Le numéro de carte reste dans le cadre sécurisé de Stripe. Après le paiement, la fenêtre demande l'état au
+// serveur (qui le vérifie chez Stripe) jusqu'à « Paiement réussi ». Sans clé publiable ou si Stripe.js ne se charge
+// pas : lien vers la page de la facture, nouvel onglet.
+// totalAffiche : montant du résumé de la page, en attendant celui de la facture. Retourne { demarrer(rep), fermer() }.
+function ouvrirPaiement(totalAffiche) {
   var m = el('div'); m.id = 'modal';
-  // Invisible tant que le formulaire de carte n'est pas prêt : plus de petite fenêtre qui grandit d'un coup.
-  m.style.visibility = 'hidden';
-  var affichee = false;
-  function afficher(raison) {
-    if (affichee) { return; }
-    affichee = true;
-    m.style.visibility = '';
-    tracePaiement('fenêtre de paiement affichée (' + raison + ')');
-    if (quandAffichee) { quandAffichee(); }
-  }
-  setTimeout(function () { afficher('délai de 4 s atteint, formulaire encore en chargement'); }, 4000);
   var voile = el('div', 'voile');
   var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
-  var titre = el('h2', null, 'Votre facture est prête');
+  var titre = el('h2', null, 'Préparation de votre facture');
   var corps = el('div', 'corps');
-  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Si vous fermez cette fenêtre sans payer, la facture est annulée.'));
-  var formulaire = el('div'); formulaire.id = 'carte-stripe'; formulaire.style.margin = '12px 0';
-  corps.appendChild(formulaire);
-  var payerBt = el('button', 'btn', 'Payer ' + argent(rep.total || 0)); payerBt.type = 'button'; payerBt.hidden = true;
+  var intro = el('p', null, 'Traitement en cours : nous préparons votre facture' + (totalAffiche ? ' de ' + totalAffiche : '') + '. Le formulaire de paiement s’affiche dans un instant.');
+  corps.appendChild(intro);
+  // Espace réservé au formulaire de carte, avec l'indicateur de traitement tant qu'il n'est pas prêt.
+  var zone = el('div'); zone.style.cssText = 'min-height:260px;margin:12px 0;position:relative';
+  var attente = el('div'); attente.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center';
+  var roue = el('div', 'spin'); roue.setAttribute('aria-hidden', 'true');
+  attente.appendChild(roue);
+  attente.appendChild(el('p', 'sub', 'Traitement en cours…'));
+  zone.appendChild(attente);
+  var formulaire = el('div'); formulaire.id = 'carte-stripe';
+  zone.appendChild(formulaire);
+  corps.appendChild(zone);
+  var payerBt = el('button', 'btn', 'Payer'); payerBt.type = 'button'; payerBt.hidden = true;
   var zonePayer = el('p'); zonePayer.appendChild(payerBt);
   corps.appendChild(zonePayer);
-  var etatP = el('p', 'sub', 'Chargement du formulaire de paiement…');
+  var etatP = el('p', 'sub', '');
   etatP.setAttribute('role', 'status'); etatP.setAttribute('aria-live', 'polite');
   corps.appendChild(etatP);
-  var secours = el('p', 'sub');
+  var secours = el('p', 'sub'); secours.hidden = true;
   var lienSecours = el('a', null, 'payer sur la page de Stripe (nouvel onglet)');
-  lienSecours.href = rep.lienPaiement; lienSecours.target = '_blank'; lienSecours.rel = 'noopener';
+  lienSecours.target = '_blank'; lienSecours.rel = 'noopener';
   secours.appendChild(document.createTextNode('Ou '));
   secours.appendChild(lienSecours);
   secours.appendChild(document.createTextNode('.'));
   corps.appendChild(secours);
   var btns = el('div', 'btns');
   var fermerBt = el('button', 'btn sec', 'Fermer'); fermerBt.type = 'button';
+  fermerBt.disabled = true; // pendant la préparation de la facture
   btns.appendChild(fermerBt);
   b.appendChild(titre); b.appendChild(corps); b.appendChild(btns);
   m.appendChild(voile); m.appendChild(b);
   document.body.appendChild(m);
+  tracePaiement('fenêtre de paiement ouverte (traitement en cours)');
 
-  // Formulaire de carte intégré, si le serveur a remis le secret de paiement et la clé publiable.
+  var rep = null;
+  var fini = false, enCours = false, debut = Date.now(), minuterie = null;
+  // regle : la demande n'attend plus de paiement (payée, à vérifier ou déjà annulée) ; fermer la fenêtre n'annule rien.
+  var regle = false;
+  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
+  function fermer() { arreter(); m.remove(); }
+  function finAttente() { attente.hidden = true; }
+
   function sansFormulaire() {
-    afficher('sans formulaire intégré');
+    finAttente();
+    zone.style.minHeight = '0';
     formulaire.hidden = true;
     payerBt.hidden = true;
     etatP.textContent = 'Le formulaire de paiement n’a pas pu s’afficher.';
+    secours.hidden = false;
     lienSecours.textContent = 'Payer ma facture sur la page de Stripe (nouvel onglet)';
     secours.firstChild.textContent = '';
     secours.lastChild.textContent = '';
     lienSecours.className = 'btn';
     lienSecours.focus();
   }
-  if (rep.secretPaiement && rep.clePublique) {
+
+  // Réponse du serveur : la facture est prête, le formulaire de carte s'installe dans l'espace réservé.
+  function demarrer(r) {
+    rep = r;
+    titre.textContent = 'Votre facture est prête';
+    intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Si vous fermez cette fenêtre sans payer, la facture est annulée.';
+    payerBt.textContent = 'Payer ' + argent(rep.total || 0);
+    lienSecours.href = rep.lienPaiement;
+    secours.hidden = false;
+    fermerBt.disabled = false;
+    attente.lastChild.textContent = 'Chargement du formulaire de paiement…';
+    if (!(rep.secretPaiement && rep.clePublique)) { sansFormulaire(); return; }
     chargerStripe().then(function (Stripe) {
       if (fini) { return; }
       var stripe = Stripe(rep.clePublique, { locale: 'fr-CA' });
@@ -839,22 +862,22 @@ function attendrePaiement(rep, quandAffichee) {
         },
       });
       var carte = elements.create('payment', { layout: 'tabs' });
-      carte.on('ready', function () { payerBt.hidden = false; etatP.textContent = ''; tracePaiement('formulaire de carte prêt'); afficher('formulaire prêt'); });
+      carte.on('ready', function () { finAttente(); payerBt.hidden = false; etatP.textContent = ''; tracePaiement('formulaire de carte prêt'); });
       carte.on('loaderror', function () { tracePaiement('formulaire de carte en erreur'); sansFormulaire(); });
       carte.mount(formulaire);
       payerBt.addEventListener('click', async function () {
         payerBt.disabled = true;
         fermerBt.disabled = true;
         etatP.textContent = 'Paiement en cours…';
-        var r = await stripe.confirmPayment({
+        var r2 = await stripe.confirmPayment({
           elements: elements,
           redirect: 'if_required',
           confirmParams: { return_url: 'https://www.editionstbl.ca/editeurfacebook' },
         });
         fermerBt.disabled = false;
-        if (r.error) {
+        if (r2.error) {
           payerBt.disabled = false;
-          etatP.textContent = r.error.message || 'Le paiement a été refusé. Vérifiez la carte ou essayez-en une autre.';
+          etatP.textContent = r2.error.message || 'Le paiement a été refusé. Vérifiez la carte ou essayez-en une autre.';
           return;
         }
         payerBt.hidden = true;
@@ -862,19 +885,14 @@ function attendrePaiement(rep, quandAffichee) {
         verifier();
       });
     }).catch(sansFormulaire);
-  } else {
-    sansFormulaire();
+    minuterie = setInterval(verifier, 4000);
+    document.addEventListener('visibilitychange', verifier);
   }
 
-  var fini = false, enCours = false, debut = Date.now(), minuterie = null;
-  // regle : la demande n'attend plus de paiement (payée, à vérifier ou déjà annulée) ; fermer la fenêtre n'annule rien.
-  var regle = false;
-  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
-  function fermer() { arreter(); m.remove(); }
   // Fermer sans avoir payé : la facture Stripe est annulée, sans courriel (décision de Marcel du 8 novembre 2026).
   // Si elle a été payée entre-temps (par exemple dans l'onglet de Stripe), le serveur la confirme au lieu de l'annuler.
   fermerBt.addEventListener('click', async function () {
-    if (regle) { fermer(); return; }
+    if (regle || !rep) { fermer(); return; }
     var choix = await modale({
       titre: 'Fermer sans payer ?',
       corps: 'La facture ' + (rep.facture || '') + ' sera annulée et vous ne recevrez aucun courriel. Vous pourrez envoyer une nouvelle demande quand vous le voudrez.',
@@ -907,7 +925,7 @@ function attendrePaiement(rep, quandAffichee) {
     toast('Paiement réussi', 'ok');
   }
   async function verifier() {
-    if (fini || enCours || document.hidden) { return; }
+    if (fini || enCours || document.hidden || !rep) { return; }
     if (Date.now() - debut > 30 * 60 * 1000) {
       arreter();
       etatP.textContent = 'Nous n’avons pas encore reçu la confirmation du paiement. Si vous avez payé, elle paraîtra sous peu dans « Mes publicités précédentes » et vous recevrez un courriel.';
@@ -929,8 +947,7 @@ function attendrePaiement(rep, quandAffichee) {
       etatP.textContent = 'Cette facture a été annulée. Envoyez une nouvelle demande pour obtenir une autre facture.';
     }
   }
-  minuterie = setInterval(verifier, 4000);
-  document.addEventListener('visibilitychange', verifier);
+  return { demarrer: demarrer, fermer: fermer };
 }
 
 async function conditions() {
