@@ -364,7 +364,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '2e161c6 · 2026-11-08 09:44';
+var VERSION_TBL = 'f697e5c · 2026-11-08 09:46';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -824,7 +824,10 @@ function ouvrirPaiement(totalAffiche) {
   var fini = false, enCours = false, debut = Date.now(), minuterie = null;
   // regle : la demande n'attend plus de paiement (payée, à vérifier ou déjà annulée) ; fermer la fenêtre n'annule rien.
   var regle = false;
-  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
+  // paiementEnCours : bouton Payer cliqué, réponse de Stripe attendue ; paiementAccepte : carte acceptée par Stripe.
+  var paiementEnCours = false, paiementAccepte = false;
+  // Fin de l'attente (payée, à vérifier, annulée ou délai de 30 minutes) : Fermer redevient actif.
+  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); fermerBt.disabled = false; }
   function fermer() { arreter(); m.remove(); }
   function finAttente() { attente.hidden = true; }
 
@@ -874,6 +877,9 @@ function ouvrirPaiement(totalAffiche) {
       carte.on('loaderror', function () { tracePaiement('formulaire de carte en erreur'); sansFormulaire(); });
       carte.mount(formulaire);
       payerBt.addEventListener('click', async function () {
+        // Pendant tout le traitement (paiement chez Stripe, puis confirmation), Fermer reste désactivé : un clic ne doit
+        // jamais pouvoir annuler une facture en train d'être payée (demande de Marcel du 8 novembre 2026).
+        paiementEnCours = true;
         payerBt.disabled = true;
         fermerBt.disabled = true;
         etatP.textContent = 'Paiement en cours…';
@@ -882,12 +888,17 @@ function ouvrirPaiement(totalAffiche) {
           redirect: 'if_required',
           confirmParams: { return_url: 'https://www.editionstbl.ca/editeurfacebook' },
         });
-        fermerBt.disabled = false;
         if (r2.error) {
+          // Carte refusée : on peut réessayer ou fermer (et annuler la facture).
+          paiementEnCours = false;
+          fermerBt.disabled = false;
           payerBt.disabled = false;
           etatP.textContent = r2.error.message || 'Le paiement a été refusé. Vérifiez la carte ou essayez-en une autre.';
           return;
         }
+        // Carte acceptée : Fermer reste désactivé jusqu'à la confirmation (voir arreter), et ne proposera plus
+        // d'annuler la facture.
+        paiementAccepte = true;
         payerBt.hidden = true;
         etatP.textContent = 'Paiement accepté. Confirmation en cours…';
         verifier();
@@ -901,8 +912,8 @@ function ouvrirPaiement(totalAffiche) {
   // Si elle a été payée entre-temps (par exemple dans l'onglet de Stripe), le serveur la confirme au lieu de l'annuler.
   var confirmationOuverte = false;
   fermerBt.addEventListener('click', async function () {
-    if (regle || !rep) { fermer(); return; }
-    if (confirmationOuverte) { return; }
+    if (regle || !rep || paiementAccepte) { fermer(); return; }
+    if (paiementEnCours || confirmationOuverte) { return; }
     confirmationOuverte = true;
     var choix = await modale({
       titre: 'Fermer sans payer ?',
