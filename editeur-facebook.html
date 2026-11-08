@@ -353,7 +353,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '8d8d567 · 2026-11-07 16:56';
+var VERSION_TBL = 'a71d372 · 2026-11-08 06:44';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -687,7 +687,7 @@ async function envoyer() {
   var sansPaiement = etat.d.admin;
   var corps = el('div');
   corps.appendChild(el('p', null, $('c-lien').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
-  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture s’ouvre ensuite : vous la payez par carte sur la page sécurisée de Stripe. Vous la recevez aussi par courriel. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
+  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture est ensuite préparée : vous la payez par carte sur la page sécurisée de Stripe, dans un nouvel onglet. Vous la recevez aussi par courriel. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
   var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
   if (r !== 'ok') { return; }
   etat.occupe = true;
@@ -704,10 +704,74 @@ async function envoyer() {
     $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  if (rep.lienPaiement || rep.checkoutId) { toast('Ouverture de votre facture…', 'ok'); return; }
+  if (rep.lienPaiement) { reinitialiser(); attendrePaiement(rep); return; }
   if (rep.demandes) { etat.d.demandes = rep.demandes; rendreAnciennes(); }
   reinitialiser();
   await modale({ titre: 'Demande envoyée', corps: 'Merci ! L’équipe TBL prépare l’annonce et vous la soumettra pour approbation.' + (rep.facture ? ' Votre facture ' + rep.facture + ' est dans l’onglet Documents de l’Espace Auteurs.' : '') });
+}
+
+// Facture Stripe : la page de paiement de Stripe ne ramène pas au site. On l'ouvre dans un nouvel onglet (lien,
+// donc jamais bloqué comme une fenêtre surgissante) et cette fenêtre demande l'état du paiement toutes les
+// 4 secondes, et dès que l'onglet TBL redevient visible, jusqu'à « Paiement réussi » (30 minutes au plus).
+function attendrePaiement(rep) {
+  var m = el('div'); m.id = 'modal';
+  var voile = el('div', 'voile');
+  var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
+  var titre = el('h2', null, 'Votre facture est prête');
+  var corps = el('div', 'corps');
+  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Le paiement se fait par carte dans un nouvel onglet, sur la page sécurisée de Stripe. Vous avez aussi reçu la facture par courriel.'));
+  var payer = el('a', 'btn', 'Payer ma facture');
+  payer.href = rep.lienPaiement; payer.target = '_blank'; payer.rel = 'noopener';
+  var zone = el('p'); zone.appendChild(payer);
+  corps.appendChild(zone);
+  var etatP = el('p', 'sub', 'En attente de votre paiement… Revenez ensuite à cet onglet : il se met à jour tout seul.');
+  etatP.setAttribute('role', 'status'); etatP.setAttribute('aria-live', 'polite');
+  corps.appendChild(etatP);
+  var btns = el('div', 'btns');
+  var fermerBt = el('button', 'btn sec', 'Fermer'); fermerBt.type = 'button';
+  btns.appendChild(fermerBt);
+  b.appendChild(titre); b.appendChild(corps); b.appendChild(btns);
+  m.appendChild(voile); m.appendChild(b);
+  document.body.appendChild(m);
+  payer.focus();
+
+  var fini = false, enCours = false, debut = Date.now(), minuterie = null;
+  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
+  function fermer() { arreter(); m.remove(); }
+  fermerBt.addEventListener('click', fermer);
+  function reussi(r) {
+    arreter();
+    titre.textContent = 'Paiement réussi';
+    corps.innerHTML = '';
+    corps.appendChild(el('p', null, 'Merci ! Votre facture ' + (r.facture || rep.facture || '') + ' est payée. L’équipe TBL prépare votre annonce et vous la soumettra pour approbation.'));
+    corps.appendChild(el('p', 'sub', 'La facture payée est dans l’onglet Documents de l’Espace Auteurs. Vous pouvez fermer l’onglet de Stripe.'));
+    fermerBt.className = 'btn'; fermerBt.focus();
+    if (r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
+    toast('Paiement réussi', 'ok');
+  }
+  async function verifier() {
+    if (fini || enCours || document.hidden) { return; }
+    if (Date.now() - debut > 30 * 60 * 1000) {
+      arreter();
+      etatP.textContent = 'Nous n’avons pas encore reçu la confirmation du paiement. Si vous avez payé, elle paraîtra sous peu dans « Mes publicités précédentes » et vous recevrez un courriel.';
+      return;
+    }
+    enCours = true;
+    var r = await appeler('statut', { demandeId: rep.demandeId }, 15000);
+    enCours = false;
+    if (fini || !r || !r.ok) { return; }
+    if (r.paye) { reussi(r); return; }
+    if (r.statut === 'À vérifier') {
+      arreter();
+      etatP.textContent = 'Le paiement est reçu, mais son montant doit être vérifié par l’équipe TBL. Nous vous écrirons.';
+      if (r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
+    } else if (r.statut === 'Abandonnée') {
+      arreter();
+      etatP.textContent = 'Cette facture a été annulée. Envoyez une nouvelle demande pour obtenir une autre facture.';
+    }
+  }
+  minuterie = setInterval(verifier, 4000);
+  document.addEventListener('visibilitychange', verifier);
 }
 
 async function conditions() {
