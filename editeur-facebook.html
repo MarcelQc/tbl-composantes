@@ -275,6 +275,9 @@ var TAILLE_MAX_IMAGE = 4 * 1024 * 1024;
 var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 var etat = { d: null, type: 'global', image: '', imageReprise: '', couverture: '', occupe: false };
+// Trace du passage au paiement (console du navigateur, F12) : « [EDF paiement] +1234 ms étape ».
+var t0Paiement = 0;
+function tracePaiement(etape) { console.log('[EDF paiement] +' + Math.round(performance.now() - t0Paiement) + ' ms ' + etape); }
 
 /* ---------- Outils ---------- */
 function $(id) { return document.getElementById(id); }
@@ -361,7 +364,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '1adc85e · 2026-11-08 08:26';
+var VERSION_TBL = 'a058806 · 2026-11-08 09:10';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -714,21 +717,29 @@ async function envoyer() {
   corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture est ensuite préparée : vous la payez par carte dans la fenêtre suivante, de façon sécurisée par Stripe. Une fois payée, elle vous est envoyée par courriel et déposée dans l’onglet Documents. Sans paiement, elle est annulée. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
   var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
   if (r !== 'ok') { return; }
+  t0Paiement = performance.now();
+  tracePaiement('clic sur « ' + (sansPaiement ? 'Envoyer' : 'Passer au paiement') + ' »');
+  // Stripe.js se charge pendant que le serveur prépare la facture (gagne le temps du chargement).
+  if (!sansPaiement) { chargerStripe().then(function () { tracePaiement('Stripe.js chargé'); }).catch(function () { tracePaiement('Stripe.js non chargé'); }); }
   etat.occupe = true;
   $('b-envoyer').disabled = true;
   var ancien = $('b-envoyer').textContent;
-  $('b-envoyer').textContent = 'Envoi en cours…';
+  $('b-envoyer').textContent = sansPaiement ? 'Envoi en cours…' : 'Préparation du paiement…';
   var rep = await appeler('envoyer', { champs: champs() }, 60000);
-  etat.occupe = false;
-  $('b-envoyer').disabled = false;
-  $('b-envoyer').textContent = ancien;
+  tracePaiement('réponse du serveur' + (rep && rep.facture ? ' (facture ' + rep.facture + ')' : '') + (rep && rep.ok ? '' : ' : erreur'));
+  var remettreBouton = function () {
+    etat.occupe = false;
+    $('b-envoyer').disabled = false;
+    $('b-envoyer').textContent = ancien;
+  };
+  if (rep && rep.ok && rep.lienPaiement) { reinitialiser(); attendrePaiement(rep, remettreBouton); return; }
+  remettreBouton();
   if (!rep || !rep.ok) {
     $('msg-global').textContent = (rep && rep.message) || 'La demande n’a pas pu être envoyée. Réessayez dans un instant.';
     $('msg-global').hidden = false;
     $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  if (rep.lienPaiement) { reinitialiser(); attendrePaiement(rep); return; }
   if (rep.demandes) { etat.d.demandes = rep.demandes; rendreAnciennes(); }
   reinitialiser();
   await modale({ titre: 'Demande envoyée', corps: 'Merci ! L’équipe TBL prépare l’annonce et vous la soumettra pour approbation.' + (rep.facture ? ' Votre facture ' + rep.facture + ' est dans l’onglet Documents de l’Espace Auteurs.' : '') });
@@ -758,8 +769,19 @@ function couleurCss(nom, defaut) {
 // Stripe (Payment Element) est intégré à cette fenêtre ; le numéro de carte reste dans le cadre sécurisé de Stripe.
 // Après le paiement, cette fenêtre demande l'état au serveur (qui le vérifie chez Stripe) jusqu'à « Paiement
 // réussi ». Sans clé publiable ou si Stripe.js ne se charge pas : lien vers la page de la facture, nouvel onglet.
-function attendrePaiement(rep) {
+function attendrePaiement(rep, quandAffichee) {
   var m = el('div'); m.id = 'modal';
+  // Invisible tant que le formulaire de carte n'est pas prêt : plus de petite fenêtre qui grandit d'un coup.
+  m.style.visibility = 'hidden';
+  var affichee = false;
+  function afficher(raison) {
+    if (affichee) { return; }
+    affichee = true;
+    m.style.visibility = '';
+    tracePaiement('fenêtre de paiement affichée (' + raison + ')');
+    if (quandAffichee) { quandAffichee(); }
+  }
+  setTimeout(function () { afficher('délai de 4 s atteint, formulaire encore en chargement'); }, 4000);
   var voile = el('div', 'voile');
   var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
   var titre = el('h2', null, 'Votre facture est prête');
@@ -789,6 +811,7 @@ function attendrePaiement(rep) {
 
   // Formulaire de carte intégré, si le serveur a remis le secret de paiement et la clé publiable.
   function sansFormulaire() {
+    afficher('sans formulaire intégré');
     formulaire.hidden = true;
     payerBt.hidden = true;
     etatP.textContent = 'Le formulaire de paiement n’a pas pu s’afficher.';
@@ -816,7 +839,8 @@ function attendrePaiement(rep) {
         },
       });
       var carte = elements.create('payment', { layout: 'tabs' });
-      carte.on('ready', function () { payerBt.hidden = false; etatP.textContent = ''; });
+      carte.on('ready', function () { payerBt.hidden = false; etatP.textContent = ''; tracePaiement('formulaire de carte prêt'); afficher('formulaire prêt'); });
+      carte.on('loaderror', function () { tracePaiement('formulaire de carte en erreur'); sansFormulaire(); });
       carte.mount(formulaire);
       payerBt.addEventListener('click', async function () {
         payerBt.disabled = true;
