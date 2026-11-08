@@ -137,16 +137,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 
 /* Fenêtre (Templates\confirm-modal.html) et avis */
-#modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+/* Règle TBL (8 novembre 2026) : une fenêtre ou un message s'affiche à la hauteur du bouton cliqué. La composante est
+   un cadre Wix à hauteur fixe dans une page qui défile : centrer dans le cadre l'enverrait hors de la vue. Le haut de
+   la boîte est placé par placerFenetre(). */
+#modal{position:fixed;inset:0;z-index:100;display:block;padding:0 20px}
 #modal .voile{position:absolute;inset:0;background:rgba(0,0,0,.72)}
-#modal .boite{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto}
+#modal .boite{position:absolute;left:50%;top:20px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md);width:min(620px,100%);max-height:calc(100vh - 40px);overflow:auto}
 #modal h2{font-family:var(--tbl-font-heading);margin:0 0 10px;font-size:1.15rem}
 #modal .corps{color:var(--muted);font-size:.95rem}
 #modal .corps ul{padding-left:20px}
 #modal .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
 #modal .btns .btn.sec{order:-1}
 #modal textarea{width:100%;min-height:120px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px}
-#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
+#toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);z-index:120;background:var(--card);border:1px solid var(--line);border-radius:var(--tbl-radius-btn);padding:10px 18px;max-width:min(560px,calc(100% - 24px));box-shadow:0 8px 30px rgba(0,0,0,.6)}
 #toast.ok{border-color:var(--ok)}
 #toast.mal{border-color:var(--accent)}
 </style>
@@ -172,8 +175,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   <main class="wrap">
     <div id="bandeau-auteur" hidden></div>
-    <div id="msg-global" role="alert" hidden></div>
-
     <form id="formulaire" novalidate>
       <!-- 1. La campagne (l'ancienne section « Le livre » est retirée : une annonce peut montrer plusieurs livres,
            selon l'image, demande de Marcel du 4 novembre 2026) -->
@@ -241,6 +242,8 @@ button,input,select,textarea{font:inherit;color:inherit}
         <h2 id="t-recap"><span class="num">3.</span> Récapitulatif</h2>
         <p class="sub">Calculé automatiquement. Le serveur refait le calcul avant le paiement.</p>
         <table class="recap"><tbody id="recap"></tbody></table>
+        <!-- Erreurs de l'envoi : à côté du bouton (règle TBL du 8 novembre 2026) -->
+        <div id="msg-global" role="alert" hidden></div>
         <div class="envoi">
           <label class="case"><input type="checkbox" id="c-conditions"><span>J’ai lu et j’accepte les <button type="button" class="lien" id="b-conditions">conditions du service</button>.</span></label>
           <button type="button" class="btn" id="b-envoyer">Payer et envoyer la demande</button>
@@ -331,6 +334,35 @@ function retourEspace() {
 }
 
 /* ---------- Fenêtres et avis (Templates\confirm-modal.html) ---------- */
+// Règle TBL (8 novembre 2026) : une fenêtre ou un message s'ouvre à la hauteur du bouton qui l'a demandé. On garde la
+// position du dernier élément cliqué (en coordonnées du document, car il peut disparaître ensuite).
+var ancre = { haut: null, bas: null };
+document.addEventListener('click', function (e) {
+  var cible = (e.target && e.target.closest && e.target.closest('button, a, input, select, label, [role="button"]')) || e.target;
+  if (!cible || !cible.getBoundingClientRect) { return; }
+  var r = cible.getBoundingClientRect();
+  if (!r.height) { return; }
+  ancre.haut = r.top + window.scrollY;
+  ancre.bas = r.bottom + window.scrollY;
+}, true);
+function hautAncre() { return ancre.haut === null ? 20 : ancre.haut - window.scrollY; }
+function basAncre() { return ancre.bas === null ? 20 : ancre.bas - window.scrollY; }
+// Place la boîte d'une fenêtre à la hauteur du bouton cliqué, sans dépasser le cadre ; suit les changements de taille.
+function placerFenetre(boite) {
+  var haut = hautAncre();
+  function placer() {
+    var h = boite.offsetHeight;
+    var max = Math.max(10, window.innerHeight - h - 10);
+    boite.style.top = Math.min(Math.max(10, haut - 40), max) + 'px';
+  }
+  placer();
+  if (window.ResizeObserver) { new ResizeObserver(placer).observe(boite); }
+}
+// Montre un élément de la page (message d'erreur) : il est déjà près du bouton, on demande aussi à la page Wix de
+// défiler si besoin.
+function montrerPres(element) {
+  if (element && element.scrollIntoView) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
 function modale(o) {
   return new Promise(function (ok) {
     var m = el('div'); m.id = 'modal';
@@ -353,18 +385,20 @@ function modale(o) {
     document.addEventListener('keydown', echap);
     m.appendChild(voile); m.appendChild(b);
     document.body.appendChild(m);
-    var premier = b.querySelector('textarea, .btns .btn'); if (premier) { premier.focus(); }
+    placerFenetre(b);
+    var premier = b.querySelector('textarea, .btns .btn'); if (premier) { premier.focus({ preventScroll: true }); }
   });
 }
 var minuterieToast = null;
 function toast(texte, classe) {
   var t = $('toast'); if (!t) { t = el('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
   t.className = classe || ''; t.textContent = texte; t.hidden = false;
+  t.style.top = Math.min(Math.max(10, basAncre() + 10), Math.max(10, window.innerHeight - t.offsetHeight - 10)) + 'px';
   clearTimeout(minuterieToast); minuterieToast = setTimeout(function () { t.hidden = true; }, 4500);
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'f697e5c · 2026-11-08 09:46';
+var VERSION_TBL = '8adb805 · 2026-11-08 10:08';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -675,7 +709,8 @@ function repeter(x) {
   }
   $('c-conditions').checked = false;
   calculer();
-  $('haut').scrollIntoView({ behavior: 'smooth' });
+  // Le formulaire est plus haut : la page Wix défile jusqu'au haut de la composante (le cadre lui-même ne défile pas).
+  if (EN_WIX && window.parent !== window) { window.parent.postMessage({ type: 'editeurFacebookHaut' }, '*'); } else { $('haut').scrollIntoView({ behavior: 'smooth' }); }
   if (!lienRepris) { toast('Formulaire rempli. Choisissez la page où mène l’annonce, puis envoyez.', 'mal'); return; }
   toast('Formulaire rempli. Relisez, modifiez au besoin, puis envoyez.', 'ok');
 }
@@ -714,7 +749,7 @@ async function envoyer() {
   if (erreurs.length) {
     $('msg-global').textContent = erreurs.join(' ');
     $('msg-global').hidden = false;
-    $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    montrerPres($('msg-global'));
     return;
   }
   var sansPaiement = etat.d.admin;
@@ -745,7 +780,7 @@ async function envoyer() {
   if (!rep || !rep.ok) {
     $('msg-global').textContent = (rep && rep.message) || 'La demande n’a pas pu être envoyée. Réessayez dans un instant.';
     $('msg-global').hidden = false;
-    $('msg-global').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    montrerPres($('msg-global'));
     return;
   }
   if (rep.demandes) { etat.d.demandes = rep.demandes; rendreAnciennes(); }
@@ -818,6 +853,7 @@ function ouvrirPaiement(totalAffiche) {
   b.appendChild(titre); b.appendChild(corps); b.appendChild(btns);
   m.appendChild(voile); m.appendChild(b);
   document.body.appendChild(m);
+  placerFenetre(b);
   tracePaiement('fenêtre de paiement ouverte (traitement en cours)');
 
   var rep = null;
