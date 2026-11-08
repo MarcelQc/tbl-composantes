@@ -398,7 +398,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = '8adb805 · 2026-11-08 10:08';
+var VERSION_TBL = '60382b5 · 2026-11-08 10:46';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -439,6 +439,43 @@ async function demarrer() {
   rendreAnciennes();
   montrer('vue');
   ajusterHauteurAnciennes(); // les hauteurs ne se mesurent qu'une fois la page visible
+  if (d.factureEnCours) { proposerFactureEnCours(d.factureEnCours); }
+}
+
+// Facture restée en cours de paiement : l'auteur a fermé l'onglet pendant le paiement (demande de Marcel du
+// 8 novembre 2026). Le serveur l'a vérifiée chez Stripe à l'ouverture ; elle est encore ouverte. L'auteur la reprend
+// (même facture, même numéro) ou l'annule. S'il ferme l'avis sans choisir, rien ne change : le filet l'annule une
+// heure après le début du paiement.
+async function proposerFactureEnCours(fc) {
+  var corps = el('div');
+  corps.appendChild(el('p', null, 'Votre facture ' + (fc.facture || '') + ' de ' + argent(fc.total || 0) + (fc.livreTitre ? ' pour « ' + fc.livreTitre + ' »' : '') + ' n’a pas encore été payée' + (fc.date ? ' (paiement commencé le ' + dateLongue(fc.date) + ')' : '') + '.'));
+  corps.appendChild(el('p', 'sub', 'Vous pouvez la payer maintenant ou l’annuler. Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
+  var choix = await modale({
+    titre: 'Une facture attend votre paiement',
+    corps: corps,
+    boutons: [{ id: 'annuler', libelle: 'Annuler la facture' }, { id: 'payer', libelle: 'Reprendre le paiement', principal: true }]
+  });
+  if (choix === 'payer') {
+    t0Paiement = performance.now();
+    tracePaiement('reprise du paiement de la facture ' + (fc.facture || ''));
+    chargerStripe().catch(function () {});
+    var fenetre = ouvrirPaiement('');
+    var r = await appeler('reprendre', { demandeId: fc.demandeId }, 30000);
+    tracePaiement('réponse du serveur (reprise)' + (r && r.ok ? '' : ' : erreur'));
+    if (r && r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
+    if (r && r.ok && r.lienPaiement) { fenetre.demarrer(r); return; }
+    fenetre.fermer();
+    if (r && r.paye) { toast('Votre facture ' + (fc.facture || '') + ' est déjà payée. Merci !', 'ok'); return; }
+    toast((r && r.message) || 'Le paiement n’a pas pu être repris. Réessayez dans un instant.', 'mal');
+  } else if (choix === 'annuler') {
+    var a = await appeler('annuler', { demandeId: fc.demandeId }, 20000);
+    if (a && a.demandes) { etat.d.demandes = a.demandes; rendreAnciennes(); }
+    if (a && a.ok) {
+      toast(a.paye ? 'Cette facture était déjà payée. Merci !' : 'Facture ' + (fc.facture || '') + ' annulée.', 'ok');
+    } else {
+      toast((a && a.message) || 'L’annulation n’a pas pu être faite. Réessayez dans un instant.', 'mal');
+    }
+  }
 }
 
 // Liens permis, regroupés (le serveur refuse toute autre adresse) : livres et coffrets de l'auteur, puis TBL.
