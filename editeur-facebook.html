@@ -361,7 +361,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'cd729df · 2026-11-08 07:57';
+var VERSION_TBL = '1adc85e · 2026-11-08 08:26';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -711,7 +711,7 @@ async function envoyer() {
   var sansPaiement = etat.d.admin;
   var corps = el('div');
   corps.appendChild(el('p', null, $('c-lien').selectedOptions[0].textContent + ' : ' + $('r-val').textContent + ', ' + $('r-periode').textContent.toLowerCase() + '.'));
-  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture est ensuite préparée : vous la payez par carte sur la page sécurisée de Stripe, dans un nouvel onglet. Vous la recevez aussi par courriel. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
+  corps.appendChild(el('p', null, sansPaiement ? 'La demande est envoyée à l’équipe TBL, qui préparera l’annonce et vous la soumettra.' : 'Votre facture est ensuite préparée : vous la payez par carte dans la fenêtre suivante, de façon sécurisée par Stripe. Une fois payée, elle vous est envoyée par courriel et déposée dans l’onglet Documents. Sans paiement, elle est annulée. La demande est transmise à l’équipe TBL dès que le paiement est confirmé.'));
   var r = await modale({ titre: sansPaiement ? 'Envoyer la demande ?' : 'Payer et envoyer la demande ?', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: sansPaiement ? 'Envoyer' : 'Passer au paiement', principal: true }] });
   if (r !== 'ok') { return; }
   etat.occupe = true;
@@ -764,7 +764,7 @@ function attendrePaiement(rep) {
   var b = el('div', 'boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
   var titre = el('h2', null, 'Votre facture est prête');
   var corps = el('div', 'corps');
-  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Vous avez aussi reçu la facture par courriel.'));
+  corps.appendChild(el('p', null, 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Si vous fermez cette fenêtre sans payer, la facture est annulée.'));
   var formulaire = el('div'); formulaire.id = 'carte-stripe'; formulaire.style.margin = '12px 0';
   corps.appendChild(formulaire);
   var payerBt = el('button', 'btn', 'Payer ' + argent(rep.total || 0)); payerBt.type = 'button'; payerBt.hidden = true;
@@ -843,10 +843,36 @@ function attendrePaiement(rep) {
   }
 
   var fini = false, enCours = false, debut = Date.now(), minuterie = null;
+  // regle : la demande n'attend plus de paiement (payée, à vérifier ou déjà annulée) ; fermer la fenêtre n'annule rien.
+  var regle = false;
   function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); }
   function fermer() { arreter(); m.remove(); }
-  fermerBt.addEventListener('click', fermer);
+  // Fermer sans avoir payé : la facture Stripe est annulée, sans courriel (décision de Marcel du 8 novembre 2026).
+  // Si elle a été payée entre-temps (par exemple dans l'onglet de Stripe), le serveur la confirme au lieu de l'annuler.
+  fermerBt.addEventListener('click', async function () {
+    if (regle) { fermer(); return; }
+    var choix = await modale({
+      titre: 'Fermer sans payer ?',
+      corps: 'La facture ' + (rep.facture || '') + ' sera annulée et vous ne recevrez aucun courriel. Vous pourrez envoyer une nouvelle demande quand vous le voudrez.',
+      boutons: [{ id: 'non', libelle: 'Continuer le paiement' }, { id: 'ok', libelle: 'Annuler la facture', principal: true }]
+    });
+    if (choix !== 'ok') { return; }
+    fermerBt.disabled = true; payerBt.disabled = true;
+    etatP.textContent = 'Annulation de la facture…';
+    var r = await appeler('annuler', { demandeId: rep.demandeId }, 20000);
+    fermerBt.disabled = false;
+    if (r && r.ok && r.paye) { reussi(r); return; }
+    if (r && r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
+    if (!r || !r.ok) {
+      payerBt.disabled = false;
+      etatP.textContent = (r && r.message) || 'L’annulation n’a pas pu être faite. Réessayez dans un instant.';
+      return;
+    }
+    fermer();
+    toast('Facture ' + (rep.facture || '') + ' annulée', 'ok');
+  });
   function reussi(r) {
+    regle = true;
     arreter();
     titre.textContent = 'Paiement réussi';
     corps.innerHTML = '';
@@ -869,10 +895,12 @@ function attendrePaiement(rep) {
     if (fini || !r || !r.ok) { return; }
     if (r.paye) { reussi(r); return; }
     if (r.statut === 'À vérifier') {
+      regle = true;
       arreter();
       etatP.textContent = 'Le paiement est reçu, mais son montant doit être vérifié par l’équipe TBL. Nous vous écrirons.';
       if (r.demandes) { etat.d.demandes = r.demandes; rendreAnciennes(); }
     } else if (r.statut === 'Abandonnée') {
+      regle = true;
       arreter();
       etatP.textContent = 'Cette facture a été annulée. Envoyez une nouvelle demande pour obtenir une autre facture.';
     }
