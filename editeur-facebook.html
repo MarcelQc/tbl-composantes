@@ -284,6 +284,14 @@ function cents(v) { var n = Number(String(v || '').replace(',', '.').replace(/\s
 function plusJours(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function dateLongue(iso) { var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Number(m[3]) + (m[3] === '01' ? 'er' : '') + ' ' + MOIS[Number(m[2]) - 1] + ' ' + m[1] : ''; }
 function dateCourte(iso) { return iso ? new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Toronto' }).format(new Date(iso)) : ''; }
+// Liste « Mes publicités précédentes » : « 8 au 17 nov. », « 28 nov. au 7 déc. » (l'année est dans la colonne Demande).
+function periodeCourte(debut, fin) {
+  if (!debut || !fin) { return ''; }
+  var f = function (iso) { return new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')); };
+  if (debut === fin) { return f(debut); }
+  var a = debut.split('-'), b = fin.split('-');
+  return (a[0] === b[0] && a[1] === b[1] ? Number(a[2]) : f(debut)) + ' au ' + f(fin);
+}
 // « Du 3 au 12 novembre 2026 », « Du 28 novembre au 7 décembre 2026 », ou une seule journée.
 function periode(debut, fin) {
   if (!debut || !fin) { return ''; }
@@ -353,7 +361,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'a71d372 · 2026-11-08 06:44';
+var VERSION_TBL = 'fe5294a · 2026-11-08 06:59';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -571,9 +579,11 @@ function rendreAnciennes() {
   var liste = etat.d.demandes || [];
   $('titre-anciennes').textContent = etat.d.pourAutre ? 'Publicités précédentes de l’auteur' : 'Mes publicités précédentes';
   if (!liste.length) { zone.appendChild(el('div', 'lg-vide', 'Aucune publicité pour le moment.')); return; }
-  var colonnes = ['Demande', 'Diffusion', 'Page annoncée', 'Budget', 'Jours', 'Région', 'Image', 'Statut', ''];
+  // Sans colonne Image (demande de Marcel du 8 novembre 2026) : la grille tient dans la largeur, sans défilement
+  // horizontal. Le bouton Répéter reprend quand même l'image de la publicité.
+  var colonnes = ['Demande', 'Diffusion', 'Page annoncée', 'Budget', 'Jours', 'Région', 'Statut', ''];
   var grille = el('div', 'lg-grille');
-  grille.style.setProperty('--lg-colonnes', 'minmax(90px,auto) minmax(150px,1.2fr) minmax(140px,1.5fr) minmax(110px,auto) 60px minmax(80px,auto) minmax(110px,auto) minmax(120px,auto) 104px');
+  grille.style.setProperty('--lg-colonnes', 'minmax(84px,auto) minmax(130px,1fr) minmax(130px,1.6fr) minmax(110px,auto) 58px minmax(70px,auto) minmax(120px,auto) 96px');
   var entete = el('div', 'lg-entete');
   colonnes.forEach(function (c) { entete.appendChild(el('div', null, c)); });
   grille.appendChild(entete);
@@ -581,12 +591,12 @@ function rendreAnciennes() {
     // La page annoncée est la colonne principale : sur un téléphone, elle passe en tête de la ligne (grid-row 1).
     var ligne = el('div', 'lg-ligne');
     ligne.appendChild(el('div', 'lg-autre', dateCourte(x.date)));
-    ligne.appendChild(el('div', 'lg-autre', periode(x.dateDebut, x.dateFin)));
+    var diffusion = el('div', 'lg-autre', periodeCourte(x.dateDebut, x.dateFin)); diffusion.title = periode(x.dateDebut, x.dateFin);
+    ligne.appendChild(diffusion);
     ligne.appendChild(el('div', 'lg-principal', x.livreTitre));
     ligne.appendChild(el('div', 'lg-autre', texteBudgetDemande(x)));
     ligne.appendChild(el('div', 'lg-autre', x.nbJours + ' j'));
     ligne.appendChild(el('div', 'lg-autre', x.region));
-    ligne.appendChild(el('div', 'lg-autre', x.imageChoix === 'tbl' ? 'Produite par TBL' : (x.aImage ? 'Image fournie' : 'Aucune')));
     var st = el('div', 'lg-autre'); st.appendChild(el('span', 'pastille ' + (STATUTS[x.statut] || ''), x.statut)); ligne.appendChild(st);
     var actions = el('div', 'lg-actions');
     var b = el('button', 'btn sec petit', 'Répéter'); b.type = 'button'; b.title = 'Remplir le formulaire avec cette publicité, à la date d’aujourd’hui';
