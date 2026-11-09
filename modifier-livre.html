@@ -704,13 +704,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=5eb726c · 2026-11-09 07:53"></script>
+<script src="paiement-stripe.js?v=e67432c · 2026-11-09 08:32"></script>
 <script>
 // ===== Version publiée =====
-// 5eb726c · 2026-11-09 07:53 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// e67432c · 2026-11-09 08:32 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '5eb726c · 2026-11-09 07:53';
+var VERSION_TBL = 'e67432c · 2026-11-09 08:32';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3186,10 +3186,11 @@ async function proposerFactureEnCours(fc) {
   corps.appendChild(paragraphe('Votre facture ' + (fc.facture || '') + ' de ' + argent(fc.total || 0) + ' n’a pas encore été payée'
     + (fc.date ? ' (paiement commencé le ' + new Date(fc.date).toLocaleString('fr-CA', { dateStyle: 'long', timeStyle: 'short' }) + ')' : '') + '.'));
   corps.appendChild(paragraphe('Vous pouvez la payer maintenant ou l’annuler. Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
-  var choix = await modale({
+  var options = {
     titre: 'Une facture attend votre paiement', corps: corps,
-    boutons: [{ id: 'payer', libelle: 'Reprendre le paiement', principal: true }, { id: 'annuler', libelle: 'Annuler la facture' }]
-  });
+    boutons: [{ id: 'annuler', libelle: 'Annuler la facture' }, { id: 'payer', libelle: 'Reprendre le paiement', principal: true }]
+  };
+  var choix = window.TblPaiement ? await window.TblPaiement.choisir(options) : await modale(options);
   if (choix === 'payer') {
     var fenetre = ouvrirFenetrePaiement(argent(fc.total || 0));
     traiterReponsePaiement(await appelerSansErreur('reprendre', { livreId: LIVRE_ID }, 30000), fenetre);
@@ -3232,13 +3233,23 @@ async function payer() {
     corps.appendChild(avert);
   }
   var res = null;
-  var r = await modale({
-    titre: 'Paiement avant la vérification', corps: corps,
-    boutons: [{ id: 'ok', libelle: LIBELLE_PAYER + ' ' + argent(f.total), principal: true, action: EN_WIX ? null : async function () {
-      res = await appeler('payer', { livreId: LIVRE_ID });
-      if (!res.ok) { throw new Error(res.message || 'Le paiement n’a pas pu être préparé.'); }
-    } }, { id: 'non', libelle: 'Annuler' }]
-  });
+  var r;
+  if (EN_WIX && window.TblPaiement) {
+    // Confirmation à la hauteur du bouton cliqué (paiement-stripe.js), comme la fenêtre de paiement qui suit : la
+    // fenêtre centrée de l'éditeur s'affichait au milieu du cadre Wix, loin du bouton (correction du 9 novembre 2026).
+    r = await window.TblPaiement.choisir({
+      titre: 'Paiement avant la vérification', corps: corps,
+      boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: LIBELLE_PAYER + ' ' + argent(f.total), principal: true }]
+    });
+  } else {
+    r = await modale({
+      titre: 'Paiement avant la vérification', corps: corps,
+      boutons: [{ id: 'ok', libelle: LIBELLE_PAYER + ' ' + argent(f.total), principal: true, action: EN_WIX ? null : async function () {
+        res = await appeler('payer', { livreId: LIVRE_ID });
+        if (!res.ok) { throw new Error(res.message || 'Le paiement n’a pas pu être préparé.'); }
+      } }, { id: 'non', libelle: 'Annuler' }]
+    });
+  }
   if (r !== 'ok') { return; }
   if (EN_WIX) {
     // Fenêtre ouverte tout de suite (« Traitement en cours ») pendant que le serveur prépare la facture.

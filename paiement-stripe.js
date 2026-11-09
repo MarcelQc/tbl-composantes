@@ -30,9 +30,11 @@
   'use strict';
   if (window.TblPaiement) { return; }
 
-  // Hauteur (coordonnées du document) du dernier élément cliqué : la fenêtre s'y place.
+  // Hauteur (coordonnées du document) du dernier bouton cliqué HORS de la fenêtre : la fenêtre s'y place et n'en
+  // bouge plus (un clic dans la fenêtre, ex. Fermer, ne la déplace pas ; correction du 9 novembre 2026).
   var ancreY = null;
   document.addEventListener('click', function (e) {
+    if (e.target && e.target.closest && e.target.closest('#tbl-paiement')) { return; }
     var r = e.target && e.target.getBoundingClientRect ? e.target.getBoundingClientRect() : null;
     ancreY = r ? r.top + window.scrollY : e.pageY;
   }, true);
@@ -98,17 +100,57 @@
     return promesseStripe;
   }
 
-  // Place le haut de la fenêtre à la hauteur du bouton cliqué, sans dépasser le bas de la page ; suit sa taille.
+  // Place le haut de la fenêtre à la hauteur du bouton cliqué (figée à l'ouverture), sans dépasser le bas de la
+  // page ; suit seulement sa taille.
   function placer(boite) {
+    var ancre = ancreY;
     function calculer() {
       var hautPage = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
       var h = boite.offsetHeight;
-      var y = ancreY !== null ? ancreY - 20 : window.scrollY + 20;
+      var y = ancre !== null ? ancre - 20 : window.scrollY + 20;
       y = Math.min(y, hautPage - h - 12);
       boite.style.top = Math.max(12, y) + 'px';
     }
     calculer();
     if (window.ResizeObserver) { new ResizeObserver(calculer).observe(boite); }
+  }
+  // Mise au point sans faire défiler la page (dans un cadre Wix, le défilement remonterait toute la page du site).
+  function viser(e) {
+    try { e.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+  }
+
+  // Fenêtre de choix à la hauteur du bouton cliqué (confirmation avant le paiement, facture restée ouverte…).
+  // o : { titre, corps (texte ou élément), boutons: [{ id, libelle, principal }] }. Retourne l'id choisi, ou null.
+  function choisir(o) {
+    installerCss();
+    var ancienne = document.getElementById('tbl-paiement');
+    if (ancienne) { ancienne.remove(); }
+    return new Promise(function (ok) {
+      var m = el('div'); m.id = 'tbl-paiement';
+      var voile = el('div', 'tp-voile');
+      var b = el('div', 'tp-boite'); b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
+      b.appendChild(el('h2', null, o.titre || ''));
+      var corps = el('div');
+      if (typeof o.corps === 'string') { corps.appendChild(el('p', null, o.corps)); } else if (o.corps) { corps.appendChild(o.corps); }
+      b.appendChild(corps);
+      var btns = el('div', 'tp-btns');
+      function fermer(id) { document.removeEventListener('keydown', echap, true); m.remove(); ok(id); }
+      function echap(ev) { if (ev.key === 'Escape') { fermer(null); } }
+      var principal = null;
+      (o.boutons || [{ id: 'ok', libelle: 'Fermer', principal: true }]).forEach(function (x) {
+        var bt = el('button', 'tp-btn' + (x.principal ? '' : ' tp-sec'), x.libelle); bt.type = 'button';
+        bt.addEventListener('click', function () { fermer(x.id); });
+        btns.appendChild(bt);
+        if (x.principal) { principal = bt; }
+      });
+      b.appendChild(btns);
+      voile.addEventListener('click', function () { fermer(null); });
+      document.addEventListener('keydown', echap, true);
+      m.appendChild(voile); m.appendChild(b);
+      document.body.appendChild(m);
+      placer(b);
+      if (principal) { viser(principal); }
+    });
   }
 
   function ouvrir(o) {
@@ -175,7 +217,7 @@
       secours.lastChild.textContent = '';
       lienSecours.textContent = 'Payer ma facture sur la page de Stripe (nouvel onglet)';
       lienSecours.className = 'tp-btn';
-      lienSecours.focus();
+      viser(lienSecours);
     }
 
     function demarrer(r) {
@@ -281,7 +323,7 @@
       corps.textContent = '';
       corps.appendChild(el('p', null, textes.reussi || ('Merci ! Votre facture ' + (r.facture || rep.facture || '') + ' est payée.')));
       corps.appendChild(el('p', 'tp-sub', textes.reussiSub || 'La facture payée est dans l’onglet Documents de l’Espace Auteurs.'));
-      fermerBt.className = 'tp-btn'; fermerBt.focus();
+      fermerBt.className = 'tp-btn'; viser(fermerBt);
       trace('paiement réussi');
       if (typeof o.surReussi === 'function') { o.surReussi(r, rep); }
     }
@@ -312,5 +354,5 @@
     return { demarrer: demarrer, fermer: fermer };
   }
 
-  window.TblPaiement = { ouvrir: ouvrir, chargerStripe: chargerStripe };
+  window.TblPaiement = { ouvrir: ouvrir, choisir: choisir, chargerStripe: chargerStripe };
 })();
