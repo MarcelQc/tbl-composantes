@@ -417,9 +417,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 0206fbd · 2026-11-08 19:21 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 44d5756 · 2026-11-08 19:32 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '0206fbd · 2026-11-08 19:21';
+var VERSION_TBL = '44d5756 · 2026-11-08 19:32';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -875,13 +875,54 @@ function etatPleinLiseuse(refuse) {
   versLiseuse({ type: 'liseusePleinEcranEtat', actif: !!elementPlein(), refuse: !!refuse });
 }
 // Hors plein écran : la page Wix retire l'en-tête et le pied de page du site, s'amène sur ce cadre et renvoie la
-// hauteur de la fenêtre ; la liseuse prend cette hauteur pour remplir l'écran, sans plus (le cadre Wix est fixe).
+// hauteur de la fenêtre. La liseuse se place sur la partie du cadre Wix réellement visible à l'écran (mesurée par
+// IntersectionObserver, mise à jour quand la page défile), sinon sur la hauteur de la fenêtre : ses boutons du bas
+// restent toujours à l'écran. En plein écran, le navigateur impose toute la taille de l'écran.
+var hauteurFenetre = 0;
+var partieVisible = null;
+var observateurVisible = null;
+function suivrePartieVisible() {
+  if (observateurVisible || !('IntersectionObserver' in window)) { return; }
+  var repere = document.createElement('div');
+  repere.setAttribute('aria-hidden', 'true');
+  repere.style.cssText = 'position:fixed;left:0;top:0;bottom:0;width:1px;pointer-events:none;visibility:hidden';
+  document.body.appendChild(repere);
+  var seuils = [];
+  for (var i = 0; i <= 200; i++) { seuils.push(i / 200); }
+  observateurVisible = new IntersectionObserver(function (entrees) {
+    var r = entrees[entrees.length - 1].intersectionRect;
+    partieVisible = { haut: Math.round(r.top), hauteur: Math.round(r.height) };
+    ajusterCadreLiseuse();
+  }, { threshold: seuils });
+  observateurVisible.observe(repere);
+}
+function ajusterCadreLiseuse() {
+  if (!cadreLiseuse || elementPlein()) { return; }
+  var haut = 0;
+  var hauteur = window.innerHeight;
+  if (partieVisible && partieVisible.hauteur >= 320) { haut = partieVisible.haut; hauteur = partieVisible.hauteur; }
+  else if (hauteurFenetre > 320) { hauteur = Math.min(hauteurFenetre, window.innerHeight); }
+  cadreLiseuse.style.top = haut + 'px';
+  cadreLiseuse.style.height = hauteur + 'px';
+}
 function surFenetreLiseuse(msg) {
+  if (msg.cadreSite) { console.log('[espace-lecteur] En-tête et pied de page du site : ' + msg.cadreSite); }
   if (!cadreLiseuse || !msg.ouverte || !(msg.hauteur > 200)) { return; }
-  cadreLiseuse.style.height = Math.min(msg.hauteur, window.innerHeight) + 'px';
+  // Mesure prise en plein écran (hauteur de l'écran) : ignorée, on la redemandera à la sortie.
+  if (!elementPlein()) { hauteurFenetre = msg.hauteur; }
+  ajusterCadreLiseuse();
+}
+// Sortie du plein écran (bouton ou Échap) : la page Wix revient sur la liseuse et remesure la fenêtre.
+function surChangementPlein() {
+  etatPleinLiseuse(false);
+  if (cadreLiseuse && !elementPlein()) {
+    ajusterCadreLiseuse();
+    envoyer({ type: 'liseuseAffichage', ouverte: true });
+  }
 }
 function ouvrirLiseuse(livreId) {
   if (cadreLiseuse) { cadreLiseuse.remove(); cadreLiseuse = null; }
+  suivrePartieVisible();
   envoyer({ type: 'liseuseAffichage', ouverte: true });
   var f = document.createElement('iframe');
   f.className = 'cadre-liseuse';
@@ -900,8 +941,8 @@ function fermerLiseuse() {
   document.body.classList.remove('liseuse-ouverte');
   envoyer({ type: 'liseuseAffichage', ouverte: false });
 }
-document.addEventListener('fullscreenchange', function () { etatPleinLiseuse(false); });
-document.addEventListener('webkitfullscreenchange', function () { etatPleinLiseuse(false); });
+document.addEventListener('fullscreenchange', surChangementPlein);
+document.addEventListener('webkitfullscreenchange', surChangementPlein);
 window.addEventListener('message', function (e) {
   if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow || e.origin !== location.origin) { return; }
   var m = e.data || {};
