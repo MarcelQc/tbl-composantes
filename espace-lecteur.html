@@ -417,9 +417,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 86081ff · 2026-11-08 20:09 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// eccf6d3 · 2026-11-09 05:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '86081ff · 2026-11-08 20:09';
+var VERSION_TBL = 'eccf6d3 · 2026-11-09 05:48';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -868,8 +868,35 @@ function quitterPlein() {
   if (!elementPlein()) { return; }
   try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { /* déjà sorti */ }
 }
+// Liseuse ouverte dans un nouvel onglet (demande de Marcel du 9 novembre 2026) : cet Espace Lecteur reste ouvert dans
+// l'onglet d'origine et relaie ses messages. Onglet nommé : un nouveau clic réutilise le même onglet.
+var fenetreLiseuse = null;
+var minuteriePresentation = null;
+function ongletVivant() { try { return !!fenetreLiseuse && !fenetreLiseuse.closed; } catch (e) { return false; } }
 function versLiseuse(msg) {
+  if (ongletVivant()) { try { fenetreLiseuse.postMessage(msg, location.origin); } catch (e) { /* onglet fermé */ } }
   if (cadreLiseuse && cadreLiseuse.contentWindow) { cadreLiseuse.contentWindow.postMessage(msg, location.origin); }
+}
+// Présentation à l'onglet comme relais (utile si cet Espace Lecteur a été rechargé depuis l'ouverture de l'onglet),
+// répétée jusqu'à la réponse liseuseRelaisOk, au plus 15 secondes.
+function presenterRelais() {
+  clearInterval(minuteriePresentation);
+  var essais = 0;
+  minuteriePresentation = setInterval(function () {
+    essais += 1;
+    if (!ongletVivant() || essais > 30) { clearInterval(minuteriePresentation); return; }
+    try { fenetreLiseuse.postMessage({ type: 'liseuseRelais' }, location.origin); } catch (e) { /* onglet fermé */ }
+  }, 500);
+}
+function ouvrirOngletLiseuse(livreId) {
+  var adresse = 'liseuse.html?onglet=1&' + (etat.demoEditeur ? 'demo=1&' : '') + (livreId ? 'livre=' + encodeURIComponent(livreId) + '&' : '') + 'v=' + Date.now();
+  var w = null;
+  try { w = window.open(adresse, 'liseuse-tbl'); } catch (e) { w = null; }
+  if (!w) { return false; }
+  fenetreLiseuse = w;
+  try { w.focus(); } catch (e) { /* le navigateur garde la main */ }
+  presenterRelais();
+  return true;
 }
 function etatPleinLiseuse(refuse) {
   versLiseuse({ type: 'liseusePleinEcranEtat', actif: !!elementPlein(), refuse: !!refuse });
@@ -944,8 +971,15 @@ function fermerLiseuse() {
 document.addEventListener('fullscreenchange', surChangementPlein);
 document.addEventListener('webkitfullscreenchange', surChangementPlein);
 window.addEventListener('message', function (e) {
-  if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow || e.origin !== location.origin) { return; }
+  if (e.origin !== location.origin) { return; }
   var m = e.data || {};
+  // Onglet de la liseuse : il ne demande que les données (ouvrir, fragments, enregistrer) ; il se ferme lui-même.
+  if (fenetreLiseuse && e.source === fenetreLiseuse) {
+    if (m.type === 'liseuseRelaisOk') { clearInterval(minuteriePresentation); }
+    else if (/^liseuse(Ouvrir|Fragments|Enregistrer)$/.test(m.type || '')) { clearInterval(minuteriePresentation); envoyer(m); }
+    return;
+  }
+  if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow) { return; }
   if (m.type === 'liseuseFermer') { fermerLiseuse(); }
   else if (m.type === 'liseusePleinEcran') {
     // Le clic dans la liseuse compte aussi pour ce cadre : le plein écran peut être demandé ici.
@@ -962,7 +996,8 @@ $('btn-liseuse').addEventListener('click', function () {
     return;
   }
   tracer('liseuse', { livre: choisi ? choisi.titre : '' });
-  ouvrirLiseuse(choisi ? choisi.id : '');
+  // Nouvel onglet ; si le navigateur le bloque, la liseuse s'ouvre par-dessus l'Espace Lecteur, en plein écran.
+  if (!ouvrirOngletLiseuse(choisi ? choisi.id : '')) { ouvrirLiseuse(choisi ? choisi.id : ''); }
 });
 function carteLivre(l) {
   var carte = el('article', 'livre');

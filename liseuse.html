@@ -143,6 +143,11 @@ body[data-pages="1"] .cadre{width:min(900px,92vw)}
 .taille output{flex:1;text-align:center}
 .avis{position:fixed;z-index:30;left:50%;bottom:90px;transform:translate(-50%,20px);max-width:min(520px,90vw);padding:12px 18px;border-radius:14px;background:rgba(20,16,12,.94);color:#f3e9d6;font:500 .9rem 'Figtree',sans-serif;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 .avis.visible{opacity:1;transform:translate(-50%,0)}
+/* X de fermeture (onglet ou cadre de l'Espace Lecteur), en haut à droite, sous les panneaux (z-index 20 et 21). */
+.fermer-liseuse{position:fixed;z-index:15;top:12px;right:14px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid rgba(255,230,190,.4);background:rgba(20,12,6,.6);color:#f3e3c4;font:600 1.25rem/1 'Figtree',system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:background .2s,transform .2s}
+.fermer-liseuse:hover,.fermer-liseuse:focus-visible{background:rgba(120,60,20,.85);transform:scale(1.06);outline:none}
+.fermer-liseuse[hidden]{display:none}
+body.avec-fermer .entete .ou{padding-right:52px}
 .ecran-message{position:relative;z-index:2;margin:auto;max-width:520px;text-align:center;padding:28px;border-radius:18px;background:rgba(15,12,10,.82);color:#f3e9d6}
 .ecran-message h2{font-family:var(--police-marque);margin:0 0 10px}
 .ecran-message p{margin:0 0 16px;color:#d8ccb8}
@@ -248,6 +253,7 @@ body.immersif .entete{display:none}
   <div class="marque"><h1>La liseuse TBL</h1></div>
   <div class="ou"><strong id="titre-livre"></strong><span id="titre-chapitre"></span></div>
 </header>
+<button class="fermer-liseuse" type="button" id="b-fermer" aria-label="Fermer la liseuse" title="Fermer la liseuse" hidden>✕</button>
 
 <main class="cadre" id="cadre">
   <div class="papier" id="papier">
@@ -283,10 +289,23 @@ function $(id) { return document.getElementById(id); }
 function el(tag, classe, texte) { var e = document.createElement(tag); if (classe) { e.className = classe; } if (texte !== undefined && texte !== null) { e.textContent = texte; } return e; }
 // cadre=1 : ouverte par l'Espace Lecteur dans un cadre plein écran posé par-dessus lui ; il relaie les messages
 // vers la page Wix. demo=1 : l'Espace Lecteur est lui-même en démonstration (éditeur Wix).
+// onglet=1 : ouverte par l'Espace Lecteur dans un nouvel onglet (mode normal). L'Espace Lecteur, resté ouvert dans
+// l'onglet d'origine, relaie les messages vers la page Wix ; son X ferme l'onglet et ramène à l'onglet précédent.
 var DANS_ESPACE = /[?&]cadre=1(&|$)/.test(location.search);
-var EN_WIX = window.parent !== window && !/[?&]demo=1(&|$)/.test(location.search);
-var ORIGINES = DANS_ESPACE ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '86081ff · 2026-11-08 20:09';
+var DANS_ONGLET = /[?&]onglet=1(&|$)/.test(location.search);
+var EN_DEMO = /[?&]demo=1(&|$)/.test(location.search);
+var EN_WIX = (DANS_ONGLET ? true : window.parent !== window) && !EN_DEMO;
+// Fenêtre de l'Espace Lecteur qui relaie : celle qui a ouvert l'onglet, ou celle qui s'est présentée (liseuseRelais)
+// si l'Espace Lecteur a été rechargé depuis.
+var relaisOnglet = null;
+function relaisVivant(w) { try { return !!w && !w.closed; } catch (e) { return false; } }
+function relais() {
+  if (!DANS_ONGLET) { return window.parent; }
+  if (relaisVivant(relaisOnglet)) { return relaisOnglet; }
+  return relaisVivant(window.opener) ? window.opener : null;
+}
+var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+var VERSION_TBL = 'eccf6d3 · 2026-11-09 05:48';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -301,6 +320,7 @@ var attentes = {};
 function demander(type, params, typeReponse, delai) {
   return new Promise(function (ok) {
     if (!EN_WIX) { ok(demo(type, params)); return; }
+    if (DANS_ONGLET && !relais()) { ok({ statut: 'espaceFerme' }); return; }
     var cle = typeReponse + ':' + (params && params.depuis !== undefined ? params.depuis : '');
     attentes[cle] = ok;
     versEspace(Object.assign({ type: type }, params || {}));
@@ -308,21 +328,44 @@ function demander(type, params, typeReponse, delai) {
   });
 }
 window.addEventListener('message', function (e) {
-  if ((!EN_WIX && !DANS_ESPACE) || e.source !== window.parent || !ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
+  if (!ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
   var m = e.data || {};
+  // L'Espace Lecteur (même origine) se présente comme relais : utile s'il a été rechargé depuis l'ouverture.
+  if (DANS_ONGLET && m.type === 'liseuseRelais' && e.source) {
+    relaisOnglet = e.source;
+    try { e.source.postMessage({ type: 'liseuseRelaisOk' }, location.origin); } catch (err) { /* fenêtre fermée */ }
+    return;
+  }
+  if ((!EN_WIX && !DANS_ESPACE) || e.source !== relais()) { return; }
   var cle = m.type + ':' + (m.type === 'resultatLiseuseFragments' && m.depuis !== undefined ? m.depuis : '');
   if (m.type === 'liseusePleinEcranEtat') { surPleinEspace(m); return; }
   if (attentes[cle]) { var f = attentes[cle]; delete attentes[cle]; f(m); }
 });
-function versEspace(message) { window.parent.postMessage(message, DANS_ESPACE ? location.origin : '*'); }
+function versEspace(message) {
+  var w = relais();
+  if (!w) { return; }
+  try { w.postMessage(message, DANS_ESPACE || DANS_ONGLET ? location.origin : '*'); } catch (e) { /* fenêtre fermée */ }
+}
+var ADRESSE_ESPACE_LECTEUR = 'https://www.editionstbl.ca/dashboardlecteurs';
+// Onglet : la position est enregistrée, puis l'onglet se ferme et le navigateur revient à l'onglet précédent.
+function fermerOnglet() {
+  enregistrerPosition();
+  try { var w = relais(); if (w && w.top) { w.top.focus(); } } catch (e) { /* onglet d'origine fermé */ }
+  setTimeout(function () {
+    window.close();
+    // Onglet que le navigateur refuse de fermer (ouvert autrement que par l'Espace Lecteur) : on y va.
+    setTimeout(function () { location.href = ADRESSE_ESPACE_LECTEUR; }, 300);
+  }, 120);
+}
 function retourEspace() {
+  if (DANS_ONGLET) { fermerOnglet(); return; }
   // Ouverte par l'Espace Lecteur : il ferme le cadre et sort du plein écran. Sinon, on revient dans le même cadre.
   if (DANS_ESPACE) { versEspace({ type: 'liseuseFermer' }); return; }
   location.href = 'espace-lecteur.html?v=' + Date.now();
 }
 // Adresse d'un autre livre : garde le mode cadre (le plein écran reste, puisque c'est le cadre qui est en plein écran).
 function adresseLiseuse(livreId) {
-  return 'liseuse.html?' + (DANS_ESPACE ? 'cadre=1&' : '') + (/[?&]demo=1(&|$)/.test(location.search) ? 'demo=1&' : '') + 'livre=' + encodeURIComponent(livreId) + '&v=' + Date.now();
+  return 'liseuse.html?' + (DANS_ESPACE ? 'cadre=1&' : '') + (DANS_ONGLET ? 'onglet=1&' : '') +(/[?&]demo=1(&|$)/.test(location.search) ? 'demo=1&' : '') + 'livre=' + encodeURIComponent(livreId) + '&v=' + Date.now();
 }
 
 /* ---------- Démonstration (ouverture hors du site) : texte inventé, jamais un vrai livre ---------- */
@@ -490,15 +533,25 @@ function afficher(anime) {
   $('folio-g').textContent = etat.page ? n : '';
   $('folio-d').textContent = etat.double && etat.page ? n + 1 : '';
   Array.prototype.forEach.call($('liste-chapitres').querySelectorAll('button'), function (b) { b.setAttribute('aria-current', Number(b.dataset.c) === ch ? 'true' : 'false'); });
-  // Position gardée au serveur, 2 secondes après le dernier changement de page.
+  // Position gardée au serveur, 2 secondes après le dernier changement de page (tout de suite à la fermeture).
   clearTimeout(minuterieEnregistrer);
-  minuterieEnregistrer = setTimeout(function () {
-    var pos = positionCourante();
-    etat.position = pos;
-    ecrire('liseuse-tbl-position-' + etat.livre.id, pos);
-    demander('liseuseEnregistrer', { livreId: etat.livre.id, chapitre: pos.chapitre, paragraphe: pos.paragraphe, pourcentage: pct }, 'resultatLiseuseEnregistrer');
-  }, 2000);
+  minuterieEnregistrer = setTimeout(enregistrerPosition, 2000);
 }
+var derniereEnvoyee = '';
+function enregistrerPosition() {
+  clearTimeout(minuterieEnregistrer);
+  if (!etat.pret || !etat.livre) { return; }
+  var pos = positionCourante();
+  var pct = etat.total > 1 ? Math.round(etat.page / (etat.total - 1) * 100) : 100;
+  etat.position = pos;
+  ecrire('liseuse-tbl-position-' + etat.livre.id, pos);
+  var cle = etat.livre.id + ':' + pos.chapitre + ':' + pos.paragraphe + ':' + pct;
+  if (cle === derniereEnvoyee) { return; }
+  derniereEnvoyee = cle;
+  demander('liseuseEnregistrer', { livreId: etat.livre.id, chapitre: pos.chapitre, paragraphe: pos.paragraphe, pourcentage: pct }, 'resultatLiseuseEnregistrer');
+}
+// Onglet fermé autrement (Ctrl+W, croix de l'onglet) : la position part quand même.
+window.addEventListener('pagehide', function () { if (DANS_ONGLET) { enregistrerPosition(); } });
 function aller(p) {
   if (!etat.pret) { return; }
   p = Math.max(0, Math.min(etat.total - 1, p));
@@ -508,12 +561,16 @@ function aller(p) {
 }
 
 /* ---------- Ouverture du livre ---------- */
-function messageEcran(titre, texte, bouton) {
+// Onglet dont l'Espace Lecteur a été fermé : la liseuse ne peut plus joindre le site.
+function espaceFerme() {
+  messageEcran('Votre Espace Lecteur est fermé', 'La liseuse passe par votre Espace Lecteur pour retrouver vos livres. Ouvrez-le de nouveau, puis touchez « La liseuse TBL ».', 'Ouvrir mon Espace Lecteur', function () { location.href = ADRESSE_ESPACE_LECTEUR; });
+}
+function messageEcran(titre, texte, bouton, action) {
   $('chargement').hidden = true;
   var m = el('div', 'ecran-message');
   m.appendChild(el('h2', '', titre));
   m.appendChild(el('p', '', texte));
-  var b = el('button', 'btn', bouton || '← Retour à l’Espace Lecteur'); b.type = 'button'; b.addEventListener('click', retourEspace);
+  var b = el('button', 'btn', bouton || (DANS_ONGLET ? 'Fermer la liseuse' : '← Retour à l’Espace Lecteur')); b.type = 'button'; b.addEventListener('click', action || retourEspace);
   m.appendChild(b);
   document.querySelector('.cadre').hidden = true;
   document.querySelector('.commandes').hidden = true;
@@ -523,7 +580,10 @@ async function ouvrir(livreId) {
   etat.pret = false;
   $('chargement').hidden = false;
   $('texte-chargement').textContent = 'Ouverture de votre livre…';
+  // Onglet : on laisse un instant à l'Espace Lecteur pour se présenter s'il a été rechargé.
+  for (var essai = 0; DANS_ONGLET && EN_WIX && !relais() && essai < 30; essai += 1) { await new Promise(function (ok) { setTimeout(ok, 100); }); }
   var r = await demander('liseuseOuvrir', { livreId: livreId || '' }, 'resultatLiseuseOuvrir', 30000);
+  if (r.statut === 'espaceFerme') { espaceFerme(); return; }
   if (r.statut === 'connexion') { messageEcran('Connectez-vous', 'La liseuse est réservée aux membres du site.'); return; }
   if (r.statut === 'aucun') {
     etat.bibliotheque = r.bibliotheque || [];
@@ -567,6 +627,13 @@ $('b-chapitres').addEventListener('click', function () { ouvrirPanneau('pn-chapi
 $('b-bibliotheque').addEventListener('click', function () { ouvrirPanneau('pn-bibliotheque'); });
 $('b-reglages').addEventListener('click', function () { ouvrirPanneau('pn-reglages'); });
 $('b-retour').addEventListener('click', retourEspace);
+// X de fermeture : onglet (ferme l'onglet, retour à l'onglet précédent) ou cadre de l'Espace Lecteur.
+if (DANS_ONGLET || DANS_ESPACE) {
+  $('b-fermer').hidden = false;
+  document.body.classList.add('avec-fermer');
+  $('b-fermer').addEventListener('click', retourEspace);
+}
+if (DANS_ONGLET) { $('b-retour').textContent = '✕ Fermer la liseuse'; }
 
 function rendreChapitres() {
   var liste = $('liste-chapitres'); liste.textContent = '';
