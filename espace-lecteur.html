@@ -178,6 +178,9 @@ textarea:focus{border-color:var(--or);outline:none}
   .annonce p{font-size:1rem}
   .annonce .btn-annonce{padding:14px 18px;font-size:1rem;width:100%}
 }
+/* La liseuse TBL : cadre posé par-dessus l'Espace Lecteur, mis en plein écran au clic sur « La liseuse TBL ». */
+.cadre-liseuse{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:1000;background:#140d08}
+body.liseuse-ouverte{overflow:hidden}
 </style>
 </head>
 <body>
@@ -352,6 +355,7 @@ function recevoir(msg) {
   else if (msg.type === 'resultatSupprimerCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
   else if (msg.type === 'resultatLivres') { surLivres(msg); }
+  else if (/^resultatLiseuse/.test(msg.type || '')) { versLiseuse(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -412,9 +416,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// e1838ce · 2026-11-08 18:37 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 6e18fd7 · 2026-11-08 19:08 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'e1838ce · 2026-11-08 18:37';
+var VERSION_TBL = '6e18fd7 · 2026-11-08 19:08';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -848,7 +852,58 @@ function majChoixLivre() {
     ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas encore préparé pour la liseuse' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
 }
-// La liseuse TBL (clé DEV001) : Webliseuse.html s'ouvre dans ce même cadre ; son bouton Retour ramène ici.
+// La liseuse TBL (clé DEV001) : Web\liseuse.html s'ouvre dans un cadre posé par-dessus l'Espace Lecteur, et ce cadre
+// passe en plein écran pendant le clic (le navigateur ne le permet qu'à ce moment). L'Espace Lecteur relaie les
+// messages de la liseuse vers la page Wix et les réponses vers la liseuse. Son bouton Retour ferme le cadre.
+var cadreLiseuse = null;
+function elementPlein() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function demanderPlein(noeud) {
+  var f = noeud.requestFullscreen || noeud.webkitRequestFullscreen;
+  var p = null;
+  try { p = f ? f.call(noeud, { navigationUI: 'hide' }) : null; } catch (e) { p = null; }
+  return Promise.resolve(p).then(function () { return !!elementPlein(); }, function () { return false; });
+}
+function quitterPlein() {
+  if (!elementPlein()) { return; }
+  try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { /* déjà sorti */ }
+}
+function versLiseuse(msg) {
+  if (cadreLiseuse && cadreLiseuse.contentWindow) { cadreLiseuse.contentWindow.postMessage(msg, location.origin); }
+}
+function etatPleinLiseuse(refuse) {
+  versLiseuse({ type: 'liseusePleinEcranEtat', actif: !!elementPlein(), refuse: !!refuse });
+}
+function ouvrirLiseuse(livreId) {
+  fermerLiseuse();
+  var f = document.createElement('iframe');
+  f.className = 'cadre-liseuse';
+  f.title = 'La liseuse TBL';
+  f.setAttribute('allow', 'fullscreen');
+  f.src = 'liseuse.html?cadre=1&' + (etat.demoEditeur ? 'demo=1&' : '') + (livreId ? 'livre=' + encodeURIComponent(livreId) + '&' : '') + 'v=' + Date.now();
+  document.body.appendChild(f);
+  document.body.classList.add('liseuse-ouverte');
+  cadreLiseuse = f;
+  demanderPlein(f).then(function (ok) { if (!ok) { console.log('[espace-lecteur] Plein écran refusé : la liseuse occupe le cadre.'); } });
+}
+function fermerLiseuse() {
+  quitterPlein();
+  if (cadreLiseuse) { cadreLiseuse.remove(); cadreLiseuse = null; }
+  document.body.classList.remove('liseuse-ouverte');
+}
+document.addEventListener('fullscreenchange', function () { etatPleinLiseuse(false); });
+document.addEventListener('webkitfullscreenchange', function () { etatPleinLiseuse(false); });
+window.addEventListener('message', function (e) {
+  if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow || e.origin !== location.origin) { return; }
+  var m = e.data || {};
+  if (m.type === 'liseuseFermer') { fermerLiseuse(); }
+  else if (m.type === 'liseusePleinEcran') {
+    // Le clic dans la liseuse compte aussi pour ce cadre : le plein écran peut être demandé ici.
+    if (elementPlein()) { quitterPlein(); }
+    else { demanderPlein(cadreLiseuse).then(function (ok) { etatPleinLiseuse(!ok); }); }
+  }
+  else if (m.type === 'liseuseEtatPlein') { etatPleinLiseuse(false); }
+  else if (/^liseuse(Ouvrir|Fragments|Enregistrer)$/.test(m.type || '')) { envoyer(m); }
+});
 $('btn-liseuse').addEventListener('click', function () {
   var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
   if (choisi && choisi.liseuse === false) {
@@ -856,7 +911,7 @@ $('btn-liseuse').addEventListener('click', function () {
     return;
   }
   tracer('liseuse', { livre: choisi ? choisi.titre : '' });
-  location.href = 'liseuse.html?' + (choisi ? 'livre=' + encodeURIComponent(choisi.id) + '&' : '') + 'v=' + Date.now();
+  ouvrirLiseuse(choisi ? choisi.id : '');
 });
 function carteLivre(l) {
   var carte = el('article', 'livre');

@@ -257,9 +257,12 @@ body.immersif .entete{display:none}
 /* ---------- Utilitaires ---------- */
 function $(id) { return document.getElementById(id); }
 function el(tag, classe, texte) { var e = document.createElement(tag); if (classe) { e.className = classe; } if (texte !== undefined && texte !== null) { e.textContent = texte; } return e; }
-var EN_WIX = window.parent !== window;
-var ORIGINES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = 'e1838ce · 2026-11-08 18:37';
+// cadre=1 : ouverte par l'Espace Lecteur dans un cadre plein écran posé par-dessus lui ; il relaie les messages
+// vers la page Wix. demo=1 : l'Espace Lecteur est lui-même en démonstration (éditeur Wix).
+var DANS_ESPACE = /[?&]cadre=1(&|$)/.test(location.search);
+var EN_WIX = window.parent !== window && !/[?&]demo=1(&|$)/.test(location.search);
+var ORIGINES = DANS_ESPACE ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
+var VERSION_TBL = '6e18fd7 · 2026-11-08 19:08';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -276,19 +279,26 @@ function demander(type, params, typeReponse, delai) {
     if (!EN_WIX) { ok(demo(type, params)); return; }
     var cle = typeReponse + ':' + (params && params.depuis !== undefined ? params.depuis : '');
     attentes[cle] = ok;
-    window.parent.postMessage(Object.assign({ type: type }, params || {}), '*');
+    versEspace(Object.assign({ type: type }, params || {}));
     setTimeout(function () { if (attentes[cle]) { delete attentes[cle]; ok({ statut: 'erreur', delai: true }); } }, delai || 20000);
   });
 }
 window.addEventListener('message', function (e) {
-  if (!EN_WIX || e.source !== window.parent || !ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
+  if ((!EN_WIX && !DANS_ESPACE) || e.source !== window.parent || !ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
   var m = e.data || {};
   var cle = m.type + ':' + (m.type === 'resultatLiseuseFragments' && m.depuis !== undefined ? m.depuis : '');
+  if (m.type === 'liseusePleinEcranEtat') { surPleinEspace(m); return; }
   if (attentes[cle]) { var f = attentes[cle]; delete attentes[cle]; f(m); }
 });
+function versEspace(message) { window.parent.postMessage(message, DANS_ESPACE ? location.origin : '*'); }
 function retourEspace() {
-  // La liseuse et l'Espace Lecteur sont servis au même endroit : on revient dans le même cadre.
+  // Ouverte par l'Espace Lecteur : il ferme le cadre et sort du plein écran. Sinon, on revient dans le même cadre.
+  if (DANS_ESPACE) { versEspace({ type: 'liseuseFermer' }); return; }
   location.href = 'espace-lecteur.html?v=' + Date.now();
+}
+// Adresse d'un autre livre : garde le mode cadre (le plein écran reste, puisque c'est le cadre qui est en plein écran).
+function adresseLiseuse(livreId) {
+  return 'liseuse.html?' + (DANS_ESPACE ? 'cadre=1&' : '') + (/[?&]demo=1(&|$)/.test(location.search) ? 'demo=1&' : '') + 'livre=' + encodeURIComponent(livreId) + '&v=' + Date.now();
 }
 
 /* ---------- Démonstration (ouverture hors du site) : texte inventé, jamais un vrai livre ---------- */
@@ -517,7 +527,7 @@ function rendreBibliotheque() {
       if (enLecture) { fermerPanneau(); return; }
       if (!l.liseuse) { annoncer('« ' + l.titre + ' » n’est pas encore préparé pour la liseuse. Il le sera bientôt.'); return; }
       fermerPanneau();
-      location.href = 'liseuse.html?livre=' + encodeURIComponent(l.id) + '&v=' + Date.now();
+      location.href = adresseLiseuse(l.id);
     });
     g.appendChild(b);
   });
@@ -613,7 +623,23 @@ function pluie(active) {
 }
 
 /* ---------- Plein écran (mode immersif si le cadre le refuse) ---------- */
+// Ouverte par l'Espace Lecteur, c'est son cadre qui passe en plein écran : on le lui demande.
+var pleinEspace = false;
+function surPleinEspace(m) {
+  pleinEspace = !!m.actif;
+  if (m.refuse && !pleinEspace) {
+    document.body.classList.add('immersif');
+    annoncer('Le plein écran n’est pas permis ici : la liseuse prend toute la place. Pour le vrai plein écran, appuyez sur F11.');
+  }
+  if (pleinEspace) { document.body.classList.remove('immersif'); }
+  majPlein();
+}
 function plein() {
+  if (DANS_ESPACE) {
+    if (document.body.classList.contains('immersif')) { document.body.classList.remove('immersif'); majPlein(); return; }
+    versEspace({ type: 'liseusePleinEcran' });
+    return;
+  }
   var r = document.documentElement;
   if (document.fullscreenElement) { document.exitFullscreen(); return; }
   if (document.body.classList.contains('immersif')) { document.body.classList.remove('immersif'); majPlein(); return; }
@@ -625,10 +651,12 @@ function plein() {
   }).then(majPlein);
 }
 function majPlein() {
-  var actif = !!document.fullscreenElement || document.body.classList.contains('immersif');
+  var actif = !!document.fullscreenElement || pleinEspace || document.body.classList.contains('immersif');
   $('b-plein').querySelector('.txt').textContent = actif ? 'Quitter le plein écran' : 'Plein écran';
 }
 document.addEventListener('fullscreenchange', majPlein);
+// Après un changement de livre (nouvelle page dans le même cadre), on redemande l'état du plein écran.
+if (DANS_ESPACE) { versEspace({ type: 'liseuseEtatPlein' }); }
 $('b-plein').addEventListener('click', plein);
 
 /* ---------- Pages : boutons, clavier, bords, glissement ---------- */
