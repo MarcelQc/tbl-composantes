@@ -39,6 +39,30 @@ body{overflow:hidden;display:flex;flex-direction:column;align-items:center;font-
 .mo-sans-titre{break-before:column;height:0;margin:0}
 .mo-exergue{text-indent:0!important;text-align:center;font-style:italic;opacity:.8;margin:0 1.5em 2em!important;font-size:.95em}
 .mo-fin{text-indent:0!important;text-align:center;font-style:italic;margin-top:2.5em!important;opacity:.7;letter-spacing:.1em}
+/* Contenu varié des EPUB (scripts\liseuse\convertir-epub.js). Rien ne doit dépasser la colonne : un mot ou une
+   image plus large que la page décalerait toutes les pages suivantes. */
+.mo-colonnes p,.mo-colonnes li{overflow-wrap:break-word}
+.mo-colonnes p.mo-centre{text-align:center;text-indent:0}
+.mo-colonnes p.mo-droite{text-align:right;text-indent:0}
+.mo-colonnes p.mo-citation{margin:.5em 1.6em;text-indent:0;font-size:.95em}
+.mo-colonnes p.mo-citation + p.mo-citation{margin-top:0}
+.mo-colonnes p.mo-note{font-size:.85em;text-indent:0;margin-top:.4em}
+.mo-colonnes p.mo-pre{white-space:pre-wrap;text-indent:0;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:.85em}
+.mo-colonnes p.mo-tableau{text-indent:0;text-align:left;margin:.15em 0}
+.mo-colonnes sup,.mo-colonnes sub{font-size:.68em;line-height:0}
+.mo-colonnes .mo-pc{font-variant:small-caps;letter-spacing:.03em}
+.mo-liste{margin:.5em 0;padding-left:2.1em}
+.mo-liste li{margin:.25em 0;padding-left:.2em}
+.mo-liste li.mo-suite{list-style:none}
+.mo-liste li p{text-indent:0;text-align:left}
+.mo-chapitre .mo-numero{display:block;font-size:.75em;letter-spacing:.2em;opacity:.7;margin-bottom:.4em}
+.mo-image{margin:1em 0;text-align:center;break-inside:avoid}
+.mo-image img{display:inline-block;max-width:100%;max-height:calc(var(--mo-h, 600px) - 2em);height:auto;object-fit:contain;border-radius:3px}
+.mo-image.mo-pleine{break-before:column;break-after:column;height:var(--mo-h, 100%);margin:0;display:flex;align-items:center;justify-content:center}
+.mo-image.mo-pleine img{max-height:var(--mo-h, 100%);border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.mo-chapitre .mo-bandeau{display:block;margin:0 0 .8em;font-size:1rem}
+.mo-chapitre .mo-bandeau img{display:block;width:100%;max-height:calc(var(--mo-h, 600px) * .32);object-fit:cover;border-radius:6px}
+.mo-chapitre.avec-bandeau{margin-top:0}
 
 /* ---------- Décor commun ---------- */
 .decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
@@ -262,7 +286,7 @@ function el(tag, classe, texte) { var e = document.createElement(tag); if (class
 var DANS_ESPACE = /[?&]cadre=1(&|$)/.test(location.search);
 var EN_WIX = window.parent !== window && !/[?&]demo=1(&|$)/.test(location.search);
 var ORIGINES = DANS_ESPACE ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = 'b052d6a · 2026-11-08 19:49';
+var VERSION_TBL = '86081ff · 2026-11-08 20:09';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -302,7 +326,25 @@ function adresseLiseuse(livreId) {
 }
 
 /* ---------- Démonstration (ouverture hors du site) : texte inventé, jamais un vrai livre ---------- */
+// Essai sur le poste de l'éditeur seulement (localhost) : ?fichier=<livre.json converti> ouvre ce livre au lieu de la
+// démonstration. Le fichier n'est jamais publié avec la composante.
+var FICHIER_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? decodeURIComponent((location.search.match(/[?&]fichier=([^&]+)/) || [])[1] || '') : '';
+var livreLocal = null;
+function demoLocal(type, p) {
+  livreLocal = livreLocal || fetch(FICHIER_LOCAL).then(function (r) { return r.json(); });
+  return livreLocal.then(function (l) {
+    if (type === 'liseuseOuvrir') {
+      return { statut: 'ok', livre: { id: 'local', titre: l.titre, auteur: l.auteur, couverture: '' }, chapitres: l.chapitres, nbChapitres: l.chapitres.length, position: null, reglages: null, bibliotheque: [{ id: 'local', titre: l.titre, auteur: l.auteur, couverture: '', liseuse: true }] };
+    }
+    if (type === 'liseuseFragments') {
+      var fin = p.depuis + p.nombre;
+      return { statut: 'ok', fragments: l.fragments.filter(function (f) { return f.chapitre >= p.depuis && f.chapitre < fin; }), fin: fin >= l.chapitres.length };
+    }
+    return { statut: 'ok' };
+  });
+}
 function demo(type, p) {
+  if (FICHIER_LOCAL) { return demoLocal(type, p); }
   var phrases = 'La pluie tapait doucement contre la vitre du bureau. Sur la table, le dossier attendait depuis le matin, ouvert à la même page. Il relut la première ligne pour la dixième fois, sans en saisir le sens. Dehors, la ville s’allumait une fenêtre à la fois, comme un livre qu’on feuillette lentement.';
   if (type === 'liseuseOuvrir') {
     var chap = [];
@@ -354,14 +396,27 @@ function construireLivre(fragments) {
     partiePrecedente = c.partie || partiePrecedente;
     var h = c.afficherTitre === false ? el('div', 'mo-sans-titre') : el('h2', 'mo-chapitre', c.titre);
     h.dataset.c = i;
+    if (c.numero && c.afficherTitre !== false) { h.insertBefore(el('span', 'mo-numero', c.numero), h.firstChild); }
     colonnes.appendChild(h);
     etat.titres[i] = h;
     if (c.exergue) { colonnes.appendChild(el('p', 'mo-exergue', c.exergue)); }
     var bloc = el('div');
     bloc.innerHTML = (parChapitre[i] || []).sort(function (a, b) { return a.fragment - b.fragment; }).map(function (f) { return f.contenu; }).join('\n');
+    // Bandeau (image en tête de chapitre) : placé dans le titre, au-dessus du numéro.
+    var premier = bloc.firstElementChild;
+    if (premier && premier.classList.contains('mo-bandeau') && h.tagName === 'H2') {
+      var bandeau = el('span', 'mo-bandeau');
+      while (premier.firstChild) { bandeau.appendChild(premier.firstChild); }
+      bloc.removeChild(premier);
+      h.insertBefore(bandeau, h.firstChild);
+      h.classList.add('avec-bandeau');
+    }
+    // Image pleine page en tête : elle passe avant le titre du chapitre.
+    while (bloc.firstElementChild && bloc.firstElementChild.classList.contains('mo-pleine')) { colonnes.insertBefore(bloc.firstElementChild, h); }
     var n = 0;
     Array.prototype.forEach.call(bloc.querySelectorAll('p'), function (p) {
-      if (!p.className && n === 0 && c.afficherTitre !== false) { p.className = 'mo-premier'; }
+      // Lettrine : premier paragraphe ordinaire du chapitre, pas dans une liste.
+      if (!p.className && n === 0 && c.afficherTitre !== false && p.parentNode === bloc) { p.className = 'mo-premier'; }
       p.dataset.c = i; p.dataset.p = n; n += 1;
       etat.paragraphes.push(p);
     });
@@ -405,6 +460,7 @@ function remettreEnPage() {
   colonnes.style.setProperty('--mo-interligne', R.interligne);
   colonnes.style.fontFamily = R.police || '';
   colonnes.style.height = H + 'px';
+  colonnes.style.setProperty('--mo-h', H + 'px');
   colonnes.style.columnWidth = (etat.double ? (L - ECART) / 2 : L) + 'px';
   colonnes.style.columnGap = ECART + 'px';
   colonnes.classList.remove('mo-anime');
@@ -484,11 +540,13 @@ async function ouvrir(livreId) {
   // Fragments par lots de 12 chapitres
   var fragments = [];
   var total = r.nbChapitres || etat.chapitres.length;
-  for (var depuis = 0; depuis < total; depuis += 12) {
+  // Le serveur peut arrêter un lot plus tôt (images lourdes) : il dit alors où reprendre (suivant).
+  for (var depuis = 0; depuis < total;) {
     $('texte-chargement').textContent = 'Ouverture de votre livre… ' + Math.round(depuis / total * 100) + ' %';
     var lot = await demander('liseuseFragments', { livreId: etat.livre.id, depuis: depuis, nombre: 12 }, 'resultatLiseuseFragments', 30000);
     if (lot.statut !== 'ok') { messageEcran('Un petit problème', 'Le livre n’a pas pu être chargé. Réessayez dans un instant.'); return; }
     fragments = fragments.concat(lot.fragments || []);
+    depuis = lot.suivant > depuis ? lot.suivant : depuis + 12;
   }
   construireLivre(fragments);
   $('chargement').hidden = true;
@@ -515,7 +573,7 @@ function rendreChapitres() {
   var partie = null;
   etat.chapitres.forEach(function (c, i) {
     if (c.partie && c.partie !== partie) { partie = c.partie; liste.appendChild(el('li', 'partie', c.partie)); }
-    var li = el('li'), b = el('button', '', c.titre); b.type = 'button'; b.dataset.c = i;
+    var li = el('li'), b = el('button', '', (c.numero ? c.numero + '. ' : '') + c.titre); b.type = 'button'; b.dataset.c = i;
     b.addEventListener('click', function () { if (etat.titres[i]) { aller(etat.titres[i]._page); } fermerPanneau(); });
     li.appendChild(b); liste.appendChild(li);
   });
