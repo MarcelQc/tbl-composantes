@@ -262,7 +262,7 @@ function el(tag, classe, texte) { var e = document.createElement(tag); if (class
 var DANS_ESPACE = /[?&]cadre=1(&|$)/.test(location.search);
 var EN_WIX = window.parent !== window && !/[?&]demo=1(&|$)/.test(location.search);
 var ORIGINES = DANS_ESPACE ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '44d5756 · 2026-11-08 19:32';
+var VERSION_TBL = 'b052d6a · 2026-11-08 19:49';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -393,7 +393,12 @@ function pageDe(pos) {
 function remettreEnPage() {
   if (!etat.pret) { return; }
   var garde = etat.total > 1 ? positionCourante() : etat.position;
-  var L = fenetre.clientWidth, H = fenetre.clientHeight;
+  // Largeur entière imposée aux colonnes : avec la largeur fractionnaire du cadre (ex. 893,6 px), le pas réel des
+  // pages différait de L + ECART d'une fraction de pixel, et l'écart s'additionnait page après page (mots coupés à
+  // droite vers la page 40). Le dernier pixel fractionnaire est simplement masqué par la fenêtre.
+  var boite = fenetre.getBoundingClientRect();
+  var L = Math.floor(boite.width), H = Math.floor(boite.height);
+  colonnes.style.width = L + 'px';
   var largeurDouble = R.ambiance === 'chalet' ? 99999 : 860;
   etat.double = R.pages === 2 ? L >= 600 : (R.pages === 1 ? false : L >= largeurDouble);
   colonnes.style.setProperty('--mo-taille', R.taille);
