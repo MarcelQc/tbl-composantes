@@ -336,6 +336,20 @@ function tracer(action, infos) {
   envoyer(Object.assign({ type: 'evenement', action: action }, infos || {}));
 }
 function tracerOnglet(nom) { tracer('onglet', { onglet: NOMS_ONGLETS[nom] }); }
+// Traces de l'ouverture de la liseuse (demande de Marcel du 9 novembre 2026, à retirer une fois la liseuse stable) :
+// envoyées directement au Journal du site (fonction HTTP traceLiseuse), sans passer par la page Wix. Le même numéro
+// de session est donné à l'onglet de la liseuse, pour suivre un essai d'un bout à l'autre.
+var SESSION_TRACE = Math.random().toString(36).slice(2, 8);
+var ADRESSE_TRACE = 'https://www.editionstbl.ca/_functions/traceLiseuse';
+function traceLiseuse(etape, detail) {
+  try {
+    console.log('[trace ' + SESSION_TRACE + '] ' + etape + (detail ? ' · ' + detail : ''));
+    var corps = JSON.stringify({ session: SESSION_TRACE, page: 'espace-lecteur', etape: etape, detail: detail ? String(detail) : '' });
+    if (navigator.sendBeacon && navigator.sendBeacon(ADRESSE_TRACE, new Blob([corps], { type: 'text/plain' }))) { return; }
+    fetch(ADRESSE_TRACE, { method: 'POST', body: corps, mode: 'no-cors', keepalive: true }).catch(function () {});
+  } catch (e) { /* trace perdue */ }
+}
+window.addEventListener('error', function (e) { traceLiseuse('ERREUR JavaScript', (e.message || '') + ' (ligne ' + (e.lineno || '?') + ')'); });
 // La page est servie par GitHub Pages et chargée dans la composante HTML de la page Wix : on n'accepte
 // que les messages de cette page parente (site publié, ou Aperçu dans l'éditeur Wix).
 var ORIGINES_PERMISES = [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
@@ -417,9 +431,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 1e9b7ac · 2026-11-09 17:27 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0388c56 · 2026-11-09 17:34 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '1e9b7ac · 2026-11-09 17:27';
+var VERSION_TBL = '0388c56 · 2026-11-09 17:34';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -874,6 +888,9 @@ var fenetreLiseuse = null;
 var minuteriePresentation = null;
 function ongletVivant() { try { return !!fenetreLiseuse && !fenetreLiseuse.closed; } catch (e) { return false; } }
 function versLiseuse(msg) {
+  if (msg && msg.type !== 'resultatLiseuseEnregistrer') {
+    traceLiseuse('Réponse de la page Wix : ' + msg.type, 'statut ' + msg.statut + (msg.type === 'resultatLiseuseOuvrir' ? (msg.epub ? ', lien EPUB reçu (' + (msg.epub.taille || '?') + ' octets)' : ', SANS lien EPUB') + ', livre ' + (msg.livre ? msg.livre.titre : '-') : '') + ' → onglet ' + (ongletVivant() ? 'ouvert' : 'absent') + ', cadre ' + (cadreLiseuse ? 'ouvert' : 'absent'));
+  }
   if (ongletVivant()) { try { fenetreLiseuse.postMessage(msg, location.origin); } catch (e) { /* onglet fermé */ } }
   if (cadreLiseuse && cadreLiseuse.contentWindow) { cadreLiseuse.contentWindow.postMessage(msg, location.origin); }
 }
@@ -889,12 +906,13 @@ function presenterRelais() {
   }, 500);
 }
 function ouvrirOngletLiseuse(livreId) {
-  var adresse = 'liseuse.html?onglet=1&' + (etat.demoEditeur ? 'demo=1&' : '') + (livreId ? 'livre=' + encodeURIComponent(livreId) + '&' : '') + 'v=' + Date.now();
+  var adresse = 'liseuse.html?onglet=1&' + (etat.demoEditeur ? 'demo=1&' : '') + (livreId ? 'livre=' + encodeURIComponent(livreId) + '&' : '') + 'trace=' + SESSION_TRACE + '&v=' + Date.now();
   // Nom unique : un onglet déjà ouvert sous un même nom serait rechargé en arrière-plan, sans venir devant (Chrome,
   // ouverture depuis un cadre), et le clic semblerait sans effet. L'onglet de la liseuse ouvert plus tôt est fermé.
   if (ongletVivant()) { try { fenetreLiseuse.close(); } catch (e) { /* onglet déjà fermé */ } }
   var w = null;
-  try { w = window.open(adresse, 'liseuse-tbl-' + Date.now()); } catch (e) { w = null; }
+  try { w = window.open(adresse, 'liseuse-tbl-' + Date.now()); } catch (e) { w = null; traceLiseuse('window.open a levé une erreur', e && e.message ? e.message : String(e)); }
+  traceLiseuse('window.open : ' + (w ? 'fenêtre obtenue' : 'null (onglet bloqué)'), adresse);
   if (!w) { return false; }
   fenetreLiseuse = w;
   try { w.focus(); } catch (e) { /* le navigateur garde la main */ }
@@ -978,12 +996,17 @@ window.addEventListener('message', function (e) {
   var m = e.data || {};
   // Onglet de la liseuse : il ne demande que les données (ouvrir, fragments, enregistrer) ; il se ferme lui-même.
   if (fenetreLiseuse && e.source === fenetreLiseuse) {
+    if (m.type !== 'liseuseEnregistrer') { traceLiseuse('Message de l’onglet : ' + m.type + (/^liseuse(Ouvrir|Signaler)$/.test(m.type || '') ? ' → relayé à la page Wix' : '')); }
     if (!ongletAParle) { ongletAParle = true; clearTimeout(minuterieSuivi); $('texte-choix-livre').textContent = 'La liseuse est ouverte dans un autre onglet.'; }
     if (m.type === 'liseuseRelaisOk') { clearInterval(minuteriePresentation); }
     else if (/^liseuse(Ouvrir|Signaler|Enregistrer)$/.test(m.type || '')) { clearInterval(minuteriePresentation); envoyer(m); }
     return;
   }
-  if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow) { return; }
+  if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow) {
+    if (/^liseuse/.test(m.type || '')) { traceLiseuse('Message ignoré : ' + m.type, 'source inconnue (onglet ' + (fenetreLiseuse ? 'mémorisé' : 'non mémorisé') + ')'); }
+    return;
+  }
+  if (m.type !== 'liseuseEnregistrer') { traceLiseuse('Message du cadre : ' + m.type); }
   if (m.type === 'liseuseFermer') { fermerLiseuse(); }
   else if (m.type === 'liseusePleinEcran') {
     // Le clic dans la liseuse compte aussi pour ce cadre : le plein écran peut être demandé ici.
@@ -1001,6 +1024,7 @@ function suivreOnglet() {
   clearTimeout(minuterieSuivi);
   minuterieSuivi = setTimeout(function () {
     if (ongletAParle) { return; }
+    traceLiseuse('Après 8 s, l’onglet n’a envoyé aucun message', 'onglet ' + (ongletVivant() ? 'encore ouvert' : 'fermé ou bloqué'));
     $('texte-choix-livre').textContent = ongletVivant()
       ? 'L’onglet de la liseuse est ouvert, mais il ne répond pas encore. Regardez s’il s’est ouvert derrière cette fenêtre.'
       : 'L’onglet de la liseuse a été fermé ou bloqué par le navigateur. Autorisez les fenêtres surgissantes pour ce site, puis réessayez.';
@@ -1009,6 +1033,7 @@ function suivreOnglet() {
 $('btn-liseuse').addEventListener('click', function () {
   try {
     var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
+    traceLiseuse('Clic sur « La liseuse TBL »', 'version ' + VERSION_TBL + ' · livre choisi : ' + (choisi ? choisi.titre + ' (' + choisi.id + ', liseuse ' + choisi.liseuse + ')' : 'aucun') + ' · livres : ' + (etat.livres || []).map(function (l) { return l.titre + (l.liseuse ? '' : ' [pas EPUB]'); }).join(', ') + ' · navigateur : ' + navigator.userAgent);
     if (choisi && choisi.liseuse === false) {
       $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas offert en format EPUB pour l’instant : il ne peut pas s’ouvrir dans la liseuse.';
       return;
@@ -1020,10 +1045,12 @@ $('btn-liseuse').addEventListener('click', function () {
       suivreOnglet();
     } else {
       $('texte-choix-livre').textContent = 'Le navigateur a bloqué le nouvel onglet : la liseuse s’ouvre ici.';
+      traceLiseuse('Onglet bloqué : liseuse ouverte dans le cadre de secours');
       ouvrirLiseuse(choisi ? choisi.id : '');
     }
   } catch (e) {
     console.error('[espace-lecteur] Ouverture de la liseuse impossible :', e);
+    traceLiseuse('ERREUR au clic', e && e.stack ? e.stack : String(e));
     $('texte-choix-livre').textContent = 'La liseuse n’a pas pu s’ouvrir (' + (e && e.message ? e.message : e) + ').';
   }
 });
@@ -1068,6 +1095,7 @@ function rendreLivres() {
   $('etat-livres').hidden = true;
   $('zone-livres').hidden = false;
   $('barre-liseuse').hidden = false;
+  if (!etat.traceBoutonVu) { etat.traceBoutonVu = true; traceLiseuse('Bouton « La liseuse TBL » affiché', livres.length + ' livre(s) : ' + livres.map(function (l) { return l.titre + (l.liseuse ? '' : ' [pas EPUB]'); }).join(', ')); }
   majChoixLivre();
   majFleches();
   montrerLivreChoisi();

@@ -309,8 +309,24 @@ function relais() {
   return relaisVivant(window.opener) ? window.opener : null;
 }
 var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '1e9b7ac · 2026-11-09 17:27';
+var VERSION_TBL = '0388c56 · 2026-11-09 17:34';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
+// Traces de l'ouverture (demande de Marcel du 9 novembre 2026, à retirer une fois la liseuse stable) : envoyées
+// directement au Journal du site (fonction HTTP traceLiseuse), avec le numéro de session de l'Espace Lecteur.
+var SESSION_TRACE = ((location.search.match(/[?&]trace=([a-z0-9]+)/) || [])[1]) || Math.random().toString(36).slice(2, 8);
+var PAGE_TRACE = DANS_ONGLET ? 'liseuse-onglet' : (DANS_ESPACE ? 'liseuse-cadre' : 'liseuse');
+var ADRESSE_TRACE = 'https://www.editionstbl.ca/_functions/traceLiseuse';
+function traceLiseuse(etape, detail) {
+  try {
+    console.log('[trace ' + SESSION_TRACE + '] ' + etape + (detail ? ' · ' + detail : ''));
+    if (!EN_WIX) { return; }
+    var corps = JSON.stringify({ session: SESSION_TRACE, page: PAGE_TRACE, etape: etape, detail: detail ? String(detail) : '' });
+    if (navigator.sendBeacon && navigator.sendBeacon(ADRESSE_TRACE, new Blob([corps], { type: 'text/plain' }))) { return; }
+    fetch(ADRESSE_TRACE, { method: 'POST', body: corps, mode: 'no-cors', keepalive: true }).catch(function () {});
+  } catch (e) { /* trace perdue */ }
+}
+window.addEventListener('error', function (e) { traceLiseuse('ERREUR JavaScript', (e.message || '') + ' (ligne ' + (e.lineno || '?') + ')'); });
+window.addEventListener('unhandledrejection', function (e) { traceLiseuse('ERREUR (promesse)', e.reason && e.reason.stack ? e.reason.stack : String(e.reason)); });
 var minuterieAvis = null;
 function annoncer(texte) {
   var a = $('avis'); a.textContent = texte; a.classList.add('visible');
@@ -324,16 +340,27 @@ var attentes = {};
 function demander(type, params, typeReponse, delai) {
   return new Promise(function (ok) {
     if (!EN_WIX) { ok(demo(type, params)); return; }
-    if (DANS_ONGLET && !relais()) { ok({ statut: 'espaceFerme' }); return; }
+    if (DANS_ONGLET && !relais()) { traceLiseuse('Demande ' + type + ' impossible : aucun Espace Lecteur pour relayer'); ok({ statut: 'espaceFerme' }); return; }
     var cle = typeReponse + ':' + (params && params.depuis !== undefined ? params.depuis : '');
-    attentes[cle] = ok;
+    var suivie = type !== 'liseuseEnregistrer';
+    attentes[cle] = function (m) {
+      if (suivie) { traceLiseuse('Réponse reçue : ' + typeReponse, 'statut ' + m.statut + (m.epub ? ', lien EPUB reçu' : '')); }
+      ok(m);
+    };
+    if (suivie) { traceLiseuse('Demande envoyée : ' + type, 'relais : ' + (relais() === window.opener ? 'onglet qui m’a ouvert' : (relais() ? 'Espace Lecteur présenté' : 'aucun'))); }
     versEspace(Object.assign({ type: type }, params || {}));
-    setTimeout(function () { if (attentes[cle]) { delete attentes[cle]; ok({ statut: 'erreur', delai: true }); } }, delai || 20000);
+    setTimeout(function () {
+      if (attentes[cle]) { delete attentes[cle]; if (suivie) { traceLiseuse('Délai dépassé sans réponse : ' + typeReponse, (delai || 20000) / 1000 + ' s'); } ok({ statut: 'erreur', delai: true }); }
+    }, delai || 20000);
   });
 }
 window.addEventListener('message', function (e) {
-  if (!ORIGINES.some(function (m) { return m.test(e.origin); })) { return; }
+  if (!ORIGINES.some(function (m) { return m.test(e.origin); })) {
+    if (e.data && /^(resultatLiseuse|liseuse)/.test(e.data.type || '')) { traceLiseuse('Message refusé (origine ' + e.origin + ') : ' + e.data.type); }
+    return;
+  }
   var m = e.data || {};
+  if ((EN_WIX || DANS_ESPACE) && e.source !== relais() && m.type !== 'liseuseRelais' && /^(resultatLiseuse|liseuse)/.test(m.type || '')) { traceLiseuse('Message ignoré (ne vient pas du relais) : ' + m.type); }
   // L'Espace Lecteur (même origine) se présente comme relais : utile s'il a été rechargé depuis l'ouverture.
   if (DANS_ONGLET && m.type === 'liseuseRelais' && e.source) {
     relaisOnglet = e.source;
@@ -476,23 +503,33 @@ async function obtenirLivre(r) {
   var Epub = await chargerConvertisseur();
   var cle = null;
   try { cle = r.cle && window.crypto && crypto.subtle ? await cleDuLecteur(r.cle) : null; } catch (e) { cle = null; }
+  traceLiseuse('Convertisseur chargé', 'version ' + Epub.VERSION + ', clé de chiffrement ' + (cle ? 'prête' : 'absente'));
   if (cle) {
     try {
       var entree = await lireRange(r.livre.id);
-      if (entree && entree.empreinte === r.epub.empreinte && entree.version === Epub.VERSION) { return await dechiffrerLivre(entree, cle, r.livre.id); }
-    } catch (e) { console.warn('[liseuse] Livre rangé illisible, nouveau téléchargement :', e && e.message ? e.message : e); }
+      if (entree && entree.empreinte === r.epub.empreinte && entree.version === Epub.VERSION) {
+        var range = await dechiffrerLivre(entree, cle, r.livre.id);
+        traceLiseuse('Livre rangé sur l’appareil ouvert, sans téléchargement');
+        return range;
+      }
+    } catch (e) { console.warn('[liseuse] Livre rangé illisible, nouveau téléchargement :', e && e.message ? e.message : e); traceLiseuse('Livre rangé illisible', e && e.message ? e.message : String(e)); }
   }
   $('texte-chargement').textContent = 'Téléchargement de votre livre…';
+  var t0 = Date.now();
+  traceLiseuse('Téléchargement de l’EPUB', (r.epub.nom || '') + ', ' + (r.epub.taille || '?') + ' octets');
   var octets = await telecharger(r.epub.url, r.epub.taille, function (f) { $('texte-chargement').textContent = 'Téléchargement de votre livre… ' + Math.round(f * 100) + ' %'; });
+  traceLiseuse('EPUB téléchargé', octets.length + ' octets en ' + (Date.now() - t0) + ' ms');
   $('texte-chargement').textContent = 'Préparation de votre livre…';
+  t0 = Date.now();
   var livre = await Epub.convertir(octets, Epub.hoteNavigateur(), { progres: function (f) { $('texte-chargement').textContent = 'Préparation de votre livre… ' + Math.round(f * 100) + ' %'; } });
+  traceLiseuse('Livre préparé', livre.chapitres.length + ' chapitres, ' + livre.fragments.length + ' fragments en ' + (Date.now() - t0) + ' ms, ' + ((livre.rapport && livre.rapport.erreurs) || []).length + ' erreur(s)');
   var rapport = livre.rapport || {};
   if ((rapport.erreurs && rapport.erreurs.length) || (rapport.avertissements && Object.keys(rapport.avertissements).length)) {
     demander('liseuseSignaler', { livreId: r.livre.id, titre: r.livre.titre, versionConvertisseur: livre.versionConvertisseur, erreurs: rapport.erreurs || [], avertissements: rapport.avertissements || {} }, 'resultatLiseuseSignaler', 15000);
   }
   var pret = { chapitres: livre.chapitres, fragments: livre.fragments };
   if (cle) {
-    try { await ecrireRange(r.livre.id, await chiffrerLivre(pret, cle, r.livre.id, r.epub.empreinte)); } catch (e) { console.warn('[liseuse] Livre non rangé sur l’appareil :', e && e.message ? e.message : e); }
+    try { await ecrireRange(r.livre.id, await chiffrerLivre(pret, cle, r.livre.id, r.epub.empreinte)); traceLiseuse('Livre rangé chiffré sur l’appareil'); } catch (e) { console.warn('[liseuse] Livre non rangé sur l’appareil :', e && e.message ? e.message : e); traceLiseuse('Livre non rangé sur l’appareil', e && e.message ? e.message : String(e)); }
   }
   return pret;
 }
@@ -665,6 +702,7 @@ function espaceFerme() {
   messageEcran('Votre Espace Lecteur est fermé', 'La liseuse passe par votre Espace Lecteur pour retrouver vos livres. Ouvrez-le de nouveau, puis touchez « La liseuse TBL ».', 'Ouvrir mon Espace Lecteur', function () { location.href = ADRESSE_ESPACE_LECTEUR; });
 }
 function messageEcran(titre, texte, bouton, action) {
+  traceLiseuse('Message affiché : ' + titre, texte);
   $('chargement').hidden = true;
   var m = el('div', 'ecran-message');
   m.appendChild(el('h2', '', titre));
@@ -676,6 +714,7 @@ function messageEcran(titre, texte, bouton, action) {
   document.body.appendChild(m);
 }
 async function ouvrir(livreId) {
+  traceLiseuse('Liseuse chargée', 'version ' + VERSION_TBL + ' · mode ' + PAGE_TRACE + ' · onglet d’origine ' + (relaisVivant(window.opener) ? 'joignable' : 'absent') + ' · livre demandé ' + (livreId || 'aucun') + ' · ' + navigator.userAgent);
   etat.pret = false;
   $('chargement').hidden = false;
   $('texte-chargement').textContent = 'Ouverture de votre livre…';
@@ -704,6 +743,7 @@ async function ouvrir(livreId) {
   var livre;
   try { livre = await obtenirLivre(r); } catch (e) {
     console.error('[liseuse] Livre impossible à préparer :', e);
+    traceLiseuse('ERREUR pendant la préparation du livre', e && e.stack ? e.stack : String(e));
     messageEcran('Un petit problème', 'Votre livre n’a pas pu être préparé. Vérifiez votre connexion, puis réessayez dans un instant.');
     return;
   }
@@ -716,6 +756,7 @@ async function ouvrir(livreId) {
   etat.total = 1;
   if (document.fonts && document.fonts.ready) { await document.fonts.ready; }
   remettreEnPage();
+  traceLiseuse('Livre affiché', '« ' + etat.livre.titre + ' » · ' + etat.total + ' pages · reprise ' + (etat.position ? 'chapitre ' + etat.position.chapitre + ', paragraphe ' + etat.position.paragraphe : 'au début'));
   if (etat.position && (etat.position.chapitre || etat.position.paragraphe)) { annoncer('Reprise à « ' + ((etat.chapitres[etat.position.chapitre] || {}).titre || '') + ' ».'); }
 }
 
