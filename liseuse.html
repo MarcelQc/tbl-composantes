@@ -262,7 +262,7 @@ function el(tag, classe, texte) { var e = document.createElement(tag); if (class
 var DANS_ESPACE = /[?&]cadre=1(&|$)/.test(location.search);
 var EN_WIX = window.parent !== window && !/[?&]demo=1(&|$)/.test(location.search);
 var ORIGINES = DANS_ESPACE ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '6e18fd7 · 2026-11-08 19:08';
+var VERSION_TBL = '0206fbd · 2026-11-08 19:21';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
