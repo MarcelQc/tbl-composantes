@@ -19,6 +19,8 @@
  *   estAnnule(r), estAVerifier(r) : réponse « statut » qui met fin à l'attente (facultatif) ;
  *   surReussi(r), surAnnulee(r), surFin(r) : rappels (fenêtre payée, facture annulée, toute réponse utile) ;
  *   trace(texte) : journal de la console (facultatif).
+ *   ancre : bouton de référence (élément) ; la fenêtre s'ouvre à sa hauteur. Sans ancre : le dernier bouton cliqué
+ *     hors de la fenêtre. Même option pour TblPaiement.choisir({ titre, corps, boutons, ancre }).
  *
  * Règles (les mêmes que l'EDF) : le numéro de carte reste dans le cadre sécurisé de Stripe ; la fenêtre s'ouvre à
  * la hauteur du bouton cliqué (règle du 8 novembre 2026) et garde sa taille ; Fermer est désactivé pendant le
@@ -102,8 +104,10 @@
 
   // Place le haut de la fenêtre à la hauteur du bouton cliqué (figée à l'ouverture), sans dépasser le bas de la
   // page ; suit seulement sa taille.
-  function placer(boite) {
-    var ancre = ancreY;
+  // element : bouton de référence donné par la composante (ex. « Payer et envoyer »), sinon le dernier bouton cliqué.
+  function placer(boite, element) {
+    var re = element && element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+    var ancre = re && (re.width || re.height) ? re.top + window.scrollY : ancreY;
     function calculer() {
       var hautPage = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
       var h = boite.offsetHeight;
@@ -148,7 +152,7 @@
       document.addEventListener('keydown', echap, true);
       m.appendChild(voile); m.appendChild(b);
       document.body.appendChild(m);
-      placer(b);
+      placer(b, o.ancre);
       if (principal) { viser(principal); }
     });
   }
@@ -197,7 +201,7 @@
     b.appendChild(titre); b.appendChild(corps); b.appendChild(confirm); b.appendChild(btns);
     m.appendChild(voile); m.appendChild(b);
     document.body.appendChild(m);
-    placer(b);
+    placer(b, o.ancre);
     trace('fenêtre de paiement ouverte (traitement en cours)');
 
     var rep = null;

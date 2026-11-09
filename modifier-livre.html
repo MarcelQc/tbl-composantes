@@ -704,13 +704,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=cc2f1ce · 2026-11-09 08:35"></script>
+<script src="paiement-stripe.js?v=fdc3825 · 2026-11-09 08:41"></script>
 <script>
 // ===== Version publiée =====
-// cc2f1ce · 2026-11-09 08:35 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// fdc3825 · 2026-11-09 08:41 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'cc2f1ce · 2026-11-09 08:35';
+var VERSION_TBL = 'fdc3825 · 2026-11-09 08:41';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1436,10 +1436,24 @@ window.addEventListener('message', function (e) {
 
 // ---------- Avis et fenêtres ----------
 var minuteurToast = null;
+// Avis bref juste sous le dernier bouton cliqué (règle du 8 novembre 2026) : dans un cadre Wix plus haut que l'écran,
+// le bas du cadre est souvent hors de la vue. Sans clic connu : en bas de l'écran, comme avant.
+var basDernierClic = null;
+document.addEventListener('click', function (e) {
+  var b = e.target && e.target.closest ? e.target.closest('button, a, [role="button"]') : null;
+  if (!b || (b.closest && b.closest('#tbl-paiement'))) { return; }
+  var r = b.getBoundingClientRect();
+  basDernierClic = (r.width || r.height) ? r.bottom + window.scrollY : null;
+}, true);
 function toast(msg, type) {
   var t = $('toast');
   t.textContent = msg;
   t.className = type || '';
+  if (EN_WIX && basDernierClic !== null) {
+    t.style.position = 'absolute'; t.style.bottom = 'auto'; t.style.top = (basDernierClic + 8) + 'px';
+  } else {
+    t.style.position = ''; t.style.bottom = ''; t.style.top = '';
+  }
   t.hidden = false;
   clearTimeout(minuteurToast);
   minuteurToast = setTimeout(function () { t.hidden = true; }, type === 'mal' ? 7000 : 3500);
@@ -2507,11 +2521,17 @@ function elementsIncomplets() {
 async function lancerApprobation() {
   var manque = elementsIncomplets();
   if (manque.length) {
-    var r = await modale({
+    var incompletes = {
       titre: 'Certaines sections sont incomplètes',
       corps: 'Il manque encore : ' + manque.join(', ') + '. Vous pouvez tout de même envoyer votre page en approbation ; l’équipe TBL vous écrira au besoin.',
       boutons: [{ id: 'ok', libelle: 'Envoyer quand même', principal: true }, { id: 'non', libelle: 'Continuer à compléter' }]
-    });
+    };
+    // À la hauteur du bouton « Payer / Envoyer » (paiement-stripe.js), comme les fenêtres qui suivent : la fenêtre
+    // centrée de l'éditeur s'affichait au milieu du cadre Wix, loin du bouton (correction du 9 novembre 2026).
+    var r = window.TblPaiement
+      ? await window.TblPaiement.choisir({ titre: incompletes.titre, corps: incompletes.corps, ancre: $('b-appr'),
+        boutons: [{ id: 'non', libelle: 'Continuer à compléter' }, { id: 'ok', libelle: 'Envoyer quand même', principal: true }] })
+      : await modale(incompletes);
     if (r !== 'ok') { return; }
   }
   approuver();
@@ -3147,6 +3167,7 @@ function ouvrirFenetrePaiement(totalAffiche) {
     appeler: appelerSansErreur,
     params: { livreId: LIVRE_ID },
     totalAffiche: totalAffiche,
+    ancre: $('b-appr'),
     retour: 'https://www.editionstbl.ca/dashboardlivre?livre=' + encodeURIComponent(LIVRE_ID),
     textes: {
       reussi: 'Merci ! Votre facture est payée. Votre page est maintenant en attente de validation par l’équipe TBL.',
@@ -3187,7 +3208,7 @@ async function proposerFactureEnCours(fc) {
     + (fc.date ? ' (paiement commencé le ' + new Date(fc.date).toLocaleString('fr-CA', { dateStyle: 'long', timeStyle: 'short' }) + ')' : '') + '.'));
   corps.appendChild(paragraphe('Vous pouvez la payer maintenant ou l’annuler. Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
   var options = {
-    titre: 'Une facture attend votre paiement', corps: corps,
+    titre: 'Une facture attend votre paiement', corps: corps, ancre: $('b-appr'),
     boutons: [{ id: 'annuler', libelle: 'Annuler la facture' }, { id: 'payer', libelle: 'Reprendre le paiement', principal: true }]
   };
   var choix = window.TblPaiement ? await window.TblPaiement.choisir(options) : await modale(options);
@@ -3238,7 +3259,7 @@ async function payer() {
     // Confirmation à la hauteur du bouton cliqué (paiement-stripe.js), comme la fenêtre de paiement qui suit : la
     // fenêtre centrée de l'éditeur s'affichait au milieu du cadre Wix, loin du bouton (correction du 9 novembre 2026).
     r = await window.TblPaiement.choisir({
-      titre: 'Paiement avant la vérification', corps: corps,
+      titre: 'Paiement avant la vérification', corps: corps, ancre: $('b-appr'),
       boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: LIBELLE_PAYER + ' ' + argent(f.total), principal: true }]
     });
   } else {
@@ -3278,13 +3299,27 @@ async function approuver() {
       ? 'Vos services ont déjà été payés : aucun nouveau paiement n’est demandé.'
       : 'Vos modifications ne comportent aucun service payant : aucun paiement n’est demandé.')));
   var res = null;
-  var r = await modale({
-    titre: 'Envoyer en approbation', corps: corps,
-    boutons: [{ id: 'ok', libelle: 'Envoyer en approbation', principal: true, action: async function () {
-      res = await appeler('envoyer', { livreId: LIVRE_ID });
-      if (!res.ok) { throw new Error(res.message || 'L’envoi a été refusé.'); }
-    } }, { id: 'non', libelle: 'Annuler' }]
-  });
+  var r;
+  if (EN_WIX && window.TblPaiement) {
+    // À la hauteur du bouton « Envoyer » (paiement-stripe.js) ; l'envoi se fait après le choix.
+    r = await window.TblPaiement.choisir({
+      titre: 'Envoyer en approbation', corps: corps, ancre: $('b-appr'),
+      boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Envoyer en approbation', principal: true }]
+    });
+    if (r !== 'ok') { return; }
+    etat.occupe = true; majUI();
+    res = await appelerSansErreur('envoyer', { livreId: LIVRE_ID }, 40000);
+    etat.occupe = false; majUI();
+    if (!res || !res.ok) { toast((res && res.message) || 'L’envoi a été refusé.', 'mal'); return; }
+  } else {
+    r = await modale({
+      titre: 'Envoyer en approbation', corps: corps,
+      boutons: [{ id: 'ok', libelle: 'Envoyer en approbation', principal: true, action: async function () {
+        res = await appeler('envoyer', { livreId: LIVRE_ID });
+        if (!res.ok) { throw new Error(res.message || 'L’envoi a été refusé.'); }
+      } }, { id: 'non', libelle: 'Annuler' }]
+    });
+  }
   if (r !== 'ok') { return; }
   etat.appr = true; etat.refus = null; etat.revue = !!etat.admin; etat.verrou = !etat.admin; etat.d.etat = 'attente'; etat.d.dateCopie = res.dateCopie;
   if (res.derniereModification) { etat.d.derniereModification = res.derniereModification; }
