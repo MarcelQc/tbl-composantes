@@ -417,9 +417,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 24b4749 · 2026-11-09 11:36 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 692875d · 2026-11-09 16:33 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '24b4749 · 2026-11-09 11:36';
+var VERSION_TBL = '692875d · 2026-11-09 16:33';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -850,7 +850,7 @@ function montrerLivreChoisi() {
 function majChoixLivre() {
   var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
   $('texte-choix-livre').textContent = choisi
-    ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas encore préparé pour la liseuse' : '') + '. Touchez-le de nouveau pour annuler.'
+    ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas offert en format EPUB' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
 }
 // La liseuse TBL (clé DEV001) : Web\liseuse.html s'ouvre dans un cadre posé par-dessus l'Espace Lecteur, et ce cadre
@@ -976,7 +976,7 @@ window.addEventListener('message', function (e) {
   // Onglet de la liseuse : il ne demande que les données (ouvrir, fragments, enregistrer) ; il se ferme lui-même.
   if (fenetreLiseuse && e.source === fenetreLiseuse) {
     if (m.type === 'liseuseRelaisOk') { clearInterval(minuteriePresentation); }
-    else if (/^liseuse(Ouvrir|Fragments|Enregistrer)$/.test(m.type || '')) { clearInterval(minuteriePresentation); envoyer(m); }
+    else if (/^liseuse(Ouvrir|Signaler|Enregistrer)$/.test(m.type || '')) { clearInterval(minuteriePresentation); envoyer(m); }
     return;
   }
   if (!cadreLiseuse || e.source !== cadreLiseuse.contentWindow) { return; }
@@ -987,12 +987,12 @@ window.addEventListener('message', function (e) {
     else { demanderPlein(cadreLiseuse).then(function (ok) { etatPleinLiseuse(!ok); }); }
   }
   else if (m.type === 'liseuseEtatPlein') { etatPleinLiseuse(false); }
-  else if (/^liseuse(Ouvrir|Fragments|Enregistrer)$/.test(m.type || '')) { envoyer(m); }
+  else if (/^liseuse(Ouvrir|Signaler|Enregistrer)$/.test(m.type || '')) { envoyer(m); }
 });
 $('btn-liseuse').addEventListener('click', function () {
   var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
   if (choisi && choisi.liseuse === false) {
-    $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas encore préparé pour la liseuse. Il le sera bientôt.';
+    $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas offert en format EPUB pour l’instant : il ne peut pas s’ouvrir dans la liseuse.';
     return;
   }
   tracer('liseuse', { livre: choisi ? choisi.titre : '' });
@@ -1022,7 +1022,7 @@ function carteLivre(l) {
   carte.appendChild(el('h3', 'titre-livre', l.titre));
   if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
-  if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Bientôt dans la liseuse')); }
+  if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Pas en format EPUB')); }
   return carte;
 }
 function rendreLivres() {

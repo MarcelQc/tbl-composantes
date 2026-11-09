@@ -8,9 +8,13 @@
 <!-- Liseuse web des Éditions TBL (version 1, 8 novembre 2026), sous la clé DEV001. Ouverte dans le cadre de l'Espace
      Lecteur (page Wix /dashboardlecteurs) par le bouton « La liseuse TBL » de l'onglet Livres : liseuse.html?livre=<id>.
      Trois ambiances (le salon, le chalet, l'enquêteur), une ou deux pages, réglages et position gardés au serveur.
-     Plan : .claude\Plans\5-ELC-liseuse-web-production.md. Prototypes : Prototype\Liseuse\.
-     Aucun texte de livre dans ce fichier public : le texte vient du serveur (backend/lecteurLivres.js), par lots, après
-     vérification de l'achat. Hors du site (ouverture directe), un court texte de démonstration. -->
+     Plans : .claude\Plans\5-ELC-liseuse-web-production.md et 6-ELC-liseuse-epub-sur-le-poste.md. Prototypes :
+     Prototype\Liseuse\.
+     Aucun texte de livre dans ce fichier public. Depuis le 9 novembre 2026 : après vérification de l'achat, le serveur
+     (backend/lecteurLivres.js) remet un lien temporaire vers l'EPUB de la boutique et la clé du lecteur ; la liseuse
+     télécharge l'EPUB, le convertit (liseuse-epub.js), puis le range chiffré (AES-GCM) dans le navigateur
+     (IndexedDB « liseuse-tbl »). Ouvertures suivantes : le livre rangé est déchiffré, sans téléchargement. Hors du
+     site (ouverture directe), un court texte de démonstration. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Figtree:wght@400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
@@ -305,7 +309,7 @@ function relais() {
   return relaisVivant(window.opener) ? window.opener : null;
 }
 var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '24b4749 · 2026-11-09 11:36';
+var VERSION_TBL = '692875d · 2026-11-09 16:33';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -369,41 +373,136 @@ function adresseLiseuse(livreId) {
 }
 
 /* ---------- Démonstration (ouverture hors du site) : texte inventé, jamais un vrai livre ---------- */
-// Essai sur le poste de l'éditeur seulement (localhost) : ?fichier=<livre.json converti> ouvre ce livre au lieu de la
-// démonstration. Le fichier n'est jamais publié avec la composante.
+// Essai sur le poste de l'éditeur seulement (localhost) : ?fichier=<livre.epub> ouvre ce livre au lieu de la
+// démonstration, par le même chemin que sur le site (téléchargement, conversion, rangement chiffré avec une clé
+// d'essai). Le fichier n'est jamais publié avec la composante.
 var FICHIER_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? decodeURIComponent((location.search.match(/[?&]fichier=([^&]+)/) || [])[1] || '') : '';
-var livreLocal = null;
-function demoLocal(type, p) {
-  livreLocal = livreLocal || fetch(FICHIER_LOCAL).then(function (r) { return r.json(); });
-  return livreLocal.then(function (l) {
-    if (type === 'liseuseOuvrir') {
-      return { statut: 'ok', livre: { id: 'local', titre: l.titre, auteur: l.auteur, couverture: '' }, chapitres: l.chapitres, nbChapitres: l.chapitres.length, position: null, reglages: null, bibliotheque: [{ id: 'local', titre: l.titre, auteur: l.auteur, couverture: '', liseuse: true }] };
-    }
-    if (type === 'liseuseFragments') {
-      var fin = p.depuis + p.nombre;
-      return { statut: 'ok', fragments: l.fragments.filter(function (f) { return f.chapitre >= p.depuis && f.chapitre < fin; }), fin: fin >= l.chapitres.length };
-    }
-    return { statut: 'ok' };
-  });
-}
-function demo(type, p) {
-  if (FICHIER_LOCAL) { return demoLocal(type, p); }
+var CLE_ESSAI_LOCAL = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=';
+function demo(type) {
+  if (FICHIER_LOCAL) {
+    if (type !== 'liseuseOuvrir') { return { statut: 'ok' }; }
+    var nom = FICHIER_LOCAL.split('/').pop();
+    return { statut: 'ok', livre: { id: 'local', titre: nom, auteur: 'Essai local', couverture: '' }, epub: { url: FICHIER_LOCAL, empreinte: 'local:' + FICHIER_LOCAL, taille: 0 }, cle: CLE_ESSAI_LOCAL, position: null, reglages: null,
+      bibliotheque: [{ id: 'local', titre: nom, auteur: 'Essai local', couverture: '', liseuse: true }] };
+  }
   var phrases = 'La pluie tapait doucement contre la vitre du bureau. Sur la table, le dossier attendait depuis le matin, ouvert à la même page. Il relut la première ligne pour la dixième fois, sans en saisir le sens. Dehors, la ville s’allumait une fenêtre à la fois, comme un livre qu’on feuillette lentement.';
   if (type === 'liseuseOuvrir') {
-    var chap = [];
-    for (var i = 0; i < 8; i += 1) { chap.push({ chapitre: i, partie: i < 4 ? 'Première partie : Le dossier' : 'Deuxième partie : La piste', titre: 'Chapitre ' + (i + 1), afficherTitre: true, exergue: i % 2 ? 'Une phrase d’exergue de démonstration.' : '' }); }
-    return { statut: 'ok', livre: { id: 'demo', titre: 'Livre de démonstration', auteur: 'Les Éditions TBL', couverture: '' }, chapitres: chap, nbChapitres: 8, position: null, reglages: null,
+    var chap = [], fr = [];
+    for (var i = 0; i < 8; i += 1) {
+      chap.push({ chapitre: i, partie: i < 4 ? 'Première partie : Le dossier' : 'Deuxième partie : La piste', titre: 'Chapitre ' + (i + 1), afficherTitre: true, exergue: i % 2 ? 'Une phrase d’exergue de démonstration.' : '' });
+      var t = []; for (var k = 0; k < 7; k += 1) { t.push('<p>' + phrases + (k === 3 ? ' <em>Il le savait déjà.</em>' : '') + '</p>'); }
+      fr.push({ chapitre: i, fragment: 0, contenu: t.join('\n') });
+    }
+    return { statut: 'ok', livre: { id: 'demo', titre: 'Livre de démonstration', auteur: 'Les Éditions TBL', couverture: '' }, livreDirect: { chapitres: chap, fragments: fr }, position: null, reglages: null,
       bibliotheque: [{ id: 'demo', titre: 'Livre de démonstration', auteur: 'Les Éditions TBL', couverture: '', liseuse: true }, { id: 'x', titre: 'Un autre livre', auteur: 'Auteur', couverture: '', liseuse: false }] };
   }
-  if (type === 'liseuseFragments') {
-    var fr = [];
-    for (var c = p.depuis; c < Math.min(8, p.depuis + p.nombre); c += 1) {
-      var t = []; for (var k = 0; k < 7; k += 1) { t.push('<p>' + phrases + (k === 3 ? ' <em>Il le savait déjà.</em>' : '') + '</p>'); }
-      fr.push({ chapitre: c, fragment: 0, contenu: t.join('\n') });
-    }
-    return { statut: 'ok', fragments: fr, fin: p.depuis + p.nombre >= 8 };
-  }
   return { statut: 'ok' };
+}
+
+/* ---------- Livre : EPUB téléchargé, converti sur le poste, rangé chiffré dans le navigateur ---------- */
+var convertisseur = null;
+// liseuse-epub.js, chargé une fois (même version que la liseuse : le numéro évite le cache de GitHub Pages).
+function chargerConvertisseur() {
+  if (window.LiseuseEpub) { return Promise.resolve(window.LiseuseEpub); }
+  convertisseur = convertisseur || new Promise(function (ok, ko) {
+    var s = document.createElement('script');
+    var v = VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? String(Date.now()) : VERSION_TBL;
+    s.src = 'liseuse-epub.js?v=' + encodeURIComponent(v);
+    s.onload = function () { if (window.LiseuseEpub) { ok(window.LiseuseEpub); } else { ko(new Error('convertisseur absent')); } };
+    s.onerror = function () { convertisseur = null; ko(new Error('convertisseur introuvable')); };
+    document.head.appendChild(s);
+  });
+  return convertisseur;
+}
+// Rangement : base IndexedDB « liseuse-tbl », un livre par identifiant, chiffré avec la clé du lecteur. Toute erreur
+// (navigation privée, espace plein) laisse le livre s'ouvrir sans être rangé.
+var BASE_LIVRES = 'liseuse-tbl', MAGASIN_LIVRES = 'livres';
+function base() {
+  return new Promise(function (ok, ko) {
+    var r = indexedDB.open(BASE_LIVRES, 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore(MAGASIN_LIVRES); };
+    r.onsuccess = function () { ok(r.result); };
+    r.onerror = function () { ko(r.error); };
+  });
+}
+function operation(mode, action) {
+  return base().then(function (db) {
+    return new Promise(function (ok, ko) {
+      var tx = db.transaction(MAGASIN_LIVRES, mode);
+      var r = action(tx.objectStore(MAGASIN_LIVRES));
+      tx.oncomplete = function () { db.close(); ok(r && r.result); };
+      tx.onerror = tx.onabort = function () { db.close(); ko(tx.error); };
+    });
+  });
+}
+function lireRange(cle) { return operation('readonly', function (m) { return m.get(cle); }); }
+function ecrireRange(cle, valeur) { return operation('readwrite', function (m) { return m.put(valeur, cle); }); }
+function effacerRange(cle) { return operation('readwrite', function (m) { return m.delete(cle); }); }
+function clesRangees() { return operation('readonly', function (m) { return m.getAllKeys(); }); }
+function versOctets(texte) { return new TextEncoder().encode(texte); }
+function cleDuLecteur(base64) {
+  var brut = Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+  return crypto.subtle.importKey('raw', brut, 'AES-GCM', false, ['encrypt', 'decrypt']);
+}
+// Le livre est compressé (gzip) puis chiffré ; l'identifiant et l'empreinte du fichier sont liés au chiffrement.
+async function chiffrerLivre(livre, cle, livreId, empreinte) {
+  var compresse = await new Response(new Blob([JSON.stringify(livre)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  var donnees = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: versOctets(livreId + '|' + empreinte) }, cle, compresse);
+  return { empreinte: empreinte, version: window.LiseuseEpub.VERSION, iv: iv, donnees: donnees, date: Date.now() };
+}
+async function dechiffrerLivre(entree, cle, livreId) {
+  var clair = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: entree.iv, additionalData: versOctets(livreId + '|' + entree.empreinte) }, cle, entree.donnees);
+  return JSON.parse(await new Response(new Blob([clair]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+async function telecharger(url, taille, progres) {
+  var rep = await fetch(url);
+  if (!rep.ok) { throw new Error('téléchargement refusé (' + rep.status + ')'); }
+  var total = Number(rep.headers.get('Content-Length')) || taille || 0;
+  if (!rep.body || !rep.body.getReader || !total) { return new Uint8Array(await rep.arrayBuffer()); }
+  var lecteur = rep.body.getReader(), morceaux = [], recu = 0;
+  for (;;) {
+    var x = await lecteur.read();
+    if (x.done) { break; }
+    morceaux.push(x.value); recu += x.value.length; progres(Math.min(1, recu / total));
+  }
+  var octets = new Uint8Array(recu), p = 0;
+  morceaux.forEach(function (m) { octets.set(m, p); p += m.length; });
+  return octets;
+}
+// Livre prêt à afficher ({ chapitres, fragments }) : rangé sur l'appareil s'il est à jour, sinon téléchargé et converti.
+async function obtenirLivre(r) {
+  if (r.livreDirect) { return r.livreDirect; }
+  var Epub = await chargerConvertisseur();
+  var cle = null;
+  try { cle = r.cle && window.crypto && crypto.subtle ? await cleDuLecteur(r.cle) : null; } catch (e) { cle = null; }
+  if (cle) {
+    try {
+      var entree = await lireRange(r.livre.id);
+      if (entree && entree.empreinte === r.epub.empreinte && entree.version === Epub.VERSION) { return await dechiffrerLivre(entree, cle, r.livre.id); }
+    } catch (e) { console.warn('[liseuse] Livre rangé illisible, nouveau téléchargement :', e && e.message ? e.message : e); }
+  }
+  $('texte-chargement').textContent = 'Téléchargement de votre livre…';
+  var octets = await telecharger(r.epub.url, r.epub.taille, function (f) { $('texte-chargement').textContent = 'Téléchargement de votre livre… ' + Math.round(f * 100) + ' %'; });
+  $('texte-chargement').textContent = 'Préparation de votre livre…';
+  var livre = await Epub.convertir(octets, Epub.hoteNavigateur(), { progres: function (f) { $('texte-chargement').textContent = 'Préparation de votre livre… ' + Math.round(f * 100) + ' %'; } });
+  var rapport = livre.rapport || {};
+  if ((rapport.erreurs && rapport.erreurs.length) || (rapport.avertissements && Object.keys(rapport.avertissements).length)) {
+    demander('liseuseSignaler', { livreId: r.livre.id, titre: r.livre.titre, versionConvertisseur: livre.versionConvertisseur, erreurs: rapport.erreurs || [], avertissements: rapport.avertissements || {} }, 'resultatLiseuseSignaler', 15000);
+  }
+  var pret = { chapitres: livre.chapitres, fragments: livre.fragments };
+  if (cle) {
+    try { await ecrireRange(r.livre.id, await chiffrerLivre(pret, cle, r.livre.id, r.epub.empreinte)); } catch (e) { console.warn('[liseuse] Livre non rangé sur l’appareil :', e && e.message ? e.message : e); }
+  }
+  return pret;
+}
+// Livres rangés qui ne sont plus dans la bibliothèque du lecteur (remboursés) : effacés de l'appareil.
+function nettoyerRanges(bibliotheque) {
+  var gardes = {};
+  bibliotheque.forEach(function (l) { gardes[l.id] = true; });
+  clesRangees().then(function (cles) {
+    (cles || []).forEach(function (k) { if (!gardes[k] && k !== 'local') { effacerRange(k).catch(function () {}); } });
+  }).catch(function () { /* rangement indisponible */ });
 }
 
 /* ---------- État ---------- */
@@ -587,28 +686,25 @@ async function ouvrir(livreId) {
   if (r.statut === 'connexion') { messageEcran('Connectez-vous', 'La liseuse est réservée aux membres du site.'); return; }
   if (r.statut === 'aucun') {
     etat.bibliotheque = r.bibliotheque || [];
-    messageEcran('Aucun livre à lire pour l’instant', 'Vos livres achetés arriveront dans la liseuse au fur et à mesure qu’ils y seront préparés.');
+    messageEcran('Aucun livre à lire pour l’instant', 'Vos livres numériques achetés apparaîtront ici dès qu’ils seront offerts en format EPUB.');
     return;
   }
   if (r.statut !== 'ok') { messageEcran('Un petit problème', 'La liseuse n’a pas pu s’ouvrir. Réessayez dans un instant.'); return; }
-  etat.livre = r.livre; etat.chapitres = r.chapitres || []; etat.bibliotheque = r.bibliotheque || [];
+  etat.livre = r.livre; etat.bibliotheque = r.bibliotheque || [];
   etat.position = r.position || lire('liseuse-tbl-position-' + r.livre.id);
   if (r.reglages) { R = Object.assign({}, REGLAGES_DEFAUT, r.reglages); ecrire('liseuse-tbl-reglages', R); appliquerApparence(); rendreReglages(); }
   $('titre-livre').textContent = etat.livre.titre;
   document.title = etat.livre.titre + ' | La liseuse TBL';
-  rendreChapitres(); rendreBibliotheque();
-  // Fragments par lots de 12 chapitres
-  var fragments = [];
-  var total = r.nbChapitres || etat.chapitres.length;
-  // Le serveur peut arrêter un lot plus tôt (images lourdes) : il dit alors où reprendre (suivant).
-  for (var depuis = 0; depuis < total;) {
-    $('texte-chargement').textContent = 'Ouverture de votre livre… ' + Math.round(depuis / total * 100) + ' %';
-    var lot = await demander('liseuseFragments', { livreId: etat.livre.id, depuis: depuis, nombre: 12 }, 'resultatLiseuseFragments', 30000);
-    if (lot.statut !== 'ok') { messageEcran('Un petit problème', 'Le livre n’a pas pu être chargé. Réessayez dans un instant.'); return; }
-    fragments = fragments.concat(lot.fragments || []);
-    depuis = lot.suivant > depuis ? lot.suivant : depuis + 12;
+  var livre;
+  try { livre = await obtenirLivre(r); } catch (e) {
+    console.error('[liseuse] Livre impossible à préparer :', e);
+    messageEcran('Un petit problème', 'Votre livre n’a pas pu être préparé. Vérifiez votre connexion, puis réessayez dans un instant.');
+    return;
   }
-  construireLivre(fragments);
+  etat.chapitres = livre.chapitres || [];
+  rendreChapitres(); rendreBibliotheque();
+  if (EN_WIX) { nettoyerRanges(etat.bibliotheque); }
+  construireLivre(livre.fragments || []);
   $('chargement').hidden = true;
   etat.pret = true;
   etat.total = 1;
@@ -640,7 +736,9 @@ function rendreChapitres() {
   var partie = null;
   etat.chapitres.forEach(function (c, i) {
     if (c.partie && c.partie !== partie) { partie = c.partie; liste.appendChild(el('li', 'partie', c.partie)); }
-    var li = el('li'), b = el('button', '', (c.numero ? c.numero + '. ' : '') + c.titre); b.type = 'button'; b.dataset.c = i;
+    // « 3. Titre » pour un numéro seul, « Chapitre 6 · Titre » ou « Prologue · Titre » sinon.
+    var avant = c.numero ? (/^(\d+|[IVXLCDM]+)$/i.test(c.numero) ? c.numero + '. ' : c.numero + ' · ') : '';
+    var li = el('li'), b = el('button', '', avant + c.titre); b.type = 'button'; b.dataset.c = i;
     b.addEventListener('click', function () { if (etat.titres[i]) { aller(etat.titres[i]._page); } fermerPanneau(); });
     li.appendChild(b); liste.appendChild(li);
   });
@@ -652,10 +750,10 @@ function rendreBibliotheque() {
     var b = el('button', 'pn-livre' + (enLecture ? ' en-lecture' : '') + (l.liseuse ? '' : ' indisponible')); b.type = 'button';
     if (l.couverture) { var img = el('img'); img.src = l.couverture; img.alt = ''; img.loading = 'lazy'; b.appendChild(img); } else { b.appendChild(el('div', 'sans-image', l.titre)); }
     b.appendChild(el('strong', '', l.titre));
-    b.appendChild(el('span', '', enLecture ? 'En lecture' : (l.liseuse ? l.auteur : 'Bientôt dans la liseuse')));
+    b.appendChild(el('span', '', enLecture ? 'En lecture' : (l.liseuse ? l.auteur : 'Pas en format EPUB')));
     b.addEventListener('click', function () {
       if (enLecture) { fermerPanneau(); return; }
-      if (!l.liseuse) { annoncer('« ' + l.titre + ' » n’est pas encore préparé pour la liseuse. Il le sera bientôt.'); return; }
+      if (!l.liseuse) { annoncer('« ' + l.titre + ' » n’est pas offert en format EPUB pour l’instant : il ne peut pas s’ouvrir dans la liseuse.'); return; }
       fermerPanneau();
       location.href = adresseLiseuse(l.id);
     });
