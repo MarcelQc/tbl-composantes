@@ -417,9 +417,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// e2bc058 · 2026-11-09 16:49 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1e9b7ac · 2026-11-09 17:27 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'e2bc058 · 2026-11-09 16:49';
+var VERSION_TBL = '1e9b7ac · 2026-11-09 17:27';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -978,6 +978,7 @@ window.addEventListener('message', function (e) {
   var m = e.data || {};
   // Onglet de la liseuse : il ne demande que les données (ouvrir, fragments, enregistrer) ; il se ferme lui-même.
   if (fenetreLiseuse && e.source === fenetreLiseuse) {
+    if (!ongletAParle) { ongletAParle = true; clearTimeout(minuterieSuivi); $('texte-choix-livre').textContent = 'La liseuse est ouverte dans un autre onglet.'; }
     if (m.type === 'liseuseRelaisOk') { clearInterval(minuteriePresentation); }
     else if (/^liseuse(Ouvrir|Signaler|Enregistrer)$/.test(m.type || '')) { clearInterval(minuteriePresentation); envoyer(m); }
     return;
@@ -992,15 +993,39 @@ window.addEventListener('message', function (e) {
   else if (m.type === 'liseuseEtatPlein') { etatPleinLiseuse(false); }
   else if (/^liseuse(Ouvrir|Signaler|Enregistrer)$/.test(m.type || '')) { envoyer(m); }
 });
+// Suivi de l'ouverture : un message sous le bouton dit ce qui se passe (onglet ouvert, onglet muet, erreur).
+var ongletAParle = false;
+var minuterieSuivi = null;
+function suivreOnglet() {
+  ongletAParle = false;
+  clearTimeout(minuterieSuivi);
+  minuterieSuivi = setTimeout(function () {
+    if (ongletAParle) { return; }
+    $('texte-choix-livre').textContent = ongletVivant()
+      ? 'L’onglet de la liseuse est ouvert, mais il ne répond pas encore. Regardez s’il s’est ouvert derrière cette fenêtre.'
+      : 'L’onglet de la liseuse a été fermé ou bloqué par le navigateur. Autorisez les fenêtres surgissantes pour ce site, puis réessayez.';
+  }, 8000);
+}
 $('btn-liseuse').addEventListener('click', function () {
-  var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
-  if (choisi && choisi.liseuse === false) {
-    $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas offert en format EPUB pour l’instant : il ne peut pas s’ouvrir dans la liseuse.';
-    return;
+  try {
+    var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
+    if (choisi && choisi.liseuse === false) {
+      $('texte-choix-livre').textContent = '« ' + choisi.titre + ' » n’est pas offert en format EPUB pour l’instant : il ne peut pas s’ouvrir dans la liseuse.';
+      return;
+    }
+    tracer('liseuse', { livre: choisi ? choisi.titre : '' });
+    // Nouvel onglet ; si le navigateur le bloque, la liseuse s'ouvre par-dessus l'Espace Lecteur, en plein écran.
+    if (ouvrirOngletLiseuse(choisi ? choisi.id : '')) {
+      $('texte-choix-livre').textContent = 'La liseuse s’ouvre dans un nouvel onglet…';
+      suivreOnglet();
+    } else {
+      $('texte-choix-livre').textContent = 'Le navigateur a bloqué le nouvel onglet : la liseuse s’ouvre ici.';
+      ouvrirLiseuse(choisi ? choisi.id : '');
+    }
+  } catch (e) {
+    console.error('[espace-lecteur] Ouverture de la liseuse impossible :', e);
+    $('texte-choix-livre').textContent = 'La liseuse n’a pas pu s’ouvrir (' + (e && e.message ? e.message : e) + ').';
   }
-  tracer('liseuse', { livre: choisi ? choisi.titre : '' });
-  // Nouvel onglet ; si le navigateur le bloque, la liseuse s'ouvre par-dessus l'Espace Lecteur, en plein écran.
-  if (!ouvrirOngletLiseuse(choisi ? choisi.id : '')) { ouvrirLiseuse(choisi ? choisi.id : ''); }
 });
 function carteLivre(l) {
   var carte = el('article', 'livre');
