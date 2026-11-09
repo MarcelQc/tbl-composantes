@@ -309,7 +309,7 @@ function relais() {
   return relaisVivant(window.opener) ? window.opener : null;
 }
 var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '692875d · 2026-11-09 16:33';
+var VERSION_TBL = '2e4a9d6 · 2026-11-09 16:42';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
@@ -690,6 +690,12 @@ async function ouvrir(livreId) {
     return;
   }
   if (r.statut !== 'ok') { messageEcran('Un petit problème', 'La liseuse n’a pas pu s’ouvrir. Réessayez dans un instant.'); return; }
+  // Réponse sans lien vers l'EPUB : le site n'a pas encore été publié avec la nouvelle liseuse (plan 6).
+  if (!r.epub && !r.livreDirect) {
+    console.warn('[liseuse] Réponse du serveur sans EPUB : site Wix à publier avec la liseuse du 9 novembre 2026.');
+    messageEcran('La liseuse se met à jour', 'Le site est en train de recevoir la nouvelle version de la liseuse. Réessayez dans quelques minutes.');
+    return;
+  }
   etat.livre = r.livre; etat.bibliotheque = r.bibliotheque || [];
   etat.position = r.position || lire('liseuse-tbl-position-' + r.livre.id);
   if (r.reglages) { R = Object.assign({}, REGLAGES_DEFAUT, r.reglages); ecrire('liseuse-tbl-reglages', R); appliquerApparence(); rendreReglages(); }
