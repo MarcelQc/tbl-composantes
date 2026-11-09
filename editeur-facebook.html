@@ -398,7 +398,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'e67432c · 2026-11-09 08:32';
+var VERSION_TBL = 'cc2f1ce · 2026-11-09 08:35';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -891,7 +891,7 @@ function ouvrirPaiement(totalAffiche) {
   secours.appendChild(document.createTextNode('.'));
   corps.appendChild(secours);
   var btns = el('div', 'btns');
-  var fermerBt = el('button', 'btn sec', 'Fermer'); fermerBt.type = 'button';
+  var fermerBt = el('button', 'btn sec', 'Annuler'); fermerBt.type = 'button';
   fermerBt.disabled = true; // pendant la préparation de la facture
   btns.appendChild(fermerBt);
   btns.appendChild(payerBt);
@@ -907,8 +907,8 @@ function ouvrirPaiement(totalAffiche) {
   var regle = false;
   // paiementEnCours : bouton Payer cliqué, réponse de Stripe attendue ; paiementAccepte : carte acceptée par Stripe.
   var paiementEnCours = false, paiementAccepte = false;
-  // Fin de l'attente (payée, à vérifier, annulée ou délai de 30 minutes) : Fermer redevient actif.
-  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); fermerBt.disabled = false; }
+  // Fin de l'attente (payée, à vérifier, annulée, délai) : il n'y a plus rien à annuler, le bouton devient Fermer.
+  function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); fermerBt.disabled = false; fermerBt.textContent = 'Fermer'; }
   function fermer() { arreter(); m.remove(); }
   function finAttente() { attente.hidden = true; }
 
@@ -930,7 +930,7 @@ function ouvrirPaiement(totalAffiche) {
   function demarrer(r) {
     rep = r;
     titre.textContent = 'Votre facture est prête';
-    intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Si vous fermez cette fenêtre sans payer, la facture est annulée.';
+    intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Annuler annule la facture, sans courriel.';
     payerBt.textContent = 'Payer ' + argent(rep.total || 0);
     lienSecours.href = rep.lienPaiement;
     secours.hidden = false;

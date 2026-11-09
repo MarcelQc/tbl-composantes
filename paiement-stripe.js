@@ -191,7 +191,7 @@
     corps.appendChild(secours);
     var confirm = el('div', 'tp-confirm'); confirm.hidden = true;
     var btns = el('div', 'tp-btns');
-    var fermerBt = el('button', 'tp-btn tp-sec', 'Fermer'); fermerBt.type = 'button'; fermerBt.disabled = true;
+    var fermerBt = el('button', 'tp-btn tp-sec', 'Annuler'); fermerBt.type = 'button'; fermerBt.disabled = true;
     var payerBt = el('button', 'tp-btn', 'Payer'); payerBt.type = 'button'; payerBt.hidden = true;
     btns.appendChild(fermerBt); btns.appendChild(payerBt);
     b.appendChild(titre); b.appendChild(corps); b.appendChild(confirm); b.appendChild(btns);
@@ -203,7 +203,8 @@
     var rep = null;
     var fini = false, enCours = false, debut = Date.now(), minuterie = null;
     var regle = false, paiementEnCours = false, paiementAccepte = false;
-    function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); fermerBt.disabled = false; }
+    // Fin de l'attente (payée, à vérifier, annulée, délai) : il n'y a plus rien à annuler, le bouton devient Fermer.
+    function arreter() { fini = true; clearInterval(minuterie); document.removeEventListener('visibilitychange', verifier); fermerBt.disabled = false; fermerBt.textContent = 'Fermer'; }
     function fermer() { arreter(); m.remove(); }
     function finAttente() { attente.hidden = true; }
     function sansFormulaire() {
@@ -223,7 +224,7 @@
     function demarrer(r) {
       rep = r;
       titre.textContent = 'Votre facture est prête';
-      intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Si vous fermez cette fenêtre sans payer, la facture est annulée.';
+      intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Annuler annule la facture, sans courriel.';
       payerBt.textContent = 'Payer ' + argent(rep.total || 0);
       lienSecours.href = rep.lienPaiement || '#';
       secours.hidden = !rep.lienPaiement;

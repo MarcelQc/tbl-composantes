@@ -305,7 +305,7 @@ function relais() {
   return relaisVivant(window.opener) ? window.opener : null;
 }
 var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = 'e67432c · 2026-11-09 08:32';
+var VERSION_TBL = 'cc2f1ce · 2026-11-09 08:35';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 var minuterieAvis = null;
 function annoncer(texte) {
