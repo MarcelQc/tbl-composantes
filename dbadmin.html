@@ -2167,9 +2167,6 @@ select:focus { outline: none; border-color: var(--accent); }
         '<label for="apr-filtre-statut">Statut</label><select id="apr-filtre-statut">' +
           APR_STATUTS.map(function (s) { return '<option value="' + s + '">' + s + '</option>'; }).join('') +
           '<option value="">Tous</option></select>' +
-        '<label for="apr-filtre-module">Module</label><select id="apr-filtre-module"><option value="">Tous les modules</option>' +
-          Object.keys(APR_MODULES).map(function (m) { return '<option value="' + m + '">' + m + ' · ' + APR_MODULES[m] + '</option>'; }).join('') +
-        '</select>' +
       '</div>' +
       '<p class="com-statut" role="status" aria-live="polite"></p>' +
       '<div class="apr-grille-zone"><table class="apr-grille"><thead><tr>' +
@@ -2179,7 +2176,6 @@ select:focus { outline: none; border-color: var(--accent); }
     apr.overlay = o;
     o.querySelector('#apr-fermer').addEventListener('click', aprFermer);
     o.querySelector('#apr-filtre-statut').addEventListener('change', aprRendre);
-    o.querySelector('#apr-filtre-module').addEventListener('change', aprRendre);
     o.querySelector('#apr-corps').addEventListener('click', aprClic);
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape' || o.hidden) return;
@@ -2212,8 +2208,7 @@ select:focus { outline: none; border-color: var(--accent); }
     var corps = apr.overlay.querySelector('#apr-corps');
     if (!apr.liste) { corps.innerHTML = ''; return; }
     var statut = apr.overlay.querySelector('#apr-filtre-statut').value;
-    var module = apr.overlay.querySelector('#apr-filtre-module').value;
-    var lignes = apr.liste.filter(function (a) { return (!statut || a.statut === statut) && (!module || a.module === module); });
+    var lignes = apr.liste.filter(function (a) { return !statut || a.statut === statut; });
     var nouvelles = apr.liste.filter(function (a) { return a.statut === 'Nouveau'; }).length;
     aprStatut('', lignes.length + (lignes.length > 1 ? ' affichées' : ' affichée') + ' · ' + nouvelles + (nouvelles > 1 ? ' nouvelles' : ' nouvelle'));
     if (!lignes.length) {
