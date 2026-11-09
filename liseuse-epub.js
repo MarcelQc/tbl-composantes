@@ -33,7 +33,8 @@
 })(typeof self !== 'undefined' ? self : this, function () {
 'use strict';
 
-const VERSION = '2026-11-09.1';
+// .2 : petites images gardées comme ornements (même numérotation des paragraphes que .1).
+const VERSION = '2026-11-09.2';
 const TAILLE_FRAGMENT = 50 * 1024;
 const DIMENSIONS = { pleine: [800, 1200], bandeau: [1200, 700], image: [1000, 1200] };
 const RE_BINAIRE = /\.(jpe?g|png|gif|webp|bmp|tiff?|svg|otf|ttf|woff2?|eot|mp3|mp4|m4a|ogg|wav|webm|pdf)$/i;
@@ -448,20 +449,45 @@ function ajouterImage(n, ctx, sortie) {
   sortie.push({ sorte: 'image', src: chemin, alt: /placeholder|^image$|^img$/i.test(alt) ? '' : alt, role: '' });
 }
 
-/* ---------- Images : JPEG réduit en data: (SVG gardé tel quel) ---------- */
+/* ---------- Images : JPEG réduit en data: (SVG et ornements gardés tels quels) ---------- */
+// Dimensions lues dans l'en-tête du fichier (PNG, GIF, JPEG) ; null si le format n'est pas reconnu.
+function dimensionsImage(o) {
+  const be16 = (p) => (o[p] << 8) | o[p + 1];
+  const be32 = (p) => ((o[p] << 24) >>> 0) + (o[p + 1] << 16) + (o[p + 2] << 8) + o[p + 3];
+  if (o.length > 24 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47) { return { l: be32(16), h: be32(20), type: 'image/png' }; }
+  if (o.length > 10 && o[0] === 0x47 && o[1] === 0x49 && o[2] === 0x46) { return { l: o[6] | (o[7] << 8), h: o[8] | (o[9] << 8), type: 'image/gif' }; }
+  if (o.length > 4 && o[0] === 0xff && o[1] === 0xd8) {
+    let p = 2;
+    while (p + 9 < o.length) {
+      if (o[p] !== 0xff) { p += 1; continue; }
+      const m = o[p + 1];
+      if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) { return { l: be16(p + 7), h: be16(p + 5), type: 'image/jpeg' }; }
+      if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { p += 2; continue; }
+      p += 2 + be16(p + 2);
+    }
+  }
+  return null;
+}
+// Petite image (ornement, fleuron, filet) : gardée à sa taille et dans son format d'origine (transparence comprise),
+// jamais étirée en bandeau.
+const TAILLE_ORNEMENT = 400;
 async function preparerImage(epub, chemin, role, rapport, hote) {
   const ext = extensionDe(chemin);
   const [lMax, hMax] = DIMENSIONS[role] || DIMENSIONS.image;
   let brut;
-  try { brut = await epub.octets(chemin); } catch (e) { rapport.erreur('Image illisible : ' + chemin + ' (' + (e.message || e) + ')'); return ''; }
-  if (ext === '.svg') { rapport.avertir('image', 'Image SVG gardée telle quelle : ' + chemin); return 'data:image/svg+xml;base64,' + enBase64(brut); }
+  try { brut = await epub.octets(chemin); } catch (e) { rapport.erreur('Image illisible : ' + chemin + ' (' + (e.message || e) + ')'); return null; }
+  if (ext === '.svg') { rapport.avertir('image', 'Image SVG gardée telle quelle : ' + chemin); return { src: 'data:image/svg+xml;base64,' + enBase64(brut) }; }
+  const dim = dimensionsImage(brut);
+  if (dim && dim.l > 0 && dim.h > 0 && dim.l <= TAILLE_ORNEMENT && dim.h <= TAILLE_ORNEMENT) {
+    return { src: 'data:' + dim.type + ';base64,' + enBase64(brut), ornement: true, l: dim.l, h: dim.h };
+  }
   try {
     const src = await hote.reduireImage(brut, { chemin, ext, lMax, hMax });
     if (!src) { rapport.erreur('Image illisible : ' + chemin); }
-    return src || '';
+    return src ? { src } : null;
   } catch (e) {
     rapport.erreur('Image illisible : ' + chemin + ' (' + String((e && e.message) || e).trim().split('\n')[0] + ')');
-    return '';
+    return null;
   }
 }
 
@@ -643,10 +669,13 @@ async function convertir(octets, hote, options = {}) {
     for (const p of c.pieces) {
       if (p.sorte === 'image') {
         pousser();
-        const src = await preparerImage(epub, p.src, p.role || 'image', rapport, hote);
-        if (!src) { continue; }
-        const classe = p.role === 'pleine' ? 'mo-image mo-pleine' : (p.role === 'bandeau' ? 'mo-image mo-bandeau' : 'mo-image');
-        fragments.push({ chapitre: i, fragment: numero, ordre: ordre++, contenu: `<figure class="${classe}"><img src="${src}" alt="${echapper(p.alt || '').replace(/"/g, '&quot;')}"></figure>` });
+        const image = await preparerImage(epub, p.src, p.role || 'image', rapport, hote);
+        if (!image) { continue; }
+        const alt = echapper(p.alt || '').replace(/"/g, '&quot;');
+        const contenu = image.ornement
+          ? `<figure class="mo-image mo-ornement"><img src="${image.src}" width="${image.l}" height="${image.h}" alt="${alt}"></figure>`
+          : `<figure class="${p.role === 'pleine' ? 'mo-image mo-pleine' : (p.role === 'bandeau' ? 'mo-image mo-bandeau' : 'mo-image')}"><img src="${image.src}" alt="${alt}"></figure>`;
+        fragments.push({ chapitre: i, fragment: numero, ordre: ordre++, contenu });
         numero += 1;
         continue;
       }

@@ -66,6 +66,10 @@ body{overflow:hidden;display:flex;flex-direction:column;align-items:center;font-
 .mo-image.mo-pleine img{max-height:var(--mo-h, 100%);border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
 .mo-chapitre .mo-bandeau{display:block;margin:0 0 .8em;font-size:1rem}
 .mo-chapitre .mo-bandeau img{display:block;width:100%;max-height:calc(var(--mo-h, 600px) * .32);object-fit:cover;border-radius:6px}
+/* Ornement (petite image de l'EPUB : fleuron, filet) : à sa taille, centré, jamais étiré. */
+.mo-image.mo-ornement{margin:.6em 0}
+.mo-image.mo-ornement img,.mo-chapitre .mo-ornement-titre img{width:auto;height:auto;max-width:40%;border-radius:0;box-shadow:none}
+.mo-chapitre .mo-ornement-titre{display:block;margin:0 0 .5em;font-size:1rem;line-height:1}
 .mo-chapitre.avec-bandeau{margin-top:0}
 
 /* ---------- Décor commun ---------- */
@@ -309,7 +313,7 @@ function relais() {
   return relaisVivant(window.opener) ? window.opener : null;
 }
 var ORIGINES = DANS_ESPACE || DANS_ONGLET ? [new RegExp('^' + location.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$')] : [/^https:\/\/(www\.)?editionstbl\.ca$/, /^https:\/\/[a-z0-9-]+\.editor\.wix\.com$/, /^https:\/\/editor\.wix\.com$/];
-var VERSION_TBL = '0388c56 · 2026-11-09 17:34';
+var VERSION_TBL = '982d884 · 2026-11-09 18:00';
 console.log('[liseuse] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 // Traces de l'ouverture (demande de Marcel du 9 novembre 2026, à retirer une fois la liseuse stable) : envoyées
 // directement au Journal du site (fonction HTTP traceLiseuse), avec le numéro de session de l'Espace Lecteur.
@@ -589,6 +593,12 @@ function construireLivre(fragments) {
       bloc.removeChild(premier);
       h.insertBefore(bandeau, h.firstChild);
       h.classList.add('avec-bandeau');
+    } else if (premier && premier.classList.contains('mo-ornement') && h.tagName === 'H2') {
+      // Ornement en tête de chapitre : dans le titre, au-dessus du numéro, à sa taille.
+      var ornement = el('span', 'mo-ornement-titre');
+      while (premier.firstChild) { ornement.appendChild(premier.firstChild); }
+      bloc.removeChild(premier);
+      h.insertBefore(ornement, h.firstChild);
     }
     // Image pleine page en tête : elle passe avant le titre du chapitre.
     while (bloc.firstElementChild && bloc.firstElementChild.classList.contains('mo-pleine')) { colonnes.insertBefore(bloc.firstElementChild, h); }
@@ -757,7 +767,8 @@ async function ouvrir(livreId) {
   if (document.fonts && document.fonts.ready) { await document.fonts.ready; }
   remettreEnPage();
   traceLiseuse('Livre affiché', '« ' + etat.livre.titre + ' » · ' + etat.total + ' pages · reprise ' + (etat.position ? 'chapitre ' + etat.position.chapitre + ', paragraphe ' + etat.position.paragraphe : 'au début'));
-  if (etat.position && (etat.position.chapitre || etat.position.paragraphe)) { annoncer('Reprise à « ' + ((etat.chapitres[etat.position.chapitre] || {}).titre || '') + ' ».'); }
+  var titreReprise = etat.position && (etat.position.chapitre || etat.position.paragraphe) ? (etat.chapitres[etat.position.chapitre] || {}).titre : '';
+  if (titreReprise) { annoncer('Reprise à « ' + titreReprise + ' ».'); }
 }
 
 /* ---------- Panneaux ---------- */
