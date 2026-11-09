@@ -398,7 +398,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise, comme l'EDC) ---------- */
-var VERSION_TBL = 'eccf6d3 · 2026-11-09 05:48';
+var VERSION_TBL = '9865621 · 2026-11-09 07:01';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -448,6 +448,14 @@ async function demarrer() {
 // heure après le début du paiement.
 async function proposerFactureEnCours(fc) {
   var corps = el('div');
+  // Administrateur dans l'EDF d'un auteur : avis à titre d'information seulement, sans Annuler ni Reprendre, pour ne
+  // pas annuler une facture que l'auteur est peut-être en train de payer (9 novembre 2026).
+  if (etat.d.pourAutre) {
+    corps.appendChild(el('p', null, 'L’auteur a une facture ' + (fc.facture || '') + ' de ' + argent(fc.total || 0) + (fc.livreTitre ? ' pour « ' + fc.livreTitre + ' »' : '') + ' en attente de paiement' + (fc.date ? ' (paiement commencé le ' + dateLongue(fc.date) + ')' : '') + '.'));
+    corps.appendChild(el('p', 'sub', 'Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
+    await modale({ titre: 'Facture en attente de paiement', corps: corps, boutons: [{ id: 'ok', libelle: 'Fermer', principal: true }] });
+    return;
+  }
   corps.appendChild(el('p', null, 'Votre facture ' + (fc.facture || '') + ' de ' + argent(fc.total || 0) + (fc.livreTitre ? ' pour « ' + fc.livreTitre + ' »' : '') + ' n’a pas encore été payée' + (fc.date ? ' (paiement commencé le ' + dateLongue(fc.date) + ')' : '') + '.'));
   corps.appendChild(el('p', 'sub', 'Vous pouvez la payer maintenant ou l’annuler. Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
   var choix = await modale({
