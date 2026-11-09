@@ -1321,6 +1321,52 @@ select:focus { outline: none; border-color: var(--accent); }
 #btn-commentaires { display: inline-flex; align-items: center; gap: 8px; }
 #btn-commentaires[hidden], .com-pastille[hidden] { display: none; }
 
+/* Approbations des auteurs (plan « Approbations_Auteurs », 9 novembre 2026) : bouton de l'en-tête avec le nombre
+   de nouvelles, fenêtre pleine grandeur (même cadre que les Commentaires), grille des demandes. */
+#btn-approbations { display: inline-flex; align-items: center; gap: 8px; }
+#btn-approbations[hidden] { display: none; }
+.apr-grille-zone { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--border-soft); border-radius: var(--radius-btn); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.apr-grille { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.apr-grille th { position: sticky; top: 0; z-index: 1; background: var(--bg-elevated); color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.apr-grille td { padding: 8px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.apr-grille tr.nouveau td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.apr-grille td.montant, .apr-grille th.montant { text-align: right; white-space: nowrap; }
+.apr-date { white-space: nowrap; }
+.apr-type { display: block; color: var(--text-dim); font-size: 0.8rem; }
+.apr-module { display: inline-block; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 700; background: var(--bg-hover); color: var(--text); }
+.apr-module.EDL { background: var(--blue-soft); color: var(--blue); }
+.apr-module.EDC { background: var(--orange-soft); color: var(--orange); }
+.apr-module.EDF { background: var(--green-soft); color: var(--green); }
+.apr-module.EDV { background: rgba(229,37,48,.15); color: var(--rouge-texte); }
+.apr-statut { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+.apr-statut.Nouveau { background: var(--blue-soft); color: var(--blue); }
+.apr-statut.Accepté { background: var(--green-soft); color: var(--green); }
+.apr-statut.Refusé { background: rgba(229,37,48,.15); color: var(--rouge-texte); }
+.apr-statut.Fermé { background: var(--bg-hover); color: var(--text-dim); }
+.apr-essai { display: inline-block; margin-left: 6px; font-size: 0.7rem; color: var(--orange); }
+.apr-note { all: unset; box-sizing: border-box; display: block; width: 100%; min-width: 140px; max-width: 280px; cursor: pointer; color: var(--text); font-size: 0.85rem; border: 1px dashed transparent; border-radius: 6px; padding: 3px 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.apr-note:hover, .apr-note:focus-visible { border-color: var(--border); }
+.apr-note.vide { color: var(--text-dim); font-style: italic; }
+.apr-actions { display: flex; gap: 6px; white-space: nowrap; }
+.apr-actions button { min-width: 34px; padding: 5px 9px; }
+.apr-pop { position: fixed; z-index: 980; width: min(420px, calc(100vw - 24px)); background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 12px 34px rgba(0,0,0,.6); padding: 14px; }
+.apr-pop[hidden] { display: none; }
+.apr-pop h3 { margin: 0 0 8px; font-size: 1rem; }
+.apr-pop p { margin: 0 0 10px; color: var(--text-dim); font-size: 0.88rem; }
+.apr-pop textarea { width: 100%; min-height: 110px; box-sizing: border-box; background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-btn); padding: 8px; font: inherit; }
+.apr-pop .apr-pop-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.apr-pop .apr-pop-err { color: var(--rouge-texte); font-size: 0.85rem; min-height: 1.2em; margin-top: 6px; }
+.apr-avis { position: fixed; z-index: 990; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius-btn); padding: 8px 12px; font-size: 0.88rem; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.apr-avis.mal { border-color: var(--accent); color: var(--rouge-texte); }
+@media (max-width: 760px) {
+  .apr-grille thead { display: none; }
+  .apr-grille, .apr-grille tbody, .apr-grille tr, .apr-grille td { display: block; width: 100%; box-sizing: border-box; }
+  .apr-grille tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+  .apr-grille td { border: none; padding: 4px 10px; }
+  .apr-grille td[data-libelle]::before { content: attr(data-libelle) ' : '; color: var(--text-dim); font-size: 0.8rem; }
+  .apr-grille td.montant { text-align: left; }
+}
+
 /* Journal du site (plan des logs du 4 novembre 2026) : fenêtre « Voir les logs », liste des fichiers du dossier
    MEDIA System/Log et texte en lecture seule. */
 #btn-logs[hidden] { display: none; }
@@ -1469,6 +1515,7 @@ select:focus { outline: none; border-color: var(--accent); }
   </div>
   <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
   <button class="tabs-actualiser" type="button" id="btn-commentaires" title="Lire les commentaires des auteurs et y répondre" hidden>&#128232; Commentaires <span class="com-pastille" id="nb-commentaires" hidden>0</span></button>
+  <button class="tabs-actualiser" type="button" id="btn-approbations" title="Demandes des auteurs qui attendent une action de l’équipe TBL" hidden>&#9989; Approbations <span class="com-pastille" id="nb-approbations" hidden>0</span></button>
   <button class="tabs-actualiser" type="button" id="btn-logs" title="Consulter les fichiers log du site (MEDIA, System/Log)" hidden>&#128196; Voir les logs</button>
 </header>
 
@@ -1546,6 +1593,7 @@ select:focus { outline: none; border-color: var(--accent); }
       etat.pret = true;
       renderTab(currentTab());
       if (etat.admin) comDemarrer(); // bouton « Commentaires » et son nombre de non-lus
+      if (etat.admin) aprDemarrer(); // bouton « Approbations » et son nombre de nouvelles
       if (etat.admin) document.getElementById('btn-logs').hidden = false; // bouton « Voir les logs »
       return;
     }
@@ -2064,6 +2112,250 @@ select:focus { outline: none; border-color: var(--accent); }
   }
 
   document.getElementById('btn-commentaires').addEventListener('click', comOuvrir);
+
+  // ---------- Approbations des auteurs (plan « Approbations_Auteurs », 9 novembre 2026) ----------
+  // Une ligne par demande d'un auteur qui attend une action de l'équipe (backend/approbations.js) : page de livre
+  // (EDL), coffret (EDC), publicité payée (EDF), demande de mise en vedette (EDV). Statuts : Nouveau à l'envoi,
+  // Accepté ou Refusé selon l'action de l'admin dans l'éditeur, Fermé avec le X. Le commentaire est une note interne.
+  // Fenêtres et avis à la hauteur du bouton cliqué (règle du 8 novembre 2026).
+  var apr = { liste: null, overlay: null, pop: null, avis: null, minuterieAvis: null };
+  var APR_STATUTS = ['Nouveau', 'Accepté', 'Refusé', 'Fermé'];
+  var APR_MODULES = { EDL: 'Éditeur de livre', EDC: 'Éditeur de coffret', EDF: 'Publicité Facebook', EDV: 'Mise en vedette' };
+
+  function aprDemarrer() {
+    document.getElementById('btn-approbations').hidden = false;
+    aprCharger();
+  }
+  function aprCharger() {
+    return appeler('listerApprobationsAdmin').then(function (r) {
+      if (!r || r.statut !== 'ok') {
+        aprStatut('err', r && r.statut === 'refuse' ? 'Les approbations sont réservées aux administrateurs (champ admin de la collection Auteurs).' : 'Les approbations n’ont pas pu être chargées. Réessayez dans un instant.');
+        return;
+      }
+      apr.liste = r.approbations || [];
+      aprMajPastille();
+      if (apr.overlay && !apr.overlay.hidden) { aprRendre(); }
+    }).catch(function (e) {
+      aprStatut('err', 'Les approbations n’ont pas pu être chargées : ' + e.message);
+    });
+  }
+  function aprMajPastille() {
+    var n = (apr.liste || []).filter(function (a) { return a.statut === 'Nouveau'; }).length;
+    var p = document.getElementById('nb-approbations');
+    p.textContent = n > 99 ? '99+' : String(n);
+    p.hidden = n === 0;
+    document.getElementById('btn-approbations').setAttribute('aria-label', 'Approbations' + (n ? ', ' + n + (n > 1 ? ' nouvelles' : ' nouvelle') : ''));
+  }
+  function aprStatut(classe, texte) {
+    if (!apr.overlay) return;
+    var s = apr.overlay.querySelector('.com-statut');
+    s.className = 'com-statut' + (classe ? ' ' + classe : '');
+    s.textContent = texte;
+  }
+  function aprConstruire() {
+    if (apr.overlay) return apr.overlay;
+    var o = comEl('div', 'com-overlay');
+    o.setAttribute('role', 'dialog');
+    o.setAttribute('aria-modal', 'true');
+    o.setAttribute('aria-labelledby', 'apr-titre');
+    o.hidden = true;
+    o.innerHTML =
+      '<div class="com-tete"><h2 id="apr-titre">Approbations des auteurs</h2>' +
+        '<button class="btn" type="button" id="apr-fermer">Fermer</button></div>' +
+      '<p class="com-intro">Demandes envoyées par les auteurs. Une demande passe à « Accepté » ou « Refusé » quand vous publiez ou refusez dans l’éditeur ; le X la ferme. Le commentaire est une note interne, jamais vue par l’auteur.</p>' +
+      '<div class="com-filtres">' +
+        '<label for="apr-filtre-statut">Statut</label><select id="apr-filtre-statut">' +
+          APR_STATUTS.map(function (s) { return '<option value="' + s + '">' + s + '</option>'; }).join('') +
+          '<option value="">Tous</option></select>' +
+        '<label for="apr-filtre-module">Module</label><select id="apr-filtre-module"><option value="">Tous les modules</option>' +
+          Object.keys(APR_MODULES).map(function (m) { return '<option value="' + m + '">' + m + ' · ' + APR_MODULES[m] + '</option>'; }).join('') +
+        '</select>' +
+      '</div>' +
+      '<p class="com-statut" role="status" aria-live="polite"></p>' +
+      '<div class="apr-grille-zone"><table class="apr-grille"><thead><tr>' +
+        '<th>Date</th><th>Auteur</th><th>Module</th><th>Demande</th><th class="montant">Montant</th><th>Facture</th><th>Statut</th><th>Commentaire</th><th>Actions</th>' +
+      '</tr></thead><tbody id="apr-corps"></tbody></table></div>';
+    document.body.appendChild(o);
+    apr.overlay = o;
+    o.querySelector('#apr-fermer').addEventListener('click', aprFermer);
+    o.querySelector('#apr-filtre-statut').addEventListener('change', aprRendre);
+    o.querySelector('#apr-filtre-module').addEventListener('change', aprRendre);
+    o.querySelector('#apr-corps').addEventListener('click', aprClic);
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || o.hidden) return;
+      if (apr.pop && !apr.pop.hidden) { aprFermerPop(); return; }
+      aprFermer();
+    });
+    return o;
+  }
+  function aprOuvrir() {
+    var o = aprConstruire();
+    o.hidden = false;
+    document.body.style.overflow = 'hidden';
+    aprStatut('', apr.liste ? '' : 'Chargement des approbations…');
+    aprRendre();
+    aprCharger();
+    o.querySelector('#apr-fermer').focus();
+  }
+  function aprFermer() {
+    if (!apr.overlay) return;
+    aprFermerPop();
+    apr.overlay.hidden = true;
+    document.body.style.overflow = '';
+    document.getElementById('btn-approbations').focus();
+  }
+  function aprArgent(montant) {
+    return typeof montant === 'number' ? montant.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' }) : '—';
+  }
+  function aprRendre() {
+    if (!apr.overlay) return;
+    var corps = apr.overlay.querySelector('#apr-corps');
+    if (!apr.liste) { corps.innerHTML = ''; return; }
+    var statut = apr.overlay.querySelector('#apr-filtre-statut').value;
+    var module = apr.overlay.querySelector('#apr-filtre-module').value;
+    var lignes = apr.liste.filter(function (a) { return (!statut || a.statut === statut) && (!module || a.module === module); });
+    var nouvelles = apr.liste.filter(function (a) { return a.statut === 'Nouveau'; }).length;
+    aprStatut('', lignes.length + (lignes.length > 1 ? ' affichées' : ' affichée') + ' · ' + nouvelles + (nouvelles > 1 ? ' nouvelles' : ' nouvelle'));
+    if (!lignes.length) {
+      corps.innerHTML = '<tr><td colspan="9" style="color:var(--text-dim);padding:16px">Aucune approbation pour ce filtre.</td></tr>';
+      return;
+    }
+    corps.innerHTML = lignes.map(function (a) {
+      var traite = a.statut !== 'Nouveau' && a.dateStatut ? (a.statut + ' le ' + formatDateFr(a.dateStatut) + (a.traitePar ? ' par ' + a.traitePar : '')) : '';
+      var note = a.commentaire
+        ? '<button type="button" class="apr-note" data-note="' + esc(a.id) + '" title="' + esc((a.commentairePar ? a.commentairePar + ', ' : '') + (a.dateCommentaire ? formatDateFr(a.dateCommentaire) : '')) + '">' + esc(a.commentaire) + '</button>'
+        : '<button type="button" class="apr-note vide" data-note="' + esc(a.id) + '">Ajouter une note</button>';
+      return '<tr class="' + (a.statut === 'Nouveau' ? 'nouveau' : '') + '">' +
+        '<td class="apr-date" data-libelle="Date">' + esc(formatDateFr(a.date)) + '</td>' +
+        '<td data-libelle="Auteur">' + esc(a.auteurNom || '—') + '</td>' +
+        '<td data-libelle="Module"><span class="apr-module ' + esc(a.module) + '" title="' + esc(APR_MODULES[a.module] || '') + '">' + esc(a.module) + '</span></td>' +
+        '<td data-libelle="Demande">' + esc(a.elementTitre || '—') + '<span class="apr-type">' + esc(a.typeDemande) + '</span></td>' +
+        '<td class="montant" data-libelle="Montant">' + esc(aprArgent(a.montant)) + '</td>' +
+        '<td data-libelle="Facture">' + esc(a.facture || '—') + (a.essai ? '<span class="apr-essai" title="Bac à sable Stripe">essai</span>' : '') + '</td>' +
+        '<td data-libelle="Statut"><span class="apr-statut ' + esc(a.statut) + '" title="' + esc(traite) + '">' + esc(a.statut) + '</span></td>' +
+        '<td data-libelle="Commentaire">' + note + '</td>' +
+        '<td data-libelle="Actions"><div class="apr-actions">' +
+          (a.lien ? '<button type="button" class="btn btn-sm" data-lien="' + esc(a.lien) + '" title="Ouvrir la demande (nouvel onglet)" aria-label="Ouvrir la demande">&#8599;</button>' : '') +
+          (a.statut !== 'Fermé' ? '<button type="button" class="btn btn-sm" data-fermer="' + esc(a.id) + '" title="Fermer cette approbation" aria-label="Fermer cette approbation">&#10005;</button>' : '') +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+  function aprTrouver(id) {
+    return (apr.liste || []).filter(function (a) { return a.id === id; })[0] || null;
+  }
+  function aprRemplacer(ligne) {
+    apr.liste = (apr.liste || []).map(function (a) { return a.id === ligne.id ? ligne : a; });
+    aprMajPastille();
+    aprRendre();
+  }
+  function aprClic(e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.lien) { aprOuvrirLien(b.dataset.lien); return; }
+    if (b.dataset.fermer) { aprDemanderFermeture(b, b.dataset.fermer); return; }
+    if (b.dataset.note) { aprEditerNote(b, b.dataset.note); }
+  }
+  // Raccourci : nouvel onglet ; s'il est bloqué, la page Wix ouvre l'adresse (Dashboard.vqsud.js, ouvrirLien).
+  function aprOuvrirLien(lien) {
+    var w = null;
+    try { w = window.open(lien, '_blank'); } catch (x) { w = null; }
+    if (w) { try { w.opener = null; } catch (x) { /* ignore */ } return; }
+    appeler('ouvrirLien', lien).catch(function () {});
+  }
+  // Petite fenêtre placée sous le bouton cliqué (dans l'écran), pour la confirmation du X et la note.
+  function aprPop(bouton, contenu) {
+    aprFermerPop();
+    var p = comEl('div', 'apr-pop');
+    p.setAttribute('role', 'dialog');
+    p.setAttribute('aria-modal', 'true');
+    p.appendChild(contenu);
+    document.body.appendChild(p);
+    apr.pop = p;
+    var r = bouton.getBoundingClientRect();
+    var h = p.offsetHeight, l = p.offsetWidth;
+    p.style.top = Math.max(12, Math.min(r.bottom + 6, window.innerHeight - h - 12)) + 'px';
+    p.style.left = Math.max(12, Math.min(r.right - l, window.innerWidth - l - 12)) + 'px';
+    return p;
+  }
+  function aprFermerPop() {
+    if (apr.pop) { apr.pop.remove(); apr.pop = null; }
+  }
+  // Avis bref juste sous le bouton cliqué.
+  function aprAvis(rect, texte, mal) {
+    if (apr.avis) { apr.avis.remove(); }
+    clearTimeout(apr.minuterieAvis);
+    var a = comEl('div', 'apr-avis' + (mal ? ' mal' : ''), texte);
+    a.setAttribute('role', 'status');
+    document.body.appendChild(a);
+    a.style.top = Math.min(rect.bottom + 6, window.innerHeight - a.offsetHeight - 12) + 'px';
+    a.style.left = Math.max(12, Math.min(rect.left, window.innerWidth - a.offsetWidth - 12)) + 'px';
+    apr.avis = a;
+    apr.minuterieAvis = setTimeout(function () { if (apr.avis) { apr.avis.remove(); apr.avis = null; } }, mal ? 6000 : 3000);
+  }
+  function aprDemanderFermeture(bouton, id) {
+    var a = aprTrouver(id);
+    if (!a) return;
+    var c = comEl('div');
+    c.appendChild(comEl('h3', null, 'Fermer cette approbation ?'));
+    c.appendChild(comEl('p', null, a.module + ' · ' + (a.elementTitre || a.typeDemande) + ' (' + (a.auteurNom || 'auteur') + '). Elle passera à « Fermé » et ne comptera plus dans la pastille.'));
+    var btns = comEl('div', 'apr-pop-btns');
+    var non = comEl('button', 'btn', 'Annuler'); non.type = 'button';
+    var oui = comEl('button', 'btn btn-primary', 'Fermer l’approbation'); oui.type = 'button';
+    var err = comEl('p', 'apr-pop-err');
+    btns.appendChild(non); btns.appendChild(oui);
+    c.appendChild(btns); c.appendChild(err);
+    aprPop(bouton, c);
+    non.addEventListener('click', aprFermerPop);
+    oui.addEventListener('click', function () {
+      var rect = bouton.getBoundingClientRect();
+      oui.disabled = true; non.disabled = true;
+      appeler('fermerApprobation', id).then(function (r) {
+        if (!r || r.statut !== 'ok') { throw new Error((r && r.message) || 'La fermeture a été refusée.'); }
+        aprFermerPop();
+        aprRemplacer(r.approbation);
+        aprAvis(rect, 'Approbation fermée.');
+      }).catch(function (e) {
+        oui.disabled = false; non.disabled = false;
+        err.textContent = e.message;
+      });
+    });
+    oui.focus();
+  }
+  function aprEditerNote(bouton, id) {
+    var a = aprTrouver(id);
+    if (!a) return;
+    var c = comEl('div');
+    c.appendChild(comEl('h3', null, 'Note de l’équipe'));
+    c.appendChild(comEl('p', null, 'Note interne sur cette demande, jamais vue par l’auteur. Laissez vide pour la retirer.'));
+    var zone = comEl('textarea');
+    zone.maxLength = 2000;
+    zone.value = a.commentaire || '';
+    c.appendChild(zone);
+    var btns = comEl('div', 'apr-pop-btns');
+    var non = comEl('button', 'btn', 'Annuler'); non.type = 'button';
+    var oui = comEl('button', 'btn btn-primary', 'Enregistrer'); oui.type = 'button';
+    var err = comEl('p', 'apr-pop-err');
+    btns.appendChild(non); btns.appendChild(oui);
+    c.appendChild(btns); c.appendChild(err);
+    aprPop(bouton, c);
+    non.addEventListener('click', aprFermerPop);
+    oui.addEventListener('click', function () {
+      var rect = bouton.getBoundingClientRect();
+      oui.disabled = true;
+      appeler('commenterApprobation', id, zone.value).then(function (r) {
+        if (!r || r.statut !== 'ok') { throw new Error((r && r.message) || 'La note n’a pas été enregistrée.'); }
+        aprFermerPop();
+        aprRemplacer(r.approbation);
+        aprAvis(rect, 'Note enregistrée.');
+      }).catch(function (e) {
+        oui.disabled = false;
+        err.textContent = e.message;
+      });
+    });
+    zone.focus();
+  }
+  document.getElementById('btn-approbations').addEventListener('click', aprOuvrir);
 
   /* ===================== Journal : « Voir les logs » ===================== */
   // Fichiers du dossier MEDIA System/Log (backend/journal.js). listerLogs régénère d'abord All.txt, Error.txt et

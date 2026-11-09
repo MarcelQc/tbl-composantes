@@ -55,18 +55,29 @@ var etat = { recu: false, demo: false, relance: null, abandon: null };
 function $(id) { return document.getElementById(id); }
 
 // Version publiée : dans la console seulement (la boîte est trop petite pour l'afficher).
-var VERSION_TBL = 'fdc3825 · 2026-11-09 08:41';
+var VERSION_TBL = '866d96f · 2026-11-09 11:18';
 console.log('[entete-roles] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 
-function pastille(cle, n) {
+// detail : texte d'aide déjà composé (pastille Admin : commentaires et approbations), sinon DETAILS[cle].
+function pastille(cle, n, detail) {
   var p = $('nb-' + cle);
   n = Math.max(0, Number(n) || 0);
   p.hidden = n === 0;
   p.textContent = n > 99 ? '99+' : String(n);
   var b = $('btn-' + cle);
-  var texte = NOMS[cle] + (n ? ', ' + n + ' ' + DETAILS[cle][n > 1 ? 1 : 0] : '');
+  var texte = NOMS[cle] + (n ? ', ' + (detail || n + ' ' + DETAILS[cle][n > 1 ? 1 : 0]) : '');
   b.setAttribute('aria-label', texte);
   b.title = texte;
+}
+// Pastille Admin : commentaires non lus plus approbations nouvelles (plan « Approbations_Auteurs », 9 novembre
+// 2026). Texte d'aide « 2 commentaires non lus, 1 approbation nouvelle » ; ancien serveur sans détail : DETAILS.
+function detailAdmin(d) {
+  if (typeof d.nbCommentaires !== 'number' && typeof d.nbApprobations !== 'number') { return ''; }
+  var morceaux = [];
+  var c = Number(d.nbCommentaires) || 0, a = Number(d.nbApprobations) || 0;
+  if (c) { morceaux.push(c + ' ' + DETAILS.admin[c > 1 ? 1 : 0]); }
+  if (a) { morceaux.push(a + (a > 1 ? ' approbations nouvelles' : ' approbation nouvelle')); }
+  return morceaux.join(', ');
 }
 // d : { connecte, admin, auteur, nbAdmin, nbAuteur, nbLecteur }. Admin : administrateur ; Auteur : auteur actif ou
 // administrateur ; Lecteur : tout membre connecté.
@@ -76,7 +87,7 @@ function appliquer(d) {
   $('btn-admin').hidden = !(connecte && d.admin);
   $('btn-auteur').hidden = !(connecte && (d.auteur || d.admin));
   $('btn-lecteur').hidden = !connecte;
-  pastille('admin', d.nbAdmin);
+  pastille('admin', d.nbAdmin, detailAdmin(d));
   pastille('auteur', d.nbAuteur);
   pastille('lecteur', d.nbLecteur);
 }
