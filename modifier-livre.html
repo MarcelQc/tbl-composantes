@@ -704,13 +704,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=543c752 · 2026-11-09 18:25"></script>
+<script src="paiement-stripe.js?v=53385e1 · 2026-11-10 05:46"></script>
 <script>
 // ===== Version publiée =====
-// 543c752 · 2026-11-09 18:25 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 53385e1 · 2026-11-10 05:46 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '543c752 · 2026-11-09 18:25';
+var VERSION_TBL = '53385e1 · 2026-11-10 05:46';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1883,7 +1883,9 @@ function ctlPdf() { return $('hote-edition').querySelector('[data-controle-pdf]'
 function referencePdf() { return etat.nouveau ? etat.L.saved.extraitPdf : etat.L.pub.extraitPdf; }
 function rendrePdf(bloque) {
   var c = ctlPdf(), W = etat.L.work.extraitPdf;
-  c.hidden = bloque;
+  // Téléversement retiré (demande de Marcel du 10 novembre 2026) : l'extrait est maintenant le début du livre, lu
+  // dans la liseuse TBL. La zone reste cachée ; un PDF déjà enregistré est gardé tel quel (formulaire « Extrait »).
+  c.hidden = true || bloque;
   c.querySelector('[data-role="lib-pdf"]').textContent = W ? 'Remplacer le PDF' : 'Téléverser l’extrait (PDF)';
   c.querySelector('[data-role="nom-pdf"]').textContent = W ? 'Fichier : ' + W.nom + (W.data ? ' (à enregistrer)' : '') : 'Aucun extrait en PDF pour le moment.';
   var voir = c.querySelector('[data-role="voir-pdf"]');
@@ -2536,13 +2538,13 @@ async function lancerApprobation() {
   }
   approuver();
 }
-// « Demande d'extrait » : explique à l'auteur comment son extrait PDF est distribué.
+// « Demande d'extrait » : explique à l'auteur comment son extrait est offert aux lecteurs (liseuse TBL, plan 7).
 function demandeExtrait() {
   var corps = document.createElement('div');
   var p1 = document.createElement('p');
-  p1.textContent = 'Les lecteurs peuvent demander un extrait de votre livre depuis sa page. Téléversez votre extrait en PDF juste au-dessus de ce bouton, puis enregistrez.';
+  p1.textContent = 'Vous n’avez plus de PDF à fournir. L’extrait de votre livre est préparé automatiquement à partir de votre livre numérique (EPUB) : les premières pages s’ouvrent dans la liseuse TBL.';
   var p2 = document.createElement('p');
-  p2.textContent = 'Une fois la page publiée, votre livre est ajouté au formulaire de demande d’extrait du site et chaque lecteur qui le demande reçoit par courriel le lien de votre PDF. Sans PDF, le bouton n’apparaît pas sur la page.';
+  p2.textContent = 'Les lecteurs y accèdent par le bouton Extrait de la page de votre livre. À la fin de l’extrait, un bouton les invite à acheter le livre. Cette nouvelle façon de lire les extraits est en cours de mise en place sur le site.';
   corps.appendChild(p1); corps.appendChild(p2);
   modale({ titre: 'Demande d’extrait', corps: corps, boutons: [{ id: 'ok', libelle: 'J’ai compris', principal: true }] });
 }
