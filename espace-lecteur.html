@@ -107,6 +107,10 @@ textarea:focus{border-color:var(--or);outline:none}
 
 /* Livres : grille de couvertures (Templates\book-grid.html), qui défile dans le panneau. */
 .titre-bibliotheque{text-align:center;margin:0 0 14px;flex:0 0 auto;font-size:1.5rem}
+.choix-vue{display:flex;justify-content:center;gap:8px;margin:0 0 14px;flex:0 0 auto}
+.choix-vue button{appearance:none;border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:7px 16px;font:600 .9rem inherit;cursor:pointer}
+.choix-vue button[aria-selected="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.choix-vue button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 /* Une seule rangée qui défile de côté, avec une flèche de chaque bout (demande de Marcel du 6 novembre 2026). */
 .zone-livres{display:flex;align-items:center;gap:8px;min-height:0}
 .rangee-livres{flex:1;min-width:0;display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--line) transparent;padding:4px 4px 10px}
@@ -230,6 +234,11 @@ body.liseuse-ouverte{overflow:hidden}
     <!-- LIVRES (clé DEV001) : les livres numériques achetés par le membre -->
     <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" data-cle-dev="DEV001" hidden>
       <h2 class="titre-bibliotheque">Ma bibliothèque</h2>
+      <!-- Mes livres (achetés) ou Les extraits (début gratuit des livres non achetés), comme dans la liseuse -->
+      <div class="choix-vue" role="tablist" aria-label="Bibliothèque" id="choix-vue" hidden>
+        <button type="button" role="tab" id="vue-livres" aria-selected="true">Mes livres</button>
+        <button type="button" role="tab" id="vue-extraits" aria-selected="false">Les extraits</button>
+      </div>
       <div class="etat-livres" id="etat-livres" role="status" aria-live="polite">
         <div class="spin" aria-hidden="true"></div>
         <p class="sub">Recherche de vos livres…</p>
@@ -431,9 +440,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 1d16bd3 · 2026-11-10 18:02 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// a458079 · 2026-11-10 18:15 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '1d16bd3 · 2026-11-10 18:02';
+var VERSION_TBL = 'a458079 · 2026-11-10 18:15';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -838,8 +847,21 @@ function surLivres(msg) {
     vus[l.id] = vus[cle] = true;
     return true;
   });
+  etat.extraits = msg.extraits || [];
+  // La liseuse retrouve ces deux listes dans son onglet (copie de la session du navigateur à l'ouverture).
+  try { sessionStorage.setItem('liseuse-tbl-listes', JSON.stringify({ bibliotheque: etat.livres, extraits: etat.extraits })); } catch (e) { /* stockage indisponible */ }
   rendreLivres();
 }
+// Vue de l'onglet Livres : « livres » (achetés) ou « extraits » (début gratuit des livres non achetés).
+etat.vueLivres = 'livres';
+etat.extraits = [];
+function changerVue(vue) {
+  if (etat.vueLivres === vue) { return; }
+  etat.vueLivres = vue;
+  etat.livreChoisi = null;
+  rendreLivres();
+}
+function listeVue() { return etat.vueLivres === 'extraits' ? etat.extraits || [] : etat.livres || []; }
 // Livre choisi pour la liseuse (id), ou null : la liseuse ouvrira alors le dernier livre lu.
 etat.livreChoisi = null;
 function choisirLivre(id) {
@@ -862,7 +884,15 @@ function montrerLivreChoisi() {
   else if (cr.right > rr.right - marge) { r.scrollBy({ left: cr.right - rr.right + marge, behavior: 'smooth' }); }
 }
 function majChoixLivre() {
-  var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
+  var choisi = listeVue().filter(function (l) { return l.id === etat.livreChoisi; })[0];
+  if (etat.vueLivres === 'extraits') {
+    $('btn-liseuse').textContent = '📖 Lire l’extrait';
+    $('texte-choix-livre').textContent = choisi
+      ? 'Extrait choisi : « ' + choisi.titre + ' ». Touchez-le de nouveau pour annuler.'
+      : 'Touchez un livre pour lire gratuitement son début dans la liseuse.';
+    return;
+  }
+  $('btn-liseuse').textContent = '📖 La liseuse TBL';
   $('texte-choix-livre').textContent = choisi
     ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas offert en format EPUB' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
@@ -1030,7 +1060,32 @@ function suivreOnglet() {
       : 'L’onglet de la liseuse a été fermé ou bloqué par le navigateur. Autorisez les fenêtres surgissantes pour ce site, puis réessayez.';
   }, 8000);
 }
+// Extrait choisi : la liseuse s'ouvre sur l'extrait dans un nouvel onglet (sans relais : l'extrait vient directement
+// du site). Onglet bloqué : la liseuse s'ouvre ici, dans le cadre de secours.
+function ouvrirExtraitLiseuse(choisi) {
+  if (!choisi) { $('texte-choix-livre').textContent = 'Touchez d’abord le livre dont vous voulez lire l’extrait.'; return; }
+  tracer('liseuse', { livre: 'extrait : ' + choisi.titre });
+  var adresse = 'liseuse.html?onglet=1&extrait=' + encodeURIComponent(choisi.id) + '&v=' + Date.now();
+  if (ongletVivant()) { try { fenetreLiseuse.close(); } catch (e) { /* onglet déjà fermé */ } }
+  var w = null;
+  try { w = window.open(adresse, 'liseuse-tbl-' + Date.now()); } catch (e) { w = null; }
+  traceLiseuse('Extrait « ' + choisi.titre + ' » : window.open ' + (w ? 'fenêtre obtenue' : 'null (onglet bloqué)'));
+  if (w) {
+    fenetreLiseuse = w;
+    $('texte-choix-livre').textContent = 'L’extrait s’ouvre dans un nouvel onglet.';
+  } else {
+    $('texte-choix-livre').textContent = 'Le navigateur a bloqué le nouvel onglet : l’extrait s’ouvre ici.';
+    ouvrirLiseuse('');
+    if (cadreLiseuse) { cadreLiseuse.src = 'liseuse.html?cadre=1&extrait=' + encodeURIComponent(choisi.id) + '&v=' + Date.now(); }
+  }
+}
+$('vue-livres').addEventListener('click', function () { changerVue('livres'); });
+$('vue-extraits').addEventListener('click', function () { changerVue('extraits'); });
 $('btn-liseuse').addEventListener('click', function () {
+  if (etat.vueLivres === 'extraits') {
+    ouvrirExtraitLiseuse((etat.extraits || []).filter(function (l) { return l.id === etat.livreChoisi; })[0]);
+    return;
+  }
   try {
     var choisi = (etat.livres || []).filter(function (l) { return l.id === etat.livreChoisi; })[0];
     traceLiseuse('Clic sur « La liseuse TBL »', 'version ' + VERSION_TBL + ' · livre choisi : ' + (choisi ? choisi.titre + ' (' + choisi.id + ', liseuse ' + choisi.liseuse + ')' : 'aucun') + ' · livres : ' + (etat.livres || []).map(function (l) { return l.titre + (l.liseuse ? '' : ' [pas EPUB]'); }).join(', ') + ' · navigateur : ' + navigator.userAgent);
@@ -1078,13 +1133,22 @@ function carteLivre(l) {
   if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
   if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Pas en format EPUB')); }
+  if (etat.vueLivres === 'extraits') { carte.appendChild(el('p', 'achat-livre', 'Extrait gratuit')); }
   return carte;
 }
 function rendreLivres() {
-  var livres = etat.livres || [];
+  var extraits = etat.vueLivres === 'extraits';
+  $('choix-vue').hidden = !(etat.extraits && etat.extraits.length) && !extraits;
+  $('vue-livres').setAttribute('aria-selected', String(!extraits));
+  $('vue-extraits').setAttribute('aria-selected', String(extraits));
+  var livres = listeVue();
   if (!livres.length) {
-    etatLivres('Votre bibliothèque est vide pour l’instant',
-      'Les livres numériques que vous achetez sur notre site apparaîtront ici automatiquement. Il suffit d’utiliser le même courriel que celui de votre compte.', false, true);
+    if (extraits) {
+      etatLivres('Aucun extrait pour l’instant', 'Les extraits de nos livres apparaîtront ici.', false, true);
+    } else {
+      etatLivres('Votre bibliothèque est vide pour l’instant',
+        'Les livres numériques que vous achetez sur notre site apparaîtront ici automatiquement. Il suffit d’utiliser le même courriel que celui de votre compte.' + (etat.extraits && etat.extraits.length ? ' En attendant, découvrez le début de nos livres dans « Les extraits ».' : ''), false, true);
+    }
     return;
   }
   var rangee = $('rangee-livres');
