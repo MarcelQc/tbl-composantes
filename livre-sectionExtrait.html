@@ -58,6 +58,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   // Démonstration : le vrai extrait du livre « lodt » (Livres.extrait)
   var DEMO = { titre: 'Les Ombres du temps', extrait: {
     demande: !/[?&]pdf=non(&|$)/.test(location.search),
+    liseuse: /[?&]liseuse=1(&|$)/.test(location.search), // ?liseuse=1 : bouton « Extrait par La Liseuse TBL » (DEV001)
     blocs: [
       bloc('paragraphe', [{ texte: 'E' }, { texte: 'xtrait ', italique: true }, { texte: 'Conte 1 : Quand la maison dormait encore' }]),
       bloc('paragraphe', []),
@@ -100,11 +101,19 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var X = L && L.extrait;
     var blocsX = X && Array.isArray(X.blocs) ? X.blocs : [];
     var avecTexte = blocsX.some(function (b) { return Array.isArray(b.runs) && b.runs.some(function (r) { return String(r.texte || '').trim(); }); });
-    if (!avecTexte && !(X && X.demande)) { page.hidden = true; return; } // rien à montrer : la page replie la composante
+    if (!avecTexte && !(X && (X.demande || X.liseuse))) { page.hidden = true; return; } // rien à montrer : la page replie la composante
     page.hidden = false;
     var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Extrait du livre'; page.appendChild(t);
     var carte = el('section', 'pg');
     if (avecTexte) { var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(blocsX)); carte.appendChild(rt); }
+    // Clé DEV001 (demande de Marcel du 10 novembre 2026) : le début du livre dans la liseuse TBL. La page ouvre la
+    // liseuse sur l'extrait de ce livre (public/livre-page.js) ; X.liseuse n'est vrai que pour un membre qui a la clé.
+    if (X.liseuse) {
+      var lire = el('button', 'btn-page', 'Extrait par La Liseuse TBL'); lire.type = 'button';
+      lire.title = 'Lire le début' + (L.titre ? ' du livre ' + L.titre : '') + ' dans la liseuse TBL';
+      lire.addEventListener('click', function () { demander('tbl-livre:liseuseExtrait'); });
+      carte.appendChild(lire);
+    }
     if (X.demande) {
       var b = el('button', 'btn-page', 'Demande d’extrait'); b.type = 'button';
       b.title = 'Recevoir l’extrait' + (L.titre ? ' du livre ' + L.titre : '') + ' par courriel';
