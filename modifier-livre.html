@@ -704,13 +704,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=3842af0 · 2026-11-10 18:47"></script>
+<script src="paiement-stripe.js?v=d0b5805 · 2026-11-10 19:18"></script>
 <script>
 // ===== Version publiée =====
-// 3842af0 · 2026-11-10 18:47 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// d0b5805 · 2026-11-10 19:18 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '3842af0 · 2026-11-10 18:47';
+var VERSION_TBL = 'd0b5805 · 2026-11-10 19:18';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2224,7 +2224,9 @@ function monterLivre() {
     c.querySelector('[data-role="retablir-img"]').addEventListener('click', function () { retablirImage(cle); });
     c.querySelector('[data-role="actualiser-img"]').addEventListener('click', function () { actualiserImage(cle); });
   });
-  zoneLivre('demande-extrait').addEventListener('click', demandeExtrait);
+  // En édition, plus de bouton d'extrait (demande de Marcel du 10 novembre 2026) : il n'est montré qu'en
+  // visualisation, où il ouvre l'extrait dans la liseuse TBL (brancherBoutonsApercu).
+  zoneLivre('demande-extrait').hidden = true;
   creerControlePdf();
   var cp = ctlPdf(), fichierPdf = cp.querySelector('[data-role="fichier-pdf"]');
   fichierPdf.addEventListener('change', function () { var fic = fichierPdf.files && fichierPdf.files[0]; fichierPdf.value = ''; if (fic) { choisirPdf(fic); } });
@@ -3468,7 +3470,20 @@ function brancherBoutonsApercu(page, L) {
   // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché, et sans
   // extrait en PDF, le bouton « Demande d'extrait » aussi.
   page.querySelector('[data-action="contact"]').hidden = !courriel;
-  page.querySelector('[data-action="extrait"]').hidden = !L.extraitPdf;
+  // Extrait : le début du livre dans la liseuse TBL, dans un nouvel onglet (demande de Marcel du 10 novembre 2026).
+  // Livre jamais publié : la liseuse le dit (« Extrait introuvable »).
+  var ext = page.querySelector('[data-action="extrait"]');
+  ext.hidden = false;
+  ext.textContent = '📖 La Liseuse TBL - Lire un extrait';
+  ext.title = 'Ouvrir le début de votre livre dans la liseuse TBL, comme le verra un lecteur';
+  ext.removeAttribute('data-action');
+  ext.classList.add('lien-liseuse');
+  ext.addEventListener('click', function (e) {
+    e.preventDefault(); e.stopPropagation();
+    var w = null;
+    try { w = window.open('liseuse.html?extrait=' + encodeURIComponent(LIVRE_ID) + '&v=' + Date.now(), 'liseuse-extrait-' + Date.now()); } catch (err) { w = null; }
+    if (!w) { bulle(ext, 'Le navigateur a bloqué le nouvel onglet. Autorisez les fenêtres surgissantes pour ce site, puis réessayez.'); }
+  });
   var messages = {
     commande: 'Commande numérique : sur le site, ce bouton lance la commande du livre numérique (ePUB). Rien n’est commandé dans l’aperçu.',
     achat: 'Acheter le ePUB : sur le site, ce bouton ajoute le livre numérique au panier. Rien n’est acheté dans l’aperçu.',
