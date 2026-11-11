@@ -57,9 +57,10 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   function bloc(type, runs, niveau) { var b = { type: type, runs: runs }; if (niveau) { b.niveau = niveau; } return b; }
   // Démonstration : le vrai extrait du livre « lodt » (Livres.extrait)
   var DEMO = { titre: 'Les Ombres du temps', extrait: {
-    demande: !/[?&]pdf=non(&|$)/.test(location.search),
-    // ?liseuse=1 : bouton « La Liseuse TBL - Lire un extrait » (DEV001), sur le vrai extrait du livre
-    liseuse: /[?&]liseuse=1(&|$)/.test(location.search) ? '1912e402-0173-4bb9-918e-5ed266dab0e1' : '',
+    // Éditeur Wix : la section telle qu'elle sera, avec le bouton de la liseuse sur le vrai extrait du livre. L'ancien
+    // bouton « Demande d'extrait » ne paraît qu'avec ?pdf=oui (demande de Marcel du 11 novembre 2026).
+    demande: /[?&]pdf=oui(&|$)/.test(location.search),
+    liseuse: '1912e402-0173-4bb9-918e-5ed266dab0e1',
     blocs: [
       bloc('paragraphe', [{ texte: 'E' }, { texte: 'xtrait ', italique: true }, { texte: 'Conte 1 : Quand la maison dormait encore' }]),
       bloc('paragraphe', []),
