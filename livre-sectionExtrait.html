@@ -58,7 +58,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   // Démonstration : le vrai extrait du livre « lodt » (Livres.extrait)
   var DEMO = { titre: 'Les Ombres du temps', extrait: {
     demande: !/[?&]pdf=non(&|$)/.test(location.search),
-    liseuse: /[?&]liseuse=1(&|$)/.test(location.search), // ?liseuse=1 : bouton « Extrait par La Liseuse TBL » (DEV001)
+    // ?liseuse=1 : bouton « La Liseuse TBL - Lire un extrait » (DEV001), sur le vrai extrait du livre
+    liseuse: /[?&]liseuse=1(&|$)/.test(location.search) ? '1912e402-0173-4bb9-918e-5ed266dab0e1' : '',
     blocs: [
       bloc('paragraphe', [{ texte: 'E' }, { texte: 'xtrait ', italique: true }, { texte: 'Conte 1 : Quand la maison dormait encore' }]),
       bloc('paragraphe', []),
@@ -108,10 +109,17 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     if (avecTexte) { var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(blocsX)); carte.appendChild(rt); }
     // Clé DEV001 (demande de Marcel du 10 novembre 2026) : le début du livre dans la liseuse TBL. La page ouvre la
     // liseuse sur l'extrait de ce livre (public/livre-page.js) ; X.liseuse n'est vrai que pour un membre qui a la clé.
+    // Même bouton que l'aperçu de l'Éditeur de livre : la liseuse s'ouvre sur l'extrait dans un nouvel onglet
+    // (X.liseuse = identifiant du livre). Onglet bloqué : la page ouvre la liseuse à la place de la page du livre.
     if (X.liseuse) {
-      var lire = el('button', 'btn-page', 'Extrait par La Liseuse TBL'); lire.type = 'button';
+      var lire = el('button', 'btn-page', '📖 La Liseuse TBL - Lire un extrait'); lire.type = 'button';
       lire.title = 'Lire le début' + (L.titre ? ' du livre ' + L.titre : '') + ' dans la liseuse TBL';
-      lire.addEventListener('click', function () { demander('tbl-livre:liseuseExtrait'); });
+      lire.addEventListener('click', function () {
+        var w = null;
+        var id = /^[0-9a-f-]{36}$/i.test(String(X.liseuse)) ? String(X.liseuse) : '';
+        if (id) { try { w = window.open('liseuse.html?extrait=' + encodeURIComponent(id) + '&v=' + Date.now(), 'liseuse-extrait-' + Date.now()); } catch (e) { w = null; } }
+        if (!w) { demander('tbl-livre:liseuseExtrait'); }
+      });
       carte.appendChild(lire);
     }
     if (X.demande) {
