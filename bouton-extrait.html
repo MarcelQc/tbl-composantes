@@ -1,0 +1,123 @@
+<!--
+  GABARIT : bouton-extrait.html
+  Usage : bouton « Extrait » avec icône de livre ouvert, à poser dans une boîte HTML Wix de n'importe quelle page de
+          livre. Le même fichier sert partout : il reconnaît le livre de la page et ouvre directement l'extrait dans
+          la liseuse TBL, sans passer par /demander-un-extrait (donc sans le délai de la page Wix ni la lecture de
+          la collection Livres). Forme du gabarit bouton-noir.html, en rouge TBL (blanc sur rouge, rouge sur blanc au survol). Ajouté le 12 novembre 2026.
+  À adapter :
+    - tblBoutonExtraitData : label (texte du bouton), liseuse (adresse de la liseuse), site (adresse du site, pour le
+      retour), livres[] ({ id, titre, cle?, chemins[] } : id = fiche publiée dans Livres, chemins = pages où le
+      bouton se trouve, en minuscules et sans accent). Tenir livres[] à jour avec la liste des extraits :
+      https://www.editionstbl.ca/_functions/extraitsLiseuse
+    - Dans l'adresse de la boîte (réglages à la main) : ?livre=<id ou clé> force le livre (le plus sûr dans Wix),
+      ?texte=… change le libellé, ?pleine=1 étire le bouton, ?retour=<adresse> règle la page de retour.
+  Détection du livre, dans cet ordre (la première qui répond gagne) :
+    1. ?livre= ; 2. message de la page { type:'tbl-livre', livre:{ _id, cle } } (même protocole que
+    livre-section1.html) ; 3. message { type:'tbl-page', url } ; 4. adresse de la page hôte (quand Wix la laisse
+    lire) ; 5. ?page=/chemin pour essayer en local.
+  Livre non reconnu dans Wix : le bouton se cache. Ouvert hors du site (essai local), il montre le premier livre.
+-->
+<div class="tbl-bouton-extrait-wrap" id="tbl-bouton-extrait-wrap">
+  <style>
+    .tbl-bouton-extrait-wrap{ display:flex; justify-content:center; padding:var(--tbl-space-sm,16px); background:var(--tbl-bg,#000); }
+    .tbl-bouton-extrait-wrap.pleine .tbl-bouton-extrait{ width:100%; }
+    .tbl-bouton-extrait{
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      font-family:var(--tbl-font-body,Arial,Helvetica,sans-serif); font-weight:700; font-size:1rem;
+      background:var(--tbl-accent,#e52530); color:#fff; border:2px solid var(--tbl-accent,#e52530);
+      border-radius:99px; padding:12px 24px; cursor:pointer; text-decoration:none; text-align:center;
+      transition:background .15s, color .15s;
+    }
+    .tbl-bouton-extrait svg{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .tbl-bouton-extrait:hover, .tbl-bouton-extrait:focus-visible{ background:var(--tbl-ink,#f5f5f5); color:var(--tbl-accent,#e52530); }
+    .tbl-bouton-extrait:focus-visible{ outline:2px solid var(--tbl-ink,#f5f5f5); outline-offset:3px; }
+    .tbl-bouton-extrait.attente{ opacity:.55; pointer-events:none; }
+  </style>
+  <a class="tbl-bouton-extrait attente" id="tbl-bouton-extrait" href="#" target="_top" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg>
+    <span id="tbl-bouton-extrait-texte"></span>
+  </a>
+</div>
+<script>
+  const tblBoutonExtraitData = {
+    label: "Liseuse TBL - Extrait",
+    liseuse: "https://marcelqc.github.io/tbl-composantes/liseuse.html",
+    site: "https://www.editionstbl.ca",
+    livres: [
+      { id: "4d36cd57-a920-4dd0-96a9-47cf2fda4ef1", titre: "Les plumes du silence", chemins: ["/les-plumes-du-silence"] },
+      { id: "5a4a7885-a8b4-40a8-b010-e24ae283444c", titre: "Faits d’hivers", chemins: ["/faits-d-hivers"] },
+      { id: "6e4b6c98-b691-4115-bcf9-84debc3048bd", titre: "Guide de survie aux Techniques policières", chemins: ["/guide-de-surive-aux-techn-policieres"] },
+      { id: "45e35a78-ffe6-48b6-8fe4-f9fd96dfcb5f", titre: "La chambre numéro 5", chemins: ["/la-chambre-numero-5"] },
+      { id: "796f045a-ce6b-4c59-afe7-38c404356751", titre: "Les grandes énigmes du monde", chemins: ["/les-grandes-enigmes-du-monde"] },
+      { id: "1912e402-0173-4bb9-918e-5ed266dab0e1", titre: "Les Ombres du temps", cle: "lodt", chemins: ["/livres/lodt"] },
+      { id: "078495a8-069d-4b09-814b-dd7ca5c11396", titre: "True Crime Québec", chemins: ["/true-crime-quebec"] },
+      { id: "a9dfb9df-c104-499b-857f-14cd31a4829d", titre: "True Crime Québec : Tome 2", chemins: [] },
+      { id: "120fa75d-b52a-4d74-b189-a930e32f2bb0", titre: "True Crime Québec : Tome 3", chemins: [] }
+    ]
+  };
+  (function () {
+    const D = tblBoutonExtraitData;
+    const params = new URLSearchParams(location.search);
+    const bouton = document.getElementById('tbl-bouton-extrait');
+    const dansCadre = window.parent !== window;
+    let rang = 99;
+    let trouve = false;
+
+    document.getElementById('tbl-bouton-extrait-texte').textContent = (params.get('texte') || D.label).slice(0, 60);
+    if (params.get('pleine') === '1') { document.getElementById('tbl-bouton-extrait-wrap').classList.add('pleine'); }
+
+    function sansAccent(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+    function chemin(u) {
+      let s = String(u || '');
+      try { s = decodeURIComponent(s); } catch (e) { /* garde tel quel */ }
+      return sansAccent(s).replace(/^https?:\/\/[^/]+/, '').split(/[?#]/)[0].replace(/\/+$/, '');
+    }
+    function parIdentifiant(v) {
+      const x = String(v || '').toLowerCase();
+      return D.livres.find(function (l) { return l.id === x || (l.cle && l.cle === x); }) || null;
+    }
+    function parPage(u) {
+      const c = chemin(u);
+      return c ? (D.livres.find(function (l) { return l.chemins.indexOf(c) !== -1; }) || null) : null;
+    }
+    function montrer(livre, pageUrl, source) {
+      const surLeSite = /^https:\/\/(www\.)?editionstbl\.ca\//i.test(pageUrl || '');
+      const retour = surLeSite ? pageUrl : (livre.chemins[0] ? D.site + livre.chemins[0] : '');
+      bouton.href = D.liseuse + '?extrait=' + encodeURIComponent(livre.id) + (retour ? '&retour=' + encodeURIComponent(retour) : '');
+      bouton.title = 'Lire gratuitement le début de « ' + livre.titre + ' »';
+      bouton.classList.remove('attente');
+      bouton.hidden = false;
+      trouve = true;
+      console.log('[bouton-extrait] livre reconnu : ' + livre.titre + ' (' + source + ')');
+    }
+    // Une source plus prioritaire (rang plus petit) remplace une moins prioritaire déjà trouvée.
+    function proposer(r, livre, pageUrl, source) { if (livre && r < rang) { rang = r; montrer(livre, pageUrl, source); } }
+
+    proposer(1, parIdentifiant(params.get('livre')), params.get('retour') || '', '?livre=');
+    if (params.get('page')) { proposer(5, parPage(params.get('page')), D.site + params.get('page'), '?page='); }
+
+    window.addEventListener('message', function (e) {
+      const d = e.data || {};
+      if (d.type === 'tbl-livre' && d.livre) {
+        proposer(2, parIdentifiant(d.livre._id) || parIdentifiant(d.livre.cle) || (d.livre.extrait && parIdentifiant(d.livre.extrait.liseuse)), d.url || '', 'message tbl-livre');
+      } else if (d.type === 'tbl-page' && d.url) {
+        proposer(3, parPage(d.url), d.url, 'message tbl-page');
+      }
+    });
+    if (dansCadre) { try { window.parent.postMessage({ type: 'tbl-livre:pret' }, '*'); } catch (e) { /* page fermée */ } }
+
+    const adresses = [];
+    try { adresses.push(window.top.location.href); } catch (e) { /* autre origine */ }
+    if (document.referrer) { adresses.push(document.referrer); }
+    try { if (location.ancestorOrigins) { for (let i = 0; i < location.ancestorOrigins.length; i++) { adresses.push(location.ancestorOrigins[i]); } } } catch (e) { /* indisponible */ }
+    adresses.forEach(function (u) { proposer(4, parPage(u), u, 'page hôte'); });
+
+    // Après 2 s sans livre reconnu : caché sur le site (rien de cassé à montrer), premier livre en essai local.
+    setTimeout(function () {
+      if (trouve) { return; }
+      if (/^(file:|http:\/\/(localhost|127\.0\.0\.1))/i.test(location.href)) { proposer(9, D.livres[0], '', 'essai local'); return; }
+      bouton.hidden = true;
+      console.warn('[bouton-extrait] livre de la page non reconnu : ajoutez ?livre=<identifiant> à l’adresse de la boîte');
+    }, 2000);
+  })();
+</script>
