@@ -38,6 +38,10 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 /* Bouton « Demande d'extrait » : bouton rouge centré, comme .btn.btn-page de l'EDL */
 .btn-page{display:block;width:max-content;max-width:100%;margin:22px auto 0;border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--tbl-accent);color:#fff;font:bold .95rem var(--tbl-font-body);cursor:pointer;text-align:center}
 .btn-page:hover,.btn-page:focus-visible{filter:brightness(1.12)}
+/* Bouton « Liseuse TBL - Extrait » : gabarit Templates\bouton-extrait.html (rouge TBL, icône de livre ouvert) */
+.btn-liseuse{display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid var(--tbl-accent);border-radius:99px;padding:12px 24px;background:var(--tbl-accent);color:#fff;font:700 1rem var(--tbl-font-body);transition:background .15s,color .15s}
+.btn-liseuse svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn-liseuse:hover,.btn-liseuse:focus-visible{background:#f5f5f5;color:var(--tbl-accent);filter:none}
 /* Chargement : boîte grise et petit message, comme la section 1 */
 .pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
 .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
@@ -113,7 +117,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     // Même bouton que l'aperçu de l'Éditeur de livre : la liseuse s'ouvre sur l'extrait dans un nouvel onglet
     // (X.liseuse = identifiant du livre). Onglet bloqué : la page ouvre la liseuse à la place de la page du livre.
     if (X.liseuse) {
-      var lire = el('button', 'btn-page', '📖 La Liseuse TBL - Lire un extrait'); lire.type = 'button';
+      var lire = el('button', 'btn-page btn-liseuse'); lire.type = 'button';
+      lire.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span>';
       lire.title = 'Lire le début' + (L.titre ? ' du livre ' + L.titre : '') + ' dans la liseuse TBL';
       lire.addEventListener('click', function () {
         var w = null;
