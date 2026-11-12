@@ -47,6 +47,10 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 /* Bouton noir (Templates\bouton-noir.html) : au survol, texte noir sur fond blanc */
 .btn-noir{display:inline-block;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
 .btn-noir:hover,.btn-noir:focus-visible{background:#fff;color:#000}
+/* Bouton « Liseuse TBL - Extrait » : gabarit Templatesbouton-extrait.html */
+.btn-liseuse{display:inline-flex;align-items:center;justify-content:center;gap:10px;box-sizing:border-box;border:2px solid var(--tbl-accent);border-radius:99px;padding:12px 24px;background:var(--tbl-accent);color:#fff;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
+.btn-liseuse svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn-liseuse:hover,.btn-liseuse:focus-visible{background:#f5f5f5;color:var(--tbl-accent)}
 /* Chargement : boîte grise et petit message, comme le coffret */
 .pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center}
 .chargement .msg{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted);font-size:1rem}
@@ -59,7 +63,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
   .couv img{max-width:240px}
   .description{font-size:17px}
 }
-@media (max-width:520px){.pg{padding:14px 12px}.btn-achat,.btn-noir{padding:11px 20px;font-size:15px}}
+@media (max-width:520px){.pg{padding:14px 12px}.btn-achat,.btn-noir,.btn-liseuse{padding:11px 20px;font-size:15px}}
 </style>
 </head>
 <body>
@@ -121,7 +125,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var bs = el('div', 'boutons-s1');
     var achat = el('button', 'btn-achat', texteNumerique(L.prixNumerique)); achat.type = 'button';
     achat.addEventListener('click', function () { demander('tbl-livre:acheter'); });
-    var ext = el('button', 'btn-noir', 'Extrait'); ext.type = 'button'; ext.title = 'Aller à l’extrait du livre';
+    var ext = el('button', 'btn-liseuse'); ext.type = 'button'; ext.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span>'; ext.title = 'Aller à l’extrait du livre';
     ext.addEventListener('click', function () { demander('tbl-livre:extrait'); });
     bs.appendChild(achat); bs.appendChild(ext); s1.appendChild(bs);
     page.appendChild(s1);

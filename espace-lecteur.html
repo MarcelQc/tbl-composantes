@@ -440,9 +440,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 028e9e6 · 2026-11-12 17:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 3b2911f · 2026-11-12 17:20 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '028e9e6 · 2026-11-12 17:14';
+var VERSION_TBL = '3b2911f · 2026-11-12 17:20';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }

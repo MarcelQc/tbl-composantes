@@ -641,7 +641,7 @@ body.v-rapport{background:#fff;color:#111}
       </div>
       <div class="boutons-s1">
         <button type="button" class="btn-achat" data-action="achat" data-role="btn-num">Numérique</button>
-        <button type="button" class="btn-noir" data-role="aller-extrait" title="Aller à l’extrait du livre">Extrait</button>
+        <button type="button" class="btn-liseuse" data-role="aller-extrait" title="Aller à l’extrait du livre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span></button>
       </div>
     </section>
     <section class="sec s-achat">
@@ -708,13 +708,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=028e9e6 · 2026-11-12 17:14"></script>
+<script src="paiement-stripe.js?v=3b2911f · 2026-11-12 17:20"></script>
 <script>
 // ===== Version publiée =====
-// 028e9e6 · 2026-11-12 17:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 3b2911f · 2026-11-12 17:20 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '028e9e6 · 2026-11-12 17:14';
+var VERSION_TBL = '3b2911f · 2026-11-12 17:20';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
