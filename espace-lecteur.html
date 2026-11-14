@@ -119,6 +119,11 @@ textarea:focus{border-color:var(--or);outline:none}
 .rangee-livres .livre .couverture{height:190px;width:auto;max-width:100%;margin:0 auto 8px}
 .rangee-livres .livre .titre-livre{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.9rem}
 .rangee-livres .livre .achat-livre{font-size:.72rem}
+/* Cartes de même taille dans Mes livres et Les extraits : titre sur 2 lignes, auteur sur 1 ligne et une ligne d'état
+   gardent toujours leur place, même vides (demande de Marcel du 14 novembre 2026). */
+.rangee-livres .livre .titre-livre{min-height:2.5em}
+.rangee-livres .livre .auteur-livre{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.3em}
+.rangee-livres .livre .achat-livre{min-height:1.3em}
 .fleche-livres{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .fleche-livres:hover:not(:disabled){border-color:var(--red)}
 .fleche-livres:disabled{opacity:.3;cursor:default}
@@ -440,9 +445,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 03e3dae · 2026-11-12 17:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// b9317b8 · 2026-11-14 07:25 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '03e3dae · 2026-11-12 17:40';
+var VERSION_TBL = 'b9317b8 · 2026-11-14 07:25';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -1130,10 +1135,12 @@ function carteLivre(l) {
     carte.appendChild(el('div', 'couverture sans-image', l.titre));
   }
   carte.appendChild(el('h3', 'titre-livre', l.titre));
-  if (l.auteur) { carte.appendChild(el('p', 'auteur-livre', l.auteur)); }
-  if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); }
-  if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Pas en format EPUB')); }
-  if (etat.vueLivres === 'extraits') { carte.appendChild(el('p', 'achat-livre', 'Extrait gratuit')); }
+  carte.appendChild(el('p', 'auteur-livre', l.auteur || ' '));
+  var lignesEtat = 0;
+  if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); lignesEtat += 1; }
+  if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Pas en format EPUB')); lignesEtat += 1; }
+  if (etat.vueLivres === 'extraits') { carte.appendChild(el('p', 'achat-livre', 'Extrait gratuit')); lignesEtat += 1; }
+  if (!lignesEtat) { carte.appendChild(el('p', 'achat-livre', ' ')); }
   return carte;
 }
 function rendreLivres() {
