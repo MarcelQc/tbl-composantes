@@ -112,8 +112,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Extrait du livre'; page.appendChild(t);
     var carte = el('section', 'pg');
     if (avecTexte) { var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(blocsX)); carte.appendChild(rt); }
-    // Clé DEV001 (demande de Marcel du 10 novembre 2026) : le début du livre dans la liseuse TBL. La page ouvre la
-    // liseuse sur l'extrait de ce livre (public/livre-page.js) ; X.liseuse n'est vrai que pour un membre qui a la clé.
+    // Demande de Marcel du 10 novembre 2026 : le début du livre dans la liseuse TBL. La page ouvre la
+    // liseuse sur l'extrait de ce livre (public/livre-page.js) ; X.liseuse est l'identifiant du livre quand il a un extrait.
     // Même bouton que l'aperçu de l'Éditeur de livre : la liseuse s'ouvre sur l'extrait dans un nouvel onglet
     // (X.liseuse = identifiant du livre). Onglet bloqué : la page ouvre la liseuse à la place de la page du livre.
     if (X.liseuse) {

@@ -9,7 +9,7 @@
 /* Espace Lecteur (ELC), à l'image de l'Espace Auteurs (espace-auteurs.html, EDA) : mêmes jetons, en-tête, onglets
    et commentaires. Ouvert à tout membre connecté (lecteur, auteur ou administrateur). Version 1 : une annonce
    « en construction » et les commentaires (demande de Marcel du 31 octobre 2026). Onglet Livres sous la clé
-   DEV001 (6 novembre 2026) : les livres numériques achetés, en attendant la liseuse web. */
+   Onglet Livres (6 novembre 2026) : les livres numériques achetés, en attendant la liseuse web. */
 /* Jetons des gabarits (Templates\tokens.css). Copiés ici : la composante est un fichier autonome. */
 :root{--tbl-bg:#000;--tbl-paper:#16181c;--tbl-paper-2:#111317;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;--tbl-accent-soft:#5b2126;--tbl-ok:#4cc38a;--tbl-orange:#e8a33d;--tbl-orange-soft:#3d2c12;--tbl-blue:#5b9bf0;--tbl-blue-soft:#14233d;--tbl-font-heading:Arial,Helvetica,sans-serif;--tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:none}
 /* Couleurs de l'EDA, rattachées aux jetons. */
@@ -232,12 +232,12 @@ body.liseuse-ouverte{overflow:hidden}
     </div>
     <div class="onglets" role="tablist" aria-label="Sections de l'Espace Lecteur">
       <button class="onglet" role="tab" id="onglet-nouveautes" aria-controls="panneau-nouveautes" aria-selected="true" tabindex="0">Nouveautés</button>
-      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1" data-cle-dev="DEV001" hidden>Livres <span class="pastille-dev" title="Fonction en développement, visible seulement par les personnes inscrites sur la clé DEV001">DEV001</span></button>
+      <button class="onglet" role="tab" id="onglet-livres" aria-controls="panneau-livres" aria-selected="false" tabindex="-1">Livres</button>
       <button class="onglet" role="tab" id="onglet-commentaires" aria-controls="panneau-commentaires" aria-selected="false" tabindex="-1">Commentaires <span class="pastille-nb nouvelles" id="nb-commentaires" aria-hidden="true" hidden>0</span></button>
     </div>
 
-    <!-- LIVRES (clé DEV001) : les livres numériques achetés par le membre -->
-    <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" data-cle-dev="DEV001" hidden>
+    <!-- LIVRES : les livres numériques achetés par le membre -->
+    <div class="panneau" role="tabpanel" id="panneau-livres" aria-labelledby="onglet-livres" hidden>
       <h2 class="titre-bibliotheque">Ma bibliothèque</h2>
       <!-- Mes livres (achetés) ou Les extraits (début gratuit des livres non achetés), comme dans la liseuse -->
       <div class="choix-vue" role="tablist" aria-label="Bibliothèque" id="choix-vue" hidden>
@@ -428,12 +428,8 @@ function surEspace(msg) {
     appliquerClesDev(msg.clesDev);
     rendreEspace();
     montrer('espace');
-    // DEV001 : l'onglet Livres est chargé tout de suite ; Nouveautés reste l'onglet ouvert au départ.
-    if (aLaCle('DEV001')) {
-      demanderLivres();
-    } else if (!$('panneau-livres').hidden) {
-      choisirOnglet('nouveautes', false);
-    }
+    // L'onglet Livres est chargé tout de suite ; Nouveautés reste l'onglet ouvert au départ.
+    demanderLivres();
     demanderCommentaires();
   } else if (msg.statut === 'connexion') {
     etat.donnees = null;
@@ -445,9 +441,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// de95fb9 · 2026-11-14 07:29 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 7a9702a · 2026-11-14 07:31 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'de95fb9 · 2026-11-14 07:29';
+var VERSION_TBL = '7a9702a · 2026-11-14 07:31';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -799,7 +795,7 @@ $('btn-reessayer').addEventListener('click', demarrer);
 // La page Wix ouvre sa fenêtre de connexion ; après la connexion, elle renvoie l'espace du membre.
 $('btn-connexion').addEventListener('click', function () { envoyer({ type: 'connexion' }); });
 
-/* ---------- Onglet Livres (clé DEV001) ---------- */
+/* ---------- Onglet Livres ---------- */
 // Livres numériques achetés par le membre. Le serveur lit seulement les commandes passées depuis la dernière
 // ouverture et ajoute les nouveaux livres (backend/lecteurLivres.js). La première lecture peut prendre quelques
 // secondes : elle parcourt tout l'historique du membre.
@@ -902,7 +898,7 @@ function majChoixLivre() {
     ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas offert en format EPUB' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
 }
-// La liseuse TBL (clé DEV001) : Web\liseuse.html s'ouvre dans un cadre posé par-dessus l'Espace Lecteur, et ce cadre
+// La liseuse TBL : Web\liseuse.html s'ouvre dans un cadre posé par-dessus l'Espace Lecteur, et ce cadre
 // passe en plein écran pendant le clic (le navigateur ne le permet qu'à ce moment). L'Espace Lecteur relaie les
 // messages de la liseuse vers la page Wix et les réponses vers la liseuse. Son bouton Retour ferme le cadre.
 var cadreLiseuse = null;
