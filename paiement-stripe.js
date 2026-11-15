@@ -44,7 +44,8 @@
   var CSS = '' +
     '#tbl-paiement{position:absolute;inset:0;z-index:300}' +
     '#tbl-paiement .tp-voile{position:fixed;inset:0;background:rgba(0,0,0,.72)}' +
-    '#tbl-paiement .tp-boite{position:absolute;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 24px));' +
+    '#tbl-paiement td:last-child{white-space:nowrap;text-align:right;vertical-align:top;padding-left:16px}' +
+    '#tbl-paiement .tp-boite{position:absolute;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 24px));' +
     'background:var(--tbl-paper,#16181c);color:var(--tbl-ink,#f5f5f5);border:1px solid var(--tbl-line,#34373e);' +
     'border-radius:var(--tbl-radius,14px);box-shadow:0 20px 50px rgba(0,0,0,.6);padding:var(--tbl-space-md,24px);' +
     'font-family:var(--tbl-font-body,Arial,Helvetica,sans-serif);box-sizing:border-box}' +
