@@ -123,7 +123,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
       lire.addEventListener('click', function () {
         var w = null;
         var id = /^[0-9a-f-]{36}$/i.test(String(X.liseuse)) ? String(X.liseuse) : '';
-        if (id) { try { w = window.open('liseuse.html?extrait=' + encodeURIComponent(id) + '&v=' + Date.now(), 'liseuse-extrait-' + Date.now()); } catch (e) { w = null; } }
+        if (id) { try { w = window.open('liseuse.html?onglet=1&extrait=' + encodeURIComponent(id) + '&v=' + Date.now(), 'liseuse-extrait-' + Date.now()); } catch (e) { w = null; } }
         if (!w) { demander('tbl-livre:liseuseExtrait'); }
       });
       carte.appendChild(lire);

@@ -33,7 +33,7 @@
     .tbl-bouton-extrait:focus-visible{ outline:2px solid var(--tbl-ink,#f5f5f5); outline-offset:3px; }
     .tbl-bouton-extrait.attente{ opacity:.55; pointer-events:none; }
   </style>
-  <a class="tbl-bouton-extrait attente" id="tbl-bouton-extrait" href="#" target="_top" rel="noopener">
+  <a class="tbl-bouton-extrait attente" id="tbl-bouton-extrait" href="#" target="_blank" rel="noopener">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg>
     <span id="tbl-bouton-extrait-texte"></span>
   </a>
@@ -83,7 +83,7 @@
     function montrer(livre, pageUrl, source) {
       const surLeSite = /^https:\/\/(www\.)?editionstbl\.ca\//i.test(pageUrl || '');
       const retour = surLeSite ? pageUrl : (livre.chemins[0] ? D.site + livre.chemins[0] : '');
-      bouton.href = D.liseuse + '?extrait=' + encodeURIComponent(livre.id) + (retour ? '&retour=' + encodeURIComponent(retour) : '');
+      bouton.href = D.liseuse + "?onglet=1&extrait=" + encodeURIComponent(livre.id) + (retour ? '&retour=' + encodeURIComponent(retour) : '');
       bouton.title = 'Lire gratuitement le début de « ' + livre.titre + ' »';
       bouton.classList.remove('attente');
       bouton.hidden = false;
