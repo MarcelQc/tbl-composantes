@@ -391,6 +391,8 @@ body.v-rapport{background:#fff;color:#111}
 <!-- ===== Vue Rapport ===== -->
 <div id="vue-rapport" hidden></div>
 
+<!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
+<script src="paiement-stripe.js?v=5623771 · 2026-11-15 11:51"></script>
 <script>
 (function () {
 'use strict';
@@ -423,6 +425,17 @@ var PRIX = {
   place: 1000         // place « En vedette » changée
 };
 var SEUIL_DESCRIPTION = 0.2;
+// Prix du catalogue Stripe envoyés par le serveur (obtenir → tarifs, en cents ; plan « Facturation_Stripe_Services »,
+// phase 3) : ils remplacent les valeurs ci-dessus, qui ne servent plus qu'à l'affichage si Stripe ne répond pas. Le
+// montant payé est toujours celui du serveur.
+function appliquerTarifs(t) {
+  if (!t) { return; }
+  Object.keys(PRIX).forEach(function (k) {
+    // « message » : même produit que les textes (coffret-texte).
+    var v = k === 'message' ? t.texte : t[k];
+    if (typeof v === 'number' && isFinite(v)) { PRIX[k] = v; }
+  });
+}
 // Groupes de champs : chaque section modifiée affiche son prix (pastille dorée), comme l'EDL.
 var GROUPES = {
   fiche: ['titre', 'prix', 'description', 'imageBoutique'],
@@ -548,14 +561,29 @@ function modale(o) {
   });
 }
 var minuterieToast = null;
+// Avis bref juste sous le dernier bouton cliqué (règle du 8 novembre 2026) : dans un cadre Wix plus haut que l'écran,
+// le bas du cadre est souvent hors de la vue. Sans clic connu : en bas de l'écran, comme avant.
+var basDernierClic = null;
+document.addEventListener('click', function (e) {
+  var b = e.target && e.target.closest ? e.target.closest('button, a, [role="button"]') : null;
+  if (!b || (b.closest && b.closest('#tbl-paiement'))) { return; }
+  var r = b.getBoundingClientRect();
+  basDernierClic = (r.width || r.height) ? r.bottom + window.scrollY : null;
+}, true);
 function toast(texte, classe) {
   var t = $('toast'); if (!t) { t = el('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
-  t.className = classe || ''; t.textContent = texte; t.hidden = false;
+  t.className = classe || ''; t.textContent = texte;
+  if (EN_WIX && basDernierClic !== null) {
+    t.style.position = 'absolute'; t.style.bottom = 'auto'; t.style.top = (basDernierClic + 8) + 'px';
+  } else {
+    t.style.position = ''; t.style.bottom = ''; t.style.top = '';
+  }
+  t.hidden = false;
   clearTimeout(minuterieToast); minuterieToast = setTimeout(function () { t.hidden = true; }, 4200);
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '7cf09de · 2026-11-15 09:49';
+var VERSION_TBL = '5623771 · 2026-11-15 11:51';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -573,7 +601,8 @@ function montrer(vue) {
 }
 function erreurPage(titre, texte) { $('etat-titre').textContent = titre; $('etat-texte').textContent = texte; montrer('etat-msg'); }
 // État du coffret : nouveau (jamais publié), publie, modifier (copie enregistrée), approbation, corriger.
-function verrou() { return etat.d.etat === 'approbation' && !etat.d.admin; }
+// Verrouillé : en attente de validation (auteur), ou pendant que la fenêtre de paiement est ouverte.
+function verrou() { return (etat.d.etat === 'approbation' && !etat.d.admin) || !!etat.verrouPaiement; }
 function revueAdmin() { return etat.d.etat === 'approbation' && etat.d.admin; }
 function livresModifiables() { return !etat.d.dejaPublie && !verrou() && etat.d.etat !== 'approbation'; }
 function editable() { return !verrou(); }
@@ -592,6 +621,8 @@ async function demarrer() {
     return;
   }
   etat.d = d;
+  etat.verrouPaiement = false;
+  appliquerTarifs(d.tarifs);
   etat.ref = Object.assign(vierge(), d.publie || {});
   etat.c = Object.assign(vierge(), d.copie || d.publie || {});
   if (!d.publie && !d.copie) { etat.c = remplirParDefaut(vierge()); }
@@ -600,6 +631,7 @@ async function demarrer() {
   $('version-tbl').textContent = texteVersion(!!d.admin); $('version-tbl').hidden = false;
   montrer('vue-edition');
   rendreTout();
+  if (d.factureEnCours) { proposerFactureEnCours(d.factureEnCours); }
 }
 
 // Nouveau coffret : textes proposés (l'auteur les change à son goût).
@@ -636,7 +668,8 @@ function coutChamp(f) {
   if (f.k === 'titre' || f.t === 'livre' || f.t === 'info') { return 0; }
   if (f.k === 'prix') { return PRIX.prix; }
   if (f.k === 'description') { return tauxDescription() < SEUIL_DESCRIPTION ? PRIX.descPetit : PRIX.descGrand; }
-  if (f.k === 'presentation1' || f.k === 'section2') { return PRIX.choix; }
+  if (f.k === 'presentation1') { return PRIX.choix; }
+  if (f.k === 'section2') { return PRIX.texte; } // produit « texte du coffret » (coffret-texte), comme le serveur
   if (f.k === 'accroche') { return PRIX.message; }
   if (f.t === 'image') { return demandeDe(f.k) ? 0 : PRIX.image; }
   if (f.t === 'demande') { return etat.c[f.k] ? PRIX.imageTbl : 0; }
@@ -1375,25 +1408,115 @@ async function enregistrer() {
   rendreTout();
   toast('Modifications enregistrées.', 'ok');
 }
+// ---------- Paiement par carte (facture Stripe, plan « Facturation_Stripe_Services », phase 3) ----------
+// La fenêtre de paiement vient de paiement-stripe.js (commune aux éditeurs) : elle s'ouvre à la hauteur du bouton,
+// montre le formulaire de carte de Stripe, puis demande l'état au serveur jusqu'à « Paiement réussi ». L'auteur ne
+// quitte jamais l'éditeur.
+function appelerSansErreur(action, params, delai) {
+  return appeler(action, params, delai).catch(function () { return null; });
+}
+// Paiement confirmé : le coffret passe à « En attente de validation » et se verrouille.
+function coffretPaye(r) {
+  etat.verrouPaiement = false;
+  etat.d.etat = 'approbation'; etat.d.refus = null; etat.d.paiementCommence = null;
+  if (r && r.derniereModification) { etat.d.derniereModification = r.derniereModification; }
+  rendreTout();
+}
+// Facture annulée (fenêtre fermée sans payer) : le coffret redevient modifiable.
+function paiementAbandonne() {
+  etat.verrouPaiement = false; etat.d.paiementCommence = null;
+  rendreTout();
+}
+function ouvrirFenetrePaiement(totalAffiche) {
+  if (!window.TblPaiement) { return null; }
+  return window.TblPaiement.ouvrir({
+    appeler: appelerSansErreur,
+    params: { coffretId: etat.d.coffretId },
+    totalAffiche: totalAffiche,
+    ancre: $('b-appr'),
+    retour: 'https://www.editionstbl.ca/dashboardcoffret?coffret=' + encodeURIComponent(etat.d.coffretId),
+    textes: {
+      reussi: 'Merci ! Votre facture est payée. Votre coffret est maintenant en attente de validation par l’équipe TBL.',
+      reussiSub: 'La facture payée est dans l’onglet Documents de l’Espace Auteurs. Nous vous écrirons dès que le coffret sera publié.',
+      fermerSansPayer: 'La facture sera annulée et vous ne recevrez aucun courriel. Vos modifications restent enregistrées : vous pourrez payer plus tard.',
+      annulee: 'Cette facture a été annulée. Cliquez de nouveau sur le bouton de paiement pour en obtenir une autre.',
+      delai: 'Nous n’avons pas encore reçu la confirmation du paiement. Si vous avez payé, le coffret passera en attente de validation sous peu et vous recevrez un courriel.'
+    },
+    estAnnule: function (r) { return r.statut === 'annule'; },
+    surReussi: function (r) { coffretPaye(r); toast('Paiement réussi', 'ok'); },
+    surAnnulee: function () { paiementAbandonne(); toast('Facture annulée. Vos modifications sont toujours enregistrées.', 'ok'); },
+    surFin: function (r) { if (r && r.statut === 'annule') { paiementAbandonne(); } },
+    trace: function (t) { console.log('[EDC paiement] ' + t); }
+  });
+}
+// Réponse du serveur à « payer » ou « reprendre » : formulaire de carte, ou coffret déjà payé, ou erreur.
+function traiterReponsePaiement(res, fenetre) {
+  if (res && res.ok && res.paye) {
+    if (fenetre) { fenetre.fermer(); }
+    coffretPaye(res);
+    toast('Votre facture ' + (res.facture || '') + ' est déjà payée. Merci !', 'ok');
+    return;
+  }
+  if (res && res.ok && res.paiement) {
+    etat.verrouPaiement = true; rendreTout();
+    if (fenetre) { fenetre.demarrer(res); return; }
+    // Script de paiement absent : la page de la facture Stripe, en secours.
+    if (res.lienPaiement) { window.open(res.lienPaiement, '_blank', 'noopener'); }
+    return;
+  }
+  if (fenetre) { fenetre.fermer(); }
+  toast((res && res.message) || 'Le paiement n’a pas pu être préparé. Réessayez dans un moment.', 'mal');
+}
+// Facture restée ouverte (onglet fermé pendant le paiement) : Reprendre (même facture) ou Annuler.
+async function proposerFactureEnCours(fc) {
+  var corps = el('div');
+  corps.appendChild(el('p', null, 'Votre facture ' + (fc.facture || '') + ' de ' + argent(fc.total || 0) + ' n’a pas encore été payée'
+    + (fc.date ? ' (paiement commencé le ' + new Date(fc.date).toLocaleString('fr-CA', { dateStyle: 'long', timeStyle: 'short' }) + ')' : '') + '.'));
+  corps.appendChild(el('p', null, 'Vous pouvez la payer maintenant ou l’annuler. Sans paiement, elle est annulée automatiquement une heure après le début du paiement, sans courriel.'));
+  var options = {
+    titre: 'Une facture attend votre paiement', corps: corps, ancre: $('b-appr'),
+    boutons: [{ id: 'annuler', libelle: 'Annuler la facture' }, { id: 'payer', libelle: 'Reprendre le paiement', principal: true }]
+  };
+  var choix = window.TblPaiement ? await window.TblPaiement.choisir(options) : await modale(options);
+  if (choix === 'payer') {
+    var fenetre = ouvrirFenetrePaiement(argent(fc.total || 0));
+    traiterReponsePaiement(await appelerSansErreur('reprendre', { coffretId: etat.d.coffretId }, 30000), fenetre);
+  } else if (choix === 'annuler') {
+    var a = await appelerSansErreur('annuler', { coffretId: etat.d.coffretId }, 20000);
+    if (a && a.ok && a.paye) { coffretPaye(a); toast('Cette facture était déjà payée. Merci !', 'ok'); return; }
+    if (a && a.ok) { paiementAbandonne(); toast('Facture ' + (fc.facture || '') + ' annulée.', 'ok'); return; }
+    toast((a && a.message) || 'L’annulation n’a pas pu être faite. Réessayez dans un instant.', 'mal');
+  }
+}
+
+// Envoi en approbation : auteur payant, le serveur crée la facture Stripe (coffrets-editeur.js, payerCoffret) et la
+// fenêtre de paiement s'affiche dans l'éditeur ; sinon (auteur gratuit, administrateur) envoi direct.
 async function lancerApprobation() {
   if (raisonRefusApprobation()) { return; }
   var f = facture();
   var corps = el('div');
-  corps.appendChild(el('p', null, f.total ? 'Après le paiement, l’équipe des Éditions TBL vérifie votre coffret puis le publie. Vous recevrez un courriel à chaque étape.' : 'Votre coffret est envoyé à l’équipe des Éditions TBL, qui le vérifie puis le publie.'));
+  corps.appendChild(el('p', null, f.total ? 'Après le paiement, l’équipe des Éditions TBL vérifie votre coffret puis le publie. Le formulaire de paiement par carte s’affiche ici même, sans quitter l’éditeur. Vous recevrez un courriel à chaque étape.' : 'Votre coffret est envoyé à l’équipe des Éditions TBL, qui le vérifie puis le publie.'));
   corps.appendChild(tableauFacture(f));
-  var r = await modale({ titre: f.total ? 'Payer et envoyer en approbation' : 'Envoyer en approbation', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: f.total ? 'Payer ' + argent(f.total) : 'Envoyer', principal: true }] });
+  if (f.total && etat.d.paiementCommence) {
+    corps.appendChild(el('p', null, 'Vous avez commencé un paiement le ' + new Date(etat.d.paiementCommence).toLocaleString('fr-CA', { dateStyle: 'long', timeStyle: 'short' }) + ' : la même facture sera reprise, sans nouveau numéro, si son montant n’a pas changé.'));
+  }
+  // À la hauteur du bouton cliqué (paiement-stripe.js), comme la fenêtre de paiement qui suit.
+  var options = {
+    titre: f.total ? 'Payer et envoyer en approbation' : 'Envoyer en approbation', corps: corps, ancre: $('b-appr'),
+    boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: f.total ? 'Payer ' + argent(f.total) : 'Envoyer', principal: true }]
+  };
+  var r = window.TblPaiement ? await window.TblPaiement.choisir(options) : await modale(options);
   if (r !== 'ok') { return; }
-  etat.occupe = true; majOutils();
-  var rep = await appeler(f.total ? 'payer' : 'envoyer', { coffretId: etat.d.coffretId });
-  etat.occupe = false;
-  if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'L’envoi a échoué. Réessayez dans un instant.', 'mal'); return; }
-  // Paiement : la page Wix ouvre la page de paiement (code de la page Dashboard Coffret). Le coffret passe en
-  // attente de validation quand Wix confirme le paiement. Le montant payé est celui que le serveur recalcule.
-  if (rep.checkoutId) {
-    etat.occupe = true; majOutils();
-    toast('Ouverture de la page de paiement…', 'ok');
+  if (f.total) {
+    // Fenêtre ouverte tout de suite (« Traitement en cours ») pendant que le serveur prépare la facture.
+    var fenetre = ouvrirFenetrePaiement(argent(f.total));
+    traiterReponsePaiement(await appelerSansErreur('payer', { coffretId: etat.d.coffretId }, 40000), fenetre);
     return;
   }
+  etat.occupe = true; majOutils();
+  var rep = await appeler('envoyer', { coffretId: etat.d.coffretId });
+  etat.occupe = false;
+  if (!rep || !rep.ok) { majOutils(); toast((rep && rep.message) || 'L’envoi a échoué. Réessayez dans un instant.', 'mal'); return; }
   toast('Demande envoyée : votre coffret attend la validation de l’équipe.' + (rep.facture ? ' Votre facture ' + rep.facture + ' vous a été envoyée par courriel.' : ''), 'ok');
   demarrer();
 }
