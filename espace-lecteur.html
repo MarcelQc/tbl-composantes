@@ -259,14 +259,13 @@ body.liseuse-ouverte{overflow:hidden}
       </div>
     </div>
 
-    <!-- NOUVEAUTÉS : annonce de l'Espace Lecteur en construction -->
+    <!-- NOUVEAUTÉS : accueil de l'Espace Lecteur (renvoie à l'onglet Livres, garde le bouton Commentaire) -->
     <div class="panneau" role="tabpanel" id="panneau-nouveautes" aria-labelledby="onglet-nouveautes">
       <article class="card annonce">
-        <span class="etiquette-bientot">En construction</span>
         <h2>Bienvenue dans votre Espace Lecteur</h2>
-        <p class="texte-annonce">Merci d'être là ! Vous faites partie des premiers lecteurs à découvrir cet espace.</p>
-        <p class="sub">L'Espace Lecteur est en construction. Notre équipe y travaille en ce moment et de nouvelles sections s'ajouteront au fil des prochaines semaines.</p>
-        <p class="sub">Nous voulons bâtir cet espace avec vous. Qu'aimeriez-vous y trouver ? Une idée, une suggestion, quelque chose qui vous manque ? Laissez-nous vos commentaires en tout temps. Notre équipe les lit tous.</p>
+        <p class="texte-annonce">Merci d'être là !</p>
+        <p class="sub">Rendez-vous dans l'onglet Livres : vous y retrouvez vos livres numériques à lire dans la liseuse TBL ainsi que les extraits de nos livres à découvrir.</p>
+        <p class="sub">Qu'aimeriez-vous y trouver d'autre ? Une idée, une suggestion, quelque chose qui vous manque ? Laissez-nous vos commentaires en tout temps. Notre équipe les lit tous.</p>
         <button class="btn btn-annonce" type="button" id="btn-commentaire-annonce">Laissez-nous vos commentaires maintenant</button>
         <p class="note">Vous retrouverez vos commentaires et nos réponses dans l'onglet Commentaires.</p>
       </article>
@@ -441,9 +440,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// 31e3f75 · 2026-11-16 14:42 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// e5ea2a1 · 2026-11-16 14:51 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = '31e3f75 · 2026-11-16 14:42';
+var VERSION_TBL = 'e5ea2a1 · 2026-11-16 14:51';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
