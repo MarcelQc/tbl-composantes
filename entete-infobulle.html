@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Infobulle Espace Lecteur | Éditions TBL</title>
+<style>
+/* Infobulle d'invitation à l'Espace Lecteur, affichée dans la fenêtre contextuelle (lightbox) « Infobulle Lecteur »
+   quand un membre vient de se connecter (demande de Marcel du 16 novembre 2026). La lightbox est ouverte par
+   masterPage.js ; son code charge cette composante dans la boîte HTML #htmlInfobulle (environ 300 × 130 px) et
+   reçoit les messages { type: 'visiter' } (bouton) et { type: 'fermer' } (X ou délai de 10 s).
+   Variables de tokens.css (Templates\) recopiées ci-dessous. Ouverte seule dans un navigateur : démonstration,
+   sans aucun changement de page. */
+:root{
+  --tbl-paper:#16181c;--tbl-line:#34373e;--tbl-ink:#f5f5f5;--tbl-muted:#b7bac2;--tbl-accent:#e52530;
+  --tbl-font-body:Arial,Helvetica,sans-serif;--tbl-radius:14px;--tbl-radius-btn:9px;--tbl-shadow:0 6px 18px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:var(--tbl-font-body)}
+.bulle{position:relative;height:100%;padding:14px 34px 12px 16px;background:var(--tbl-paper);color:var(--tbl-ink);
+  border:1px solid var(--tbl-line);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);
+  display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.bulle strong{display:block;font-size:.98rem;line-height:1.2}
+.bulle p{margin:4px 0 0;font-size:.84rem;line-height:1.35;color:var(--tbl-muted)}
+.visiter{align-self:flex-start;border:0;border-radius:var(--tbl-radius-btn);background:var(--tbl-accent);color:#fff;
+  font:bold .86rem var(--tbl-font-body);padding:9px 14px;cursor:pointer}
+.visiter:hover{filter:brightness(1.1)}
+.visiter:focus-visible,.fermer:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.fermer{position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;border-radius:50%;background:none;
+  color:var(--tbl-muted);font-size:1.2rem;line-height:1;cursor:pointer}
+.fermer:hover{color:var(--tbl-ink)}
+.bulle{animation:entree .25s ease-out}
+@keyframes entree{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.bulle{animation:none}}
+</style>
+</head>
+<body>
+<div class="bulle" role="status" aria-live="polite">
+  <button class="fermer" type="button" id="fermer" aria-label="Fermer">&times;</button>
+  <div>
+    <strong>Bienvenue chez TBL !</strong>
+    <p>Votre Espace Lecteur vous attend : vos livres, vos extraits et vos réponses.</p>
+  </div>
+  <button class="visiter" type="button" id="visiter">Visiter mon Espace Lecteur</button>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+var DELAI_MS = 10000;
+var DANS_WIX = window.parent !== window;
+var minuteur = null;
+
+// Version publiée : dans la console seulement
+var VERSION_TBL = '9fae49d · 2026-11-16 09:20';
+console.log('[entete-infobulle] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
+
+function envoyer(message) {
+  if (DANS_WIX) { window.parent.postMessage(message, '*'); }
+}
+function armer() {
+  clearTimeout(minuteur);
+  minuteur = setTimeout(function () { envoyer({ type: 'fermer' }); }, DELAI_MS);
+}
+
+document.getElementById('visiter').addEventListener('click', function () { envoyer({ type: 'visiter' }); });
+document.getElementById('fermer').addEventListener('click', function () { envoyer({ type: 'fermer' }); });
+// Le délai est suspendu tant que le pointeur est sur la bulle
+document.addEventListener('mouseenter', function () { clearTimeout(minuteur); });
+document.addEventListener('mouseleave', armer);
+
+envoyer({ type: 'pret' });
+if (DANS_WIX) { armer(); }
+})();
+</script>
+</body>
+</html>
