@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=7cc39c7 · 2026-11-16 08:52"></script>
+<script src="paiement-stripe.js?v=227f819 · 2026-11-16 08:56"></script>
 <script>
 // ===== Version publiée =====
-// 7cc39c7 · 2026-11-16 08:52 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 227f819 · 2026-11-16 08:56 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '7cc39c7 · 2026-11-16 08:52';
+var VERSION_TBL = '227f819 · 2026-11-16 08:56';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2608,6 +2608,35 @@ function lignesS1(P, W) {
   if (texteCoffret(P) !== texteCoffret(W)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret' }); }
   return l;
 }
+// Fiche de la boutique (16 novembre 2026) : prix changé = 5 $ (comme un texte mineur) ; description facturée comme
+// les autres textes, selon la part de mots changés (5 $ sous 20 %, 10 $ à partir de 20 %).
+function blocsDepuisHtmlDescription(html) {
+  var d = document.createElement('div');
+  d.innerHTML = String(html || '').replace(/<\/(p|li|div)>|<br\s*\/?>/gi, '\n');
+  return blocsDepuisTexteBrut(d.textContent);
+}
+function lignesBoutique() {
+  var l = [];
+  if (!etat.boutique) { return l; }
+  if (etat.chgB.prix) { l.push({ nom: 'Prix (boutique)', montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
+  if (etat.chgB.description) {
+    var t = tauxModification(blocsDepuisHtmlDescription(etat.B.pub.description), blocsDepuisHtmlDescription(etat.B.work.description)).taux;
+    l.push({ nom: 'Description (boutique)', montant: prixTexte(true, t), cle: 'fiche' });
+  }
+  return l;
+}
+// Même calcul pour le rapport de l'administrateur : d.boutique = { publie, copie } (null sans produit relié)
+function lignesBoutiqueRapport(b) {
+  var l = [];
+  if (!b || !b.copie) { return l; }
+  var P = versFiche(b.publie), C = versFiche(b.copie);
+  if (valB(P.prix, 'prix') !== valB(C.prix, 'prix')) { l.push({ nom: 'Prix (boutique)', montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
+  if (valB(P.description, 'description') !== valB(C.description, 'description')) {
+    var t = tauxModification(blocsDepuisHtmlDescription(P.description), blocsDepuisHtmlDescription(C.description)).taux;
+    l.push({ nom: 'Description (boutique)', montant: prixTexte(true, t), cle: 'fiche' });
+  }
+  return l;
+}
 function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
 // textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }] ; nbVedettes : places « En vedette » changées
 // (10 $ chacune, décision du 21 octobre 2026) ; autres : lignes déjà chiffrées (section 1, section Coffret).
@@ -2629,13 +2658,14 @@ function factureCourante() {
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: !!etat.chgL[x[0]] && !(x[0] === 'photoAuteur' && etat.L.work.photoAuteur === etat.photoFiche) }; }),
     etat.d.gratuit,
     vedettesModifiables() ? placesChangees(etat.L.pub.vedettes, etat.L.work.vedettes) : 0,
-    lignesS1(etat.L.pub, etat.L.work));
+    lignesS1(etat.L.pub, etat.L.work).concat(lignesBoutique()));
 }
 // Un texte compte comme modifié si son contenu a changé. L'extrait PDF fait partie de la composante Extrait
 // (décision de Marcel du 19 octobre 2026) : un nouveau PDF seul coûte 5 $, 10 $ si le texte change de 20 % ou plus.
 function champModifie(cle) { return !!etat.chg[cle] || (cle === 'extrait' && !!etat.chgL.extraitPdf); }
 function allerA(cle) {
   var cible = cle === 'vedettes' ? $('hote-edition').querySelector('[data-vedettes]')
+    : cle === 'fiche' ? $('fiche')
     : (etat.champs[cle] || (IMAGE_CONF[cle] ? ctl(cle) : zoneLivre(cle)));
   if (cible) { cible.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
@@ -2669,7 +2699,7 @@ function voirDetail() {
   var corps = document.createElement('div');
   if (!f.lignes.length) {
     var p = document.createElement('p');
-    p.textContent = 'Aucune modification à payer pour le moment. Chaque texte modifié coûte 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus), chaque image 10 $.';
+    p.textContent = 'Aucune modification à payer pour le moment. Chaque texte modifié coûte 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus), chaque image 10 $, un changement de prix dans la boutique 5 $.';
     corps.appendChild(p);
   } else {
     var t = document.createElement('table');
@@ -3579,7 +3609,7 @@ function montrerRapport(d) {
   var fac = d.etat === 'corriger' ? null : factureCorrections(
     CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i] || (c.cle === 'extrait' && pdfChg), taux: taux[i] }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: (LPr[x[0]] || '') !== (LCr[x[0]] || '') }; }),
-    d.gratuit, nbVed, lignesS1(LPr, LCr));
+    d.gratuit, nbVed, lignesS1(LPr, LCr).concat(lignesBoutiqueRapport(d.boutique)));
   var racine = $('vue-rapport');
   racine.textContent = '';
   var rap = document.createElement('div');
