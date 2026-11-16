@@ -19,18 +19,22 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:var(--tbl-font-body)}
-.bulle{position:relative;height:100%;padding:14px 34px 12px 16px;background:var(--tbl-paper);color:var(--tbl-ink);
-  border:1px solid var(--tbl-line);border-radius:var(--tbl-radius);box-shadow:var(--tbl-shadow);
+/* Ouverte seule dans un navigateur : fond bleu de démonstration, comme la bulle de la lightbox */
+body.seule{background:#0b4fd6}
+/* Fond transparent : la forme de bulle (bleue) vient de la lightbox Wix, le texte et le bouton s'y fondent.
+   Le haut est dégagé pour la pointe de la bulle. */
+.bulle{position:relative;height:100%;padding:34px 32px 12px 14px;background:transparent;color:#fff;
   display:flex;flex-direction:column;justify-content:space-between;gap:8px}
 .bulle strong{display:block;font-size:.98rem;line-height:1.2}
-.bulle p{margin:4px 0 0;font-size:.84rem;line-height:1.35;color:var(--tbl-muted)}
-.visiter{align-self:flex-start;border:0;border-radius:var(--tbl-radius-btn);background:var(--tbl-accent);color:#fff;
+.bulle p{margin:4px 0 0;font-size:.84rem;line-height:1.35;color:rgba(255,255,255,.88)}
+/* Bouton blanc à texte bleu : bien lisible sur le bleu de la bulle */
+.visiter{align-self:flex-start;border:0;border-radius:var(--tbl-radius-btn);background:#fff;color:#0b4fd6;
   font:bold .86rem var(--tbl-font-body);padding:9px 14px;cursor:pointer}
-.visiter:hover{filter:brightness(1.1)}
+.visiter:hover{filter:brightness(.94)}
 .visiter:focus-visible,.fermer:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.fermer{position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;border-radius:50%;background:none;
-  color:var(--tbl-muted);font-size:1.2rem;line-height:1;cursor:pointer}
-.fermer:hover{color:var(--tbl-ink)}
+.fermer{position:absolute;top:28px;right:6px;width:26px;height:26px;border:0;border-radius:50%;background:none;
+  color:#fff;font-size:1.3rem;line-height:1;cursor:pointer;opacity:.85}
+.fermer:hover{opacity:1}
 .bulle{animation:entree .25s ease-out}
 @keyframes entree{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.bulle{animation:none}}
@@ -53,9 +57,10 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-famil
 var DELAI_MS = 10000;
 var DANS_WIX = window.parent !== window;
 var minuteur = null;
+if (!DANS_WIX) { document.body.className = 'seule'; }
 
 // Version publiée : dans la console seulement
-var VERSION_TBL = '9fae49d · 2026-11-16 09:20';
+var VERSION_TBL = '09110a3 · 2026-11-16 14:15';
 console.log('[entete-infobulle] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 
 function envoyer(message) {
