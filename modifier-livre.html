@@ -708,13 +708,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=fa7e64c · 2026-11-15 13:48"></script>
+<script src="paiement-stripe.js?v=0d70b99 · 2026-11-16 08:19"></script>
 <script>
 // ===== Version publiée =====
-// fa7e64c · 2026-11-15 13:48 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0d70b99 · 2026-11-16 08:19 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'fa7e64c · 2026-11-15 13:48';
+var VERSION_TBL = '0d70b99 · 2026-11-16 08:19';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2276,7 +2276,7 @@ function rendreLivre() {
   bRetirer.hidden = !W.sansPhoto && !imageSure(W.photoAuteur);
   cpa.querySelector('[data-role="photo-fiche"]').hidden = !imageSure(etat.photoFiche) || W.photoAuteur === etat.photoFiche;
   rendrePdf(bloque);
-  majControleS1(bloque);
+  majControleS1(etat.verrou); // le choix de la section 1 reste utilisable en mode comparaison
   var cv = $('hote-edition').querySelector('[data-controle-ved]');
   if (cv) { cv.hidden = bloque; }
 }
