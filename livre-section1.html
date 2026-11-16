@@ -86,6 +86,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     image1Ord: 'https://static.wixstatic.com/media/0037d9_fce9bf7e5e934b13897c5f9c88bcb9be~mv2.webp',
     image1Mob: 'https://static.wixstatic.com/media/0037d9_5f9dcf67167a4f36959f22e1690ab0d2~mv2.webp',
     image: 'https://static.wixstatic.com/media/26b968_8d79d34cb61e4a888f05dc27b87374ea~mv2.png',
+    // ?extrait=non : section Extrait sans texte, le bouton devient « Liseuse TBL - Extrait »
+    extrait: { liseuse: '1912e402-0173-4bb9-918e-5ed266dab0e1', blocs: /[?&]extrait=non(&|$)/.test(location.search) ? [] : [{ type: 'paragraphe', runs: [{ texte: 'Extrait' }] }] },
     description: 'Livre numérique: Les Ombres du temps est un recueil de contes sans rimes, portés par le rythme naturel des phrases et la force des images. À travers l’enfance, l’absence, l’attente et la tendresse, il offre au lecteur l’espace de reconnaître ses propres émotions, dans une écriture simple, sensible et libre.'
   };
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (txt !== undefined) { e.textContent = txt; } return e; }
@@ -125,9 +127,21 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var bs = el('div', 'boutons-s1');
     var achat = el('button', 'btn-achat', texteNumerique(L.prixNumerique)); achat.type = 'button';
     achat.addEventListener('click', function () { demander('tbl-livre:acheter'); });
-    var ext = el('button', 'btn-liseuse'); ext.type = 'button'; ext.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span>'; ext.title = 'Aller à l’extrait du livre';
-    ext.addEventListener('click', function () { demander('tbl-livre:extrait'); });
-    bs.appendChild(achat); bs.appendChild(ext); s1.appendChild(bs);
+    bs.appendChild(achat);
+    // Section Extrait affichée (elle a du texte) : ce bouton y mène, la liseuse suit le texte de l'extrait.
+    // Section Extrait non affichée : le bouton ouvre la liseuse sur l'extrait du livre (demande de Marcel du 16 novembre 2026).
+    var X = L.extrait, blocsX = X && Array.isArray(X.blocs) ? X.blocs : [];
+    var extraitAffiche = blocsX.some(function (b) { return Array.isArray(b.runs) && b.runs.some(function (r) { return String(r.texte || '').trim(); }); }) || !!(X && X.demande);
+    if (extraitAffiche) {
+      var aller = el('button', 'btn-noir', 'Extrait'); aller.type = 'button'; aller.title = 'Aller à l’extrait du livre';
+      aller.addEventListener('click', function () { demander('tbl-livre:allerExtrait'); });
+      bs.appendChild(aller);
+    } else if (X && X.liseuse) {
+      var ext = el('button', 'btn-liseuse'); ext.type = 'button'; ext.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span>'; ext.title = 'Lire le début du livre dans la liseuse TBL';
+      ext.addEventListener('click', function () { demander('tbl-livre:liseuseExtrait'); });
+      bs.appendChild(ext);
+    }
+    s1.appendChild(bs);
     page.appendChild(s1);
   }
   function afficherDemo() { console.log('[livre-section1] livre de démonstration'); afficher(DEMO); }

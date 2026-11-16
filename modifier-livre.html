@@ -260,6 +260,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .v-apercu .carte-auteur.sans-photo{grid-template-columns:1fr}
 .v-apercu .carte-auteur.sans-photo .col-photo{display:none}
 .v-edition .carte-auteur.sans-photo .portrait{opacity:.35}
+/* Aperçu avec photo : « Contacter l'auteur » sous la photo (demande de Marcel du 16 novembre 2026) ; sans photo, il
+   reste en bas de la note. En édition, il reste à côté du courriel. */
+.btn-contact-photo{display:none}
+.v-apercu .carte-auteur.photo-ok .btn-contact-photo{display:block;width:100%;margin:14px 0 0}
+.v-apercu .carte-auteur.photo-ok .ligne-contact{display:none}
 .controle-image{display:flex;flex-direction:column;align-items:center;gap:8px;margin:10px auto 0;max-width:330px;background:var(--card);border:0;border-radius:var(--tbl-radius);padding:10px 12px;text-align:center;font:12px var(--tbl-font-body);color:var(--muted)}
 .controle-image .rang{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .controle-image .etat-img{color:var(--gold);font-weight:bold}
@@ -641,7 +646,9 @@ body.v-rapport{background:#fff;color:#111}
       </div>
       <div class="boutons-s1">
         <button type="button" class="btn-achat" data-action="achat" data-role="btn-num">Numérique</button>
-        <button type="button" class="btn-liseuse" data-role="aller-extrait" title="Aller à l’extrait du livre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg><span>Liseuse TBL - Extrait</span></button>
+        <!-- Section Extrait visible : bouton qui y mène (la liseuse est à la suite de l'extrait). Sans texte d'extrait
+             (aperçu), la section est masquée et ce bouton devient « Liseuse TBL - Extrait » (brancherBoutonsApercu). -->
+        <button type="button" class="btn-noir" data-role="aller-extrait" title="Aller à l’extrait du livre">Extrait</button>
       </div>
     </section>
     <section class="sec s-achat">
@@ -683,10 +690,11 @@ body.v-rapport{background:#fff;color:#111}
     <div class="section-masquee">La section Auteur est masquée sur la page publiée. Votre texte est conservé : réactivez l’interrupteur pour le modifier.</div>
     <img class="titre-img fige" alt="Auteur" src="https://static.wixstatic.com/media/26b968_114e6bb5852148aa8f30705393fa9ca8~mv2.png">
     <div class="sec carte carte-auteur">
-      <div class="col-photo"><div><img class="portrait" data-affiche="photoAuteur" alt="Photo de l'auteur"></div><div data-zone-controle="photoAuteur"></div></div>
+      <div class="col-photo"><div><img class="portrait" data-affiche="photoAuteur" alt="Photo de l'auteur"></div><div data-zone-controle="photoAuteur"></div>
+        <button type="button" class="btn btn-page fige btn-contact-photo" data-action="contact" tabindex="-1">Contacter l’auteur</button></div>
       <div class="col-note champ" data-champ="bioAuteur"><div class="champ-tete"></div><div class="rt"></div><div class="msg-url" hidden></div>
         <div class="ligne-contact">
-          <button type="button" class="btn btn-page fige" data-action="contact" tabindex="-1">Contacter l’auteur</button>
+          <button type="button" class="btn btn-page fige btn-contact-ligne" data-action="contact" tabindex="-1">Contacter l’auteur</button>
           <div class="champ-email" data-role="boite-email"><label for="in-email">Courriel de contact (reçoit les messages des lecteurs)</label>
             <input type="email" id="in-email" data-role="email" maxlength="254" autocomplete="off" inputmode="email" placeholder="nom@exemple.com" spellcheck="false"></div>
         </div>
@@ -708,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=0d70b99 · 2026-11-16 08:19"></script>
+<script src="paiement-stripe.js?v=b1a023d · 2026-11-16 08:34"></script>
 <script>
 // ===== Version publiée =====
-// 0d70b99 · 2026-11-16 08:19 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// b1a023d · 2026-11-16 08:34 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '0d70b99 · 2026-11-16 08:19';
+var VERSION_TBL = 'b1a023d · 2026-11-16 08:34';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2102,6 +2110,7 @@ function appliquerLivre(page, L) {
   remplirImage(page.querySelector('[data-img="couverture3d"]'), L.image, 'image');
   remplirImage(page.querySelector('[data-affiche="photoAuteur"]'), L.photoAuteur, 'photoAuteur');
   page.querySelector('.carte-auteur').classList.toggle('sans-photo', !!L.sansPhoto);
+  page.querySelector('.carte-auteur').classList.toggle('photo-ok', !L.sansPhoto && imageSure(L.photoAuteur));
   // Section 1 : présentation choisie et images publicitaires. Sans image, une demande à TBL montre l'image à venir.
   var s1 = page.querySelector('[data-s1]'), pres = valL(L.presentation1, 'presentation1');
   s1.classList.toggle('pres-image', pres === 'image');
@@ -2318,7 +2327,7 @@ function majLivre() {
   var ie = zoneLivre('info-email');
   remplirInfo(ie, C.email, P.email || '(aucun)', courrielNorm(W.email) || '(aucun)');
   // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché
-  $('hote-edition').querySelector('[data-action="contact"]').hidden = courrielNorm(W.email) === '';
+  Array.prototype.forEach.call($('hote-edition').querySelectorAll('[data-action="contact"]'), function (b) { b.hidden = courrielNorm(W.email) === ''; });
   if (!pe && courrielNorm(W.email) === '' && W.afficheauteur) {
     var avert = 'Sans courriel, le bouton « Contacter l’auteur » sera caché sur la page.';
     ie.appendChild(document.createTextNode((ie.textContent ? ' · ' : '') + avert));
@@ -3440,7 +3449,7 @@ function montrerApercu(d) {
   var page = fabriquerPage(cadre, d);
   var LA = d.champsLivre.copie || d.champsLivre.publie;
   appliquerLivre(page, LA);
-  brancherBoutonsApercu(page, LA);
+  brancherBoutonsApercu(page, LA, blocsAvecTexte(norm(src.extrait)));
   var boites = boitesChamps(page);
   CHAMPS.forEach(function (c) {
     var rt = boites[c.cle].querySelector('.rt');
@@ -3470,11 +3479,33 @@ function montrerApercu(d) {
 // Dans l'aperçu, rien ne se passe vraiment : chaque bouton de la page affiche un message qui explique ce
 // qu'il fera sur le site.
 var ICONE_LISEUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.3 5.2 8 4.6 4.5 4.6v13.2c3.5 0 5.8.6 7.5 1.9 1.7-1.3 4-1.9 7.5-1.9V4.6C16 4.6 13.7 5.2 12 6.5z"/><path d="M12 6.5v13.2"/></svg>';
-function brancherBoutonsApercu(page, L) {
+function blocsAvecTexte(blocs) {
+  return (blocs || []).some(function (b) { return (b.runs || []).some(function (r) { return String(r.texte || '').trim() !== ''; }); });
+}
+// Ouvre la liseuse sur l'extrait du livre, dans un nouvel onglet
+function ouvrirLiseuseExtrait(bouton) {
+  var w = null;
+  try { w = window.open('liseuse.html?onglet=1&extrait=' + encodeURIComponent(LIVRE_ID) + '&v=' + Date.now(), 'liseuse-extrait-' + Date.now()); } catch (err) { w = null; }
+  if (!w) { bulle(bouton, 'Le navigateur a bloqué le nouvel onglet. Autorisez les fenêtres surgissantes pour ce site, puis réessayez.'); }
+}
+function brancherBoutonsApercu(page, L, extraitVisible) {
   var courriel = (L.email || '').trim();
   // Comme sur la page du site : sans courriel de contact, le bouton « Contacter l'auteur » est caché, et sans
   // extrait en PDF, le bouton « Demande d'extrait » aussi.
-  page.querySelector('[data-action="contact"]').hidden = !courriel;
+  Array.prototype.forEach.call(page.querySelectorAll('[data-action="contact"]'), function (b) { b.hidden = !courriel; });
+  // Section Extrait sans texte : elle n'est pas affichée (comme sur le site). Le bouton de la section 1 devient alors
+  // « Liseuse TBL - Extrait » et ouvre la liseuse ; sinon il mène à l'extrait, où la liseuse suit le texte.
+  var allerX = page.querySelector('[data-role="aller-extrait"]');
+  if (!extraitVisible) {
+    var titreX = page.querySelector('img[alt="Extrait du livre"]'), boiteX = page.querySelector('[data-champ="extrait"]');
+    if (titreX) { titreX.hidden = true; }
+    if (boiteX) { boiteX.hidden = true; }
+    allerX.className = 'btn-liseuse';
+    allerX.innerHTML = ICONE_LISEUSE + '<span>Liseuse TBL - Extrait</span>';
+    allerX.title = 'Ouvrir le début de votre livre dans la liseuse TBL, comme le verra un lecteur';
+    allerX.addEventListener('click', function (e) { e.stopPropagation(); ouvrirLiseuseExtrait(allerX); });
+    page.querySelector('[data-action="extrait"]').hidden = true;
+  }
   // Extrait : le début du livre dans la liseuse TBL, dans un nouvel onglet (demande de Marcel du 10 novembre 2026).
   // Livre jamais publié : la liseuse le dit (« Extrait introuvable »).
   var ext = page.querySelector('[data-action="extrait"]');

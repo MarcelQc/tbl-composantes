@@ -107,7 +107,8 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var X = L && L.extrait;
     var blocsX = X && Array.isArray(X.blocs) ? X.blocs : [];
     var avecTexte = blocsX.some(function (b) { return Array.isArray(b.runs) && b.runs.some(function (r) { return String(r.texte || '').trim(); }); });
-    if (!avecTexte && !(X && (X.demande || X.liseuse))) { page.hidden = true; return; } // rien à montrer : la page replie la composante
+    // Sans texte, la section n'est pas affichée : le bouton « Liseuse TBL - Extrait » est alors dans la section 1.
+    if (!avecTexte && !(X && X.demande)) { page.hidden = true; return; } // rien à montrer : la page replie la composante
     page.hidden = false;
     var t = el('img', 'titre-img'); t.src = IMAGE_TITRE; t.alt = 'Extrait du livre'; page.appendChild(t);
     var carte = el('section', 'pg');

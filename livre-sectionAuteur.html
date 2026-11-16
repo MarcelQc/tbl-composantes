@@ -45,6 +45,7 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
 /* Bouton noir (Templates\bouton-noir.html) : au survol, texte noir sur fond blanc */
 .btn-noir{display:inline-block;background:transparent;color:#fff;border:2px solid #fff;border-radius:99px;padding:12px 26px;font:700 16px/1.2 var(--tbl-font-body);white-space:nowrap;cursor:pointer;transition:background .15s,color .15s}
 .btn-noir:hover,.btn-noir:focus-visible{background:#fff;color:#000}
+.btn-sous-photo{display:block;width:100%;margin-top:14px;text-align:center}
 /* Chargement : boîte grise et petit message, comme la section 1 */
 .pg.chargement{min-height:220px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tbl-muted)}
 .roue{width:1.1em;height:1.1em;border:2px solid var(--tbl-line);border-top-color:var(--tbl-accent);border-radius:50%;animation:tourne .8s linear infinite}
@@ -125,10 +126,16 @@ body{color:#fff;font-family:var(--tbl-font-body);line-height:1.5}
     var colNote = el('div', 'col-note');
     var rt = el('div', 'rt'); rt.appendChild(blocsVersDom(A.bio)); colNote.appendChild(rt);
     if (A.contact) {
-      var ligne = el('div', 'ligne-contact');
       var b = el('button', 'btn-noir', 'Contacter l’auteur'); b.type = 'button';
       b.addEventListener('click', function () { demander('tbl-livre:contact'); });
-      ligne.appendChild(b); colNote.appendChild(ligne);
+      if (photo) {
+        // Avec photo : le bouton est sous la photo (demande de Marcel du 16 novembre 2026)
+        b.classList.add('btn-sous-photo');
+        carte.querySelector('.col-photo').appendChild(b);
+      } else {
+        var ligne = el('div', 'ligne-contact');
+        ligne.appendChild(b); colNote.appendChild(ligne);
+      }
     }
     carte.appendChild(colNote);
     page.appendChild(carte);
