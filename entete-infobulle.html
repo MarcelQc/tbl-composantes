@@ -10,7 +10,7 @@
    quand un membre vient de se connecter (demande de Marcel du 16 novembre 2026). La lightbox est ouverte par
    masterPage.js ; son code charge cette composante dans la boîte HTML #htmlInfobulle (environ 300 × 130 px) et
    reçoit les messages { type: 'visiter' } (bouton, qui est aussi un lien vers l'Espace Lecteur) et
-   { type: 'fermer' } (délai de 10 s). Le bouton de fermeture est celui de Wix, pas de X dans cette composante.
+   { type: 'fermer' } (délai de 10 s). Le texte dépend du numéro de message (?m=) : voir MESSAGES plus bas. Le bouton de fermeture est celui de Wix, pas de X dans cette composante.
    Variables de tokens.css (Templates\) recopiées ci-dessous. Ouverte seule dans un navigateur : démonstration,
    sans aucun changement de page. */
 :root{
@@ -41,10 +41,10 @@ body.seule{background:#0b4fd6}
 <body>
 <div class="bulle" role="status" aria-live="polite">
   <div>
-    <strong>Bienvenue chez TBL !</strong>
-    <p>Votre Espace Lecteur vous attend : vos livres, vos extraits et vos réponses.</p>
+    <strong id="titre"></strong>
+    <p id="texte"></p>
   </div>
-  <a class="visiter" id="visiter" href="https://www.editionstbl.ca/dashboardlecteurs" target="_top">Visiter mon Espace Lecteur</a>
+  <a class="visiter" id="visiter" href="https://www.editionstbl.ca/dashboardlecteurs" target="_top"></a>
 </div>
 
 <script>
@@ -56,8 +56,20 @@ var DANS_WIX = window.parent !== window;
 var minuteur = null;
 if (!DANS_WIX) { document.body.className = 'seule'; }
 
+// Textes par numéro de message (Lecteurs.messageVu, backend/messageAccueil.js) : 1 = bienvenue, 2 = nouveauté, etc.
+// Pour une nouveauté : ajouter le numéro suivant ici, puis monter MESSAGE_COURANT dans messageAccueil.js.
+// Le numéro arrive dans l'adresse (?m=2), ajouté par le code de la lightbox ; sans numéro : message 1.
+var MESSAGES = {
+  1: { titre: 'Bienvenue chez TBL !', texte: 'Votre Espace Lecteur vous attend : vos livres, vos extraits et vos réponses.', bouton: 'Visiter mon Espace Lecteur' }
+};
+var numero = parseInt((location.search.match(/[?&]m=(\d+)/) || [])[1], 10);
+var M = MESSAGES[numero] || MESSAGES[1];
+document.getElementById('titre').textContent = M.titre;
+document.getElementById('texte').textContent = M.texte;
+document.getElementById('visiter').textContent = M.bouton;
+
 // Version publiée : dans la console seulement
-var VERSION_TBL = 'e5ea2a1 · 2026-11-16 14:51';
+var VERSION_TBL = '2628027 · 2026-11-16 15:04';
 console.log('[entete-infobulle] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 
 function envoyer(message) {
