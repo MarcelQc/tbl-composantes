@@ -9,7 +9,7 @@
 /* Infobulle d'invitation à l'Espace Lecteur, affichée dans la fenêtre contextuelle (lightbox) « Infobulle Lecteur »
    quand un membre vient de se connecter (demande de Marcel du 16 novembre 2026). La lightbox est ouverte par
    masterPage.js ; son code charge cette composante dans la boîte HTML #htmlInfobulle (environ 300 × 130 px) et
-   reçoit les messages { type: 'visiter' } (bouton : la lightbox se ferme et l'Espace Lecteur s'ouvre) et
+   reçoit les messages { type: 'visiter' } (bouton, qui est aussi un lien vers l'Espace Lecteur) et
    { type: 'fermer' } (délai de 10 s). Le bouton de fermeture est celui de Wix, pas de X dans cette composante.
    Variables de tokens.css (Templates\) recopiées ci-dessous. Ouverte seule dans un navigateur : démonstration,
    sans aucun changement de page. */
@@ -29,7 +29,7 @@ body.seule{background:#0b4fd6}
 .bulle strong{display:block;font-size:.98rem;line-height:1.2}
 .bulle p{margin:4px 0 0;font-size:.84rem;line-height:1.35;color:rgba(255,255,255,.88)}
 /* Bouton blanc à texte bleu : bien lisible sur le bleu de la bulle */
-.visiter{align-self:flex-start;border:0;border-radius:var(--tbl-radius-btn);background:#fff;color:#0b4fd6;
+.visiter{align-self:flex-start;display:inline-block;text-decoration:none;border:0;border-radius:var(--tbl-radius-btn);background:#fff;color:#0b4fd6;
   font:bold .86rem var(--tbl-font-body);padding:9px 14px;cursor:pointer}
 .visiter:hover{filter:brightness(.94)}
 .visiter:focus-visible{outline:2px solid #fff;outline-offset:2px}
@@ -44,7 +44,7 @@ body.seule{background:#0b4fd6}
     <strong>Bienvenue chez TBL !</strong>
     <p>Votre Espace Lecteur vous attend : vos livres, vos extraits et vos réponses.</p>
   </div>
-  <button class="visiter" type="button" id="visiter">Visiter mon Espace Lecteur</button>
+  <a class="visiter" id="visiter" href="https://www.editionstbl.ca/dashboardlecteurs" target="_top">Visiter mon Espace Lecteur</a>
 </div>
 
 <script>
@@ -57,7 +57,7 @@ var minuteur = null;
 if (!DANS_WIX) { document.body.className = 'seule'; }
 
 // Version publiée : dans la console seulement
-var VERSION_TBL = '3cb392b · 2026-11-16 14:22';
+var VERSION_TBL = '31e3f75 · 2026-11-16 14:42';
 console.log('[entete-infobulle] ' + (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0 ? 'Version locale (non publiée)' : 'Version ' + VERSION_TBL));
 
 function envoyer(message) {
@@ -68,7 +68,12 @@ function armer() {
   minuteur = setTimeout(function () { envoyer({ type: 'fermer' }); }, DELAI_MS);
 }
 
-document.getElementById('visiter').addEventListener('click', function () { envoyer({ type: 'visiter' }); });
+// Le bouton est un lien (target="_top") : il ouvre l'Espace Lecteur même si le code de la lightbox ne répond pas.
+// Le message demande en plus à la lightbox de se fermer. Ouverte seule (démonstration) : aucun changement de page.
+document.getElementById('visiter').addEventListener('click', function (e) {
+  if (!DANS_WIX) { e.preventDefault(); return; }
+  envoyer({ type: 'visiter' });
+});
 // Le délai est suspendu tant que le pointeur est sur la bulle
 document.addEventListener('mouseenter', function () { clearTimeout(minuteur); });
 document.addEventListener('mouseleave', armer);
