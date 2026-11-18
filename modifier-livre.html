@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=393e6e9 · 2026-11-17 17:42"></script>
+<script src="paiement-stripe.js?v=89063c9 · 2026-11-17 20:43"></script>
 <script>
 // ===== Version publiée =====
-// 393e6e9 · 2026-11-17 17:42 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 89063c9 · 2026-11-17 20:43 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '393e6e9 · 2026-11-17 17:42';
+var VERSION_TBL = '89063c9 · 2026-11-17 20:43';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2289,17 +2289,17 @@ function rendreLivre() {
   var cv = $('hote-edition').querySelector('[data-controle-ved]');
   if (cv) { cv.hidden = bloque; }
 }
-function remplirInfo(el, chg, ancien, nouveau) {
+function remplirInfo(el, chg, ancien, nouveau, etqAncien, etqNouveau) {
   el.textContent = '';
   el.hidden = !chg;
   if (!chg) { return; }
   el.className = (el.className.replace(/\bdiff-l\b/g, '').trim() + ' diff-l').trim();
   if (etat.diff) {
     var a = document.createElement('span'), n = document.createElement('span');
-    a.className = 'ancien'; a.textContent = ancien; n.className = 'nouveau'; n.textContent = nouveau;
+    a.className = 'ancien'; a.textContent = (etqAncien || '') + ancien; n.className = 'nouveau'; n.textContent = (etqNouveau || '') + nouveau;
     el.appendChild(a); el.appendChild(document.createTextNode(' → ')); el.appendChild(n);
   } else {
-    el.textContent = 'Version publiée : ' + ancien;
+    el.textContent = (etqAncien || 'Version publiée : ') + ancien;
   }
 }
 function majLivre() {
@@ -2442,6 +2442,7 @@ function rendreFiche() {
   var mp = document.createElement('span'); mp.className = 'msg'; mp.setAttribute('data-role', 'msg'); mp.hidden = true; lp.appendChild(mp);
   if (!B.prixModifiable) { lp.appendChild(document.createTextNode('Ce produit a plusieurs variantes : son prix se change dans la boutique.')); }
   var ipp = document.createElement('span'); ipp.className = 'info-pub'; ipp.setAttribute('data-role', 'info-pub'); ipp.hidden = true; lp.appendChild(ipp);
+  if (actif) { lp.appendChild(boutonRetablirB('prix')); }
   col.appendChild(lp);
   col.appendChild(editeurDescription(actif));
   g.appendChild(col);
@@ -2495,7 +2496,34 @@ function editeurDescription(actif) {
   }
   bloc.appendChild(zone);
   var ipd = document.createElement('span'); ipd.className = 'info-pub'; ipd.setAttribute('data-role', 'info-pub'); ipd.hidden = true; bloc.appendChild(ipd);
+  if (actif) { bloc.appendChild(boutonRetablirB('description')); }
   return bloc;
+}
+// « Annuler les modifications » de la fiche : remet le prix ou la description publiés (ou, pour un livre Nouveau,
+// les derniers enregistrés). Le bouton n'apparaît que si la valeur a changé.
+function referenceB(k) { return etat.nouveau ? etat.B.saved[k] : etat.B.pub[k]; }
+function boutonRetablirB(k) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'mini'; b.textContent = '↺ Annuler les modifications';
+  b.setAttribute('data-role', 'retablir-b'); b.setAttribute('data-cle', k); b.hidden = true;
+  b.style.alignSelf = 'flex-start';
+  b.addEventListener('click', function () { retablirFiche(k); });
+  return b;
+}
+async function retablirFiche(k) {
+  if (etat.verrou || etat.diff) { return; }
+  var nom = k === 'prix' ? 'le prix du livre numérique' : 'la description de la boutique';
+  var r = await modale({
+    titre: 'Annuler les modifications ?',
+    corps: etat.nouveau
+      ? 'Vos modifications non enregistrées de ' + nom + ' seront perdues. La dernière valeur enregistrée sera remise.'
+      : 'Vos modifications de ' + nom + ' seront annulées. La valeur actuellement publiée dans la boutique sera remise.',
+    boutons: [{ id: 'ok', libelle: 'Annuler les modifications', principal: true }, { id: 'non', libelle: 'Garder mes modifications' }]
+  });
+  if (r !== 'ok') { return; }
+  etat.B.work[k] = referenceB(k);
+  rendreFiche(); recalculer();
+  toast(etat.nouveau ? 'Dernière valeur enregistrée remise.' : 'Valeur publiée remise. Enregistrez pour conserver ce changement.');
 }
 // États de la fiche : image du livre (suit la section 1), erreur de prix, ce qui a changé par rapport au produit.
 function majFiche() {
@@ -2510,7 +2538,11 @@ function majFiche() {
   lp.querySelector('[data-role="msg"]').hidden = !etat.probB;
   lp.querySelector('[data-role="msg"]').textContent = etat.probB || '';
   var P = etat.B.pub, W = etat.B.work;
-  remplirInfo(lp.querySelector('[data-role="info-pub"]'), !etat.nouveau && etat.chgB.prix, (P.prix || '(aucun)') + ' $', (W.prix || '(aucun)') + ' $');
+  remplirInfo(lp.querySelector('[data-role="info-pub"]'), !etat.nouveau && etat.chgB.prix, (P.prix || '(aucun)') + ' $', (W.prix || '(aucun)') + ' $', 'Prix publié : ', 'nouveau prix : ');
+  CLES_B.forEach(function (k) {
+    var bt = f.querySelector('[data-role="retablir-b"][data-cle="' + k + '"]');
+    if (bt) { bt.hidden = etat.verrou || etat.diff || valB(W[k], k) === valB(referenceB(k), k); }
+  });
   var ld = f.querySelector('[data-fiche="description"]');
   ld.querySelector('.desc-riche').classList.toggle('chg', !etat.nouveau && etat.chgB.description);
   var ipd = ld.querySelector('[data-role="info-pub"]');
@@ -2618,10 +2650,10 @@ function blocsDepuisHtmlDescription(html) {
 function lignesBoutique() {
   var l = [];
   if (!etat.boutique) { return l; }
-  if (etat.chgB.prix) { l.push({ nom: 'Prix (boutique)', montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
+  if (etat.chgB.prix) { l.push({ nom: nomPrixBoutique(etat.B.pub.prix, etat.B.work.prix), montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
   if (etat.chgB.description) {
     var t = tauxModification(blocsDepuisHtmlDescription(etat.B.pub.description), blocsDepuisHtmlDescription(etat.B.work.description)).taux;
-    l.push({ nom: 'Description (boutique)', montant: prixTexte(true, t), cle: 'fiche' });
+    l.push({ nom: nomDescriptionBoutique(t), montant: prixTexte(true, t), cle: 'fiche' });
   }
   return l;
 }
@@ -2630,12 +2662,19 @@ function lignesBoutiqueRapport(b) {
   var l = [];
   if (!b || !b.copie) { return l; }
   var P = versFiche(b.publie), C = versFiche(b.copie);
-  if (valB(P.prix, 'prix') !== valB(C.prix, 'prix')) { l.push({ nom: 'Prix (boutique)', montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
+  if (valB(P.prix, 'prix') !== valB(C.prix, 'prix')) { l.push({ nom: nomPrixBoutique(P.prix, C.prix), montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
   if (valB(P.description, 'description') !== valB(C.description, 'description')) {
     var t = tauxModification(blocsDepuisHtmlDescription(P.description), blocsDepuisHtmlDescription(C.description)).taux;
-    l.push({ nom: 'Description (boutique)', montant: prixTexte(true, t), cle: 'fiche' });
+    l.push({ nom: nomDescriptionBoutique(t), montant: prixTexte(true, t), cle: 'fiche' });
   }
   return l;
+}
+// Noms des lignes de la facture : on dit ce qui change et pourquoi le montant est celui-là.
+function nomPrixBoutique(avant, apres) {
+  return 'Prix du livre numérique dans la boutique (' + (avant || 'aucun') + NBSP + '$ → ' + (apres || 'aucun') + NBSP + '$)';
+}
+function nomDescriptionBoutique(taux) {
+  return 'Description du livre dans la boutique (' + (taux >= SEUIL_TEXTE_GRAND ? SEUIL_TEXTE_GRAND + NBSP + '% des mots ou plus' : 'moins de ' + SEUIL_TEXTE_GRAND + NBSP + '% des mots') + ' modifiés)';
 }
 function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? PRIX_TEXTE_GRAND : PRIX_TEXTE_PETIT); }
 // textes : [{ cle, nom, chg, taux }] ; images : [{ cle, nom, chg }] ; nbVedettes : places « En vedette » changées
@@ -2699,7 +2738,7 @@ function voirDetail() {
   var corps = document.createElement('div');
   if (!f.lignes.length) {
     var p = document.createElement('p');
-    p.textContent = 'Aucune modification à payer pour le moment. Chaque texte modifié coûte 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus), chaque image 10 $, un changement de prix dans la boutique 5 $.';
+    p.textContent = 'Aucune modification à payer pour le moment. Chaque texte modifié coûte 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus), chaque image 10 $, un changement de prix dans la boutique 5 $, une description de la boutique modifiée 5 $ (moins de 20 % des mots) ou 10 $ (20 % ou plus).';
     corps.appendChild(p);
   } else {
     var t = document.createElement('table');
