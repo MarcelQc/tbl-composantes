@@ -392,7 +392,7 @@ body.v-rapport{background:#fff;color:#111}
 <div id="vue-rapport" hidden></div>
 
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=ae35f6c · 2026-11-17 21:12"></script>
+<script src="paiement-stripe.js?v=842ad23 · 2026-11-18 06:14"></script>
 <script>
 (function () {
 'use strict';
@@ -583,7 +583,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = 'ae35f6c · 2026-11-17 21:12';
+var VERSION_TBL = '842ad23 · 2026-11-18 06:14';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1600,9 +1600,12 @@ async function ecrireCommentaire() {
   corps.appendChild(el('p', null, 'Une question, une suggestion ou un problème ? Votre commentaire est transmis à l’équipe des Éditions TBL.'));
   var ta = el('textarea'); ta.maxLength = 2000; ta.setAttribute('aria-label', 'Votre commentaire'); corps.appendChild(ta);
   var r = await modale({ titre: 'Envoyer un commentaire', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Envoyer', principal: true, avant: function () { if (!ta.value.trim()) { ta.focus(); return false; } } }] });
-  if (r !== 'ok') { return; }
+  // Sortie de la fenêtre (envoyé ou annulé) : la page Wix recalcule la pastille Admin si elle est visible
+  function sortie() { if (EN_WIX) { window.parent.postMessage({ type: 'rafraichirEntete' }, '*'); } }
+  if (r !== 'ok') { sortie(); return; }
   var rep = await appeler('commentaire', { commentaire: ta.value.trim(), coffretId: etat.d.coffretId });
   toast(rep && rep.ok ? (rep.message || 'Merci ! Votre commentaire a été envoyé.') : 'Votre commentaire n’a pas pu être envoyé.', rep && rep.ok ? 'ok' : 'mal');
+  sortie();
 }
 
 /* ---------- Aperçus et rapport ---------- */

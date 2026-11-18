@@ -442,9 +442,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// ae35f6c · 2026-11-17 21:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 842ad23 · 2026-11-18 06:14 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'ae35f6c · 2026-11-17 21:12';
+var VERSION_TBL = '842ad23 · 2026-11-18 06:14';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -523,6 +523,8 @@ function ouvrirFenetre(id, focusId) {
 function fermerFenetre(id) {
   $(id).hidden = true;
   if (dernierFocus && dernierFocus.focus) { dernierFocus.focus(); }
+  // Sortie de la fenêtre Commentaire : la page Wix recalcule la pastille Admin si elle est visible
+  if (id === 'fenetre-commentaire') { envoyer({ type: 'rafraichirEntete' }); }
 }
 function confirmer(titre, texte, libelle, action) {
   $('titre-confirmer').textContent = titre;
