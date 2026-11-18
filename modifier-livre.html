@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=89063c9 · 2026-11-17 20:43"></script>
+<script src="paiement-stripe.js?v=d29366a · 2026-11-17 20:58"></script>
 <script>
 // ===== Version publiée =====
-// 89063c9 · 2026-11-17 20:43 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// d29366a · 2026-11-17 20:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '89063c9 · 2026-11-17 20:43';
+var VERSION_TBL = 'd29366a · 2026-11-17 20:58';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2635,9 +2635,9 @@ function appliquerTarifs(t) {
 }
 function lignesS1(P, W) {
   var l = [];
-  if (valL(P.presentation1, 'presentation1') !== valL(W.presentation1, 'presentation1')) { l.push({ nom: 'Présentation de la section 1', montant: PRIX_CHOIX_S1, cle: 'ctl-s1' }); }
-  if (W.demande1 && !P.demande1) { l.push({ nom: 'Image publicitaire créée par TBL', montant: PRIX_IMAGE_TBL, cle: 'demande1' }); }
-  if (texteCoffret(P) !== texteCoffret(W)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret' }); }
+  if (valL(P.presentation1, 'presentation1') !== valL(W.presentation1, 'presentation1')) { l.push({ nom: 'Présentation de la section 1', montant: PRIX_CHOIX_S1, cle: 'ctl-s1', origine: 'Présentation : ' + valL(P.presentation1, 'presentation1') + ' (publié) → ' + valL(W.presentation1, 'presentation1') }); }
+  if (W.demande1 && !P.demande1) { l.push({ nom: 'Image publicitaire créée par TBL', montant: PRIX_IMAGE_TBL, cle: 'demande1', origine: 'Demande d’image à TBL ajoutée' }); }
+  if (texteCoffret(P) !== texteCoffret(W)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret', origine: 'Section Coffret : « ' + texteCoffret(P) + ' » (publié) → « ' + texteCoffret(W) + ' »' }); }
   return l;
 }
 // Fiche de la boutique (16 novembre 2026) : prix changé = 5 $ (comme un texte mineur) ; description facturée comme
@@ -2650,10 +2650,10 @@ function blocsDepuisHtmlDescription(html) {
 function lignesBoutique() {
   var l = [];
   if (!etat.boutique) { return l; }
-  if (etat.chgB.prix) { l.push({ nom: nomPrixBoutique(etat.B.pub.prix, etat.B.work.prix), montant: PRIX_TEXTE_PETIT, cle: 'fiche' }); }
+  if (etat.chgB.prix) { l.push({ nom: nomPrixBoutique(etat.B.pub.prix, etat.B.work.prix), montant: PRIX_TEXTE_PETIT, cle: 'fiche', origine: 'Fiche de la boutique : prix modifié' }); }
   if (etat.chgB.description) {
     var t = tauxModification(blocsDepuisHtmlDescription(etat.B.pub.description), blocsDepuisHtmlDescription(etat.B.work.description)).taux;
-    l.push({ nom: nomDescriptionBoutique(t), montant: prixTexte(true, t), cle: 'fiche' });
+    l.push({ nom: nomDescriptionBoutique(t), montant: prixTexte(true, t), cle: 'fiche', origine: 'Fiche de la boutique : description modifiée (' + Math.round(t) + NBSP + '% des mots)' });
   }
   return l;
 }
@@ -2681,9 +2681,12 @@ function prixTexte(chg, taux) { return !chg ? 0 : (taux >= SEUIL_TEXTE_GRAND ? P
 // (10 $ chacune, décision du 21 octobre 2026) ; autres : lignes déjà chiffrées (section 1, section Coffret).
 function factureCorrections(textes, images, gratuit, nbVedettes, autres) {
   var lignes = (autres || []).slice();
-  textes.forEach(function (t) { var m = prixTexte(t.chg, t.taux); if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle }); } });
-  images.forEach(function (i) { if (i.chg) { lignes.push({ nom: i.nom, montant: PRIX_IMAGE, cle: i.cle }); } });
-  if (nbVedettes) { lignes.push({ nom: 'En vedette (' + nbVedettes + (nbVedettes > 1 ? ' places)' : ' place)'), montant: nbVedettes * PRIX_PLACE_VEDETTE, cle: 'vedettes' }); }
+  textes.forEach(function (t) {
+    var m = prixTexte(t.chg, t.taux);
+    if (m) { lignes.push({ nom: t.nom, montant: m, cle: t.cle, origine: t.taux > 0 ? 'Texte modifié : ' + Math.round(t.taux) + NBSP + '% des mots changés' : 'Texte modifié : mise en forme ou structure seulement (aucun mot changé)' }); }
+  });
+  images.forEach(function (i) { if (i.chg) { lignes.push({ nom: i.nom, montant: PRIX_IMAGE, cle: i.cle, origine: 'Image différente de celle publiée' }); } });
+  if (nbVedettes) { lignes.push({ nom: 'En vedette (' + nbVedettes + (nbVedettes > 1 ? ' places)' : ' place)'), montant: nbVedettes * PRIX_PLACE_VEDETTE, cle: 'vedettes', origine: nbVedettes + ' place' + (nbVedettes > 1 ? 's' : '') + ' « En vedette » différente' + (nbVedettes > 1 ? 's' : '') + ' de celle' + (nbVedettes > 1 ? 's' : '') + ' publiée' + (nbVedettes > 1 ? 's' : '') }); }
   return calculerFacture(lignes, { gratuit: !!gratuit });
 }
 // Facture de la page en cours : prix fixe d'un livre Nouveau (calculé par le serveur) ou prix des corrections.
@@ -2748,7 +2751,15 @@ function voirDetail() {
       if (fort) { tr.className = 'total'; }
       tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
     };
-    f.lignes.forEach(function (l) { rang(l.nom, l.montant); });
+    f.lignes.forEach(function (l) {
+      rang(l.nom, l.montant);
+      // Provenance du montant : d'où vient cette ligne (ce qui diffère de la version publiée)
+      if (l.origine) {
+        var to = document.createElement('tr'), co = document.createElement('td');
+        co.colSpan = 2; co.textContent = '↳ ' + l.origine; co.style.cssText = 'font-size:12px;color:var(--muted);padding-top:0';
+        to.appendChild(co); t.appendChild(to);
+      }
+    });
     rang('Frais de service (5' + NBSP + '%)', f.frais);
     if (f.montantGratuite) { rang('Gratuité (services offerts)', f.montantGratuite); }
     rang('TPS', f.tps);
