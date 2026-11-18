@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=d29366a · 2026-11-17 20:58"></script>
+<script src="paiement-stripe.js?v=ae35f6c · 2026-11-17 21:12"></script>
 <script>
 // ===== Version publiée =====
-// d29366a · 2026-11-17 20:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// ae35f6c · 2026-11-17 21:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'd29366a · 2026-11-17 20:58';
+var VERSION_TBL = 'ae35f6c · 2026-11-17 21:12';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3061,6 +3061,13 @@ async function enregistrer() {
     }
     var r = await appeler('enregistrer', { livreId: LIVRE_ID, champs: champs, livre: livre });
     if (!r.ok) { toast(r.message || 'L’enregistrement a été refusé.', 'mal'); return false; }
+    // Plus aucune modification : le serveur a supprimé la copie, le livre redevient « Publié ». On relit la page.
+    if (r.copieSupprimee) {
+      etat.dirty = false; etat.occupe = false;
+      await demarrer();
+      toast('Plus aucune modification : la page est revenue à la version publiée.', 'ok');
+      return true;
+    }
     CHAMPS.forEach(function (c) { etat.saved[c.cle] = clone(norm(etat.work[c.cle])); });
     // Le serveur renvoie l'adresse définitive des images téléversées (Gestionnaire de médias)
     Object.keys(r.images || {}).forEach(function (k) { if (Object.prototype.hasOwnProperty.call(livre.images, k)) { etat.L.work[k] = r.images[k]; } });
@@ -3492,7 +3499,14 @@ function brancherEdition() {
   $('b-commentaire').addEventListener('click', ecrireCommentaire);
   $('t-ap-ord').addEventListener('click', function () { tracer('apercu', 'ordinateur'); ouvrirVue('apercu', 'ordinateur'); });
   $('t-ap-mob').addEventListener('click', function () { tracer('apercu', 'mobile'); ouvrirVue('apercu', 'mobile'); });
-  $('t-rapport').addEventListener('click', function () { tracer('rapport', 'rapport'); ouvrirVue('rapport'); });
+  $('t-rapport').addEventListener('click', function () {
+    // Rien à comparer : un message plutôt qu'un rapport vide (modifications non enregistrées comprises)
+    if (!etat.nouveau && !auMoinsUnChangement()) {
+      toast('Il n’y a aucune modification à comparer : la page est identique à la version publiée.', 'mal');
+      return;
+    }
+    tracer('rapport', 'rapport'); ouvrirVue('rapport');
+  });
   $('b-enreg').addEventListener('click', enregistrer);
   $('b-appr').addEventListener('click', lancerApprobation);
   $('b-valider').addEventListener('click', valider);
