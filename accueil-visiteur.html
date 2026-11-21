@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
 <style>
 /* Marque : titre et ornement du site, à conserver */
-.marque{position:absolute;top:0;left:0;right:0;z-index:2;text-align:center;padding:26px 16px 0;font-family:"Cinzel Decorative","Cinzel",Georgia,"Times New Roman",serif;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.marque{position:relative;z-index:2;text-align:center;padding:26px 16px 0;font-family:"Cinzel Decorative","Cinzel",Georgia,"Times New Roman",serif;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8)}
 .marque .nom{font-size:clamp(34px,6vw,64px);font-weight:700;letter-spacing:.07em;text-transform:uppercase;line-height:1.1}
 .marque .nom img{display:block;width:min(560px,92vw);height:auto;margin:-28px auto -34px}
 .marque .desc{font-family:"Cinzel",Georgia,serif;font-size:clamp(15px,2.4vw,26px);font-weight:700;letter-spacing:.3em;text-transform:uppercase;margin-top:12px}
@@ -39,7 +39,7 @@
 html,body{margin:0}
 body{background:var(--tbl-bg);color:var(--tbl-ink);font-family:var(--tbl-font-body);line-height:1.55}
 a{color:inherit}
-.heros{position:relative;min-height:88vh;display:flex}
+.heros{position:relative;min-height:88vh;display:flex;flex-direction:column;justify-content:flex-start}
 .heros::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(transparent,var(--tbl-bg))}
 .heros .contenu{position:relative;z-index:1;margin:0 auto;width:100%;text-align:center}
 .etiquette{display:inline-block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--tbl-orange);margin-bottom:var(--tbl-space-sm)}
@@ -54,8 +54,8 @@ h1{font-size:clamp(32px,5.4vw,60px);line-height:1.08;margin:0 auto var(--tbl-spa
 .btn .ico{width:1.5em;height:1.5em;border-radius:50%;vertical-align:middle;margin:-3px 8px 0 -4px}
 .btn.petit{padding:9px 14px;font-size:14px}
 /* Héros (visiteur et lecteur) : texte en bas de l'image */
-.heros{align-items:flex-end;background:linear-gradient(rgba(0,0,0,.35) 0%,rgba(0,0,0,.25) 40%,rgba(0,0,0,.85) 100%),var(--fond) 58% center/cover no-repeat #000}
-.heros .contenu{max-width:900px;padding:290px var(--tbl-space-md) 40px}
+.heros{background:linear-gradient(rgba(0,0,0,.35) 0%,rgba(0,0,0,.25) 40%,rgba(0,0,0,.85) 100%),var(--fond) 58% center/cover no-repeat #000}
+.heros .contenu{max-width:900px;padding:var(--tbl-space-md) var(--tbl-space-md) 40px}
 h1{text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .heros p.sous{text-shadow:0 1px 8px rgba(0,0,0,.7)}
 /* Auteurs : renvoi discret */
