@@ -49,6 +49,8 @@ main.wrap{padding-top:8px}
 h2{margin:0 0 5px;font-size:1.5rem;line-height:1.15}
 
 /* Boutons */
+#btn-liseuse{display:inline-flex;align-items:center;justify-content:center;gap:10px}
+#btn-liseuse .logo-liseuse{width:28px;height:28px;flex:none}
 .btn{border:0;border-radius:var(--tbl-radius-btn);padding:12px 18px;background:var(--red);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
 .btn:hover:not(:disabled){filter:brightness(1.1)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -256,7 +258,7 @@ body.liseuse-ouverte{overflow:hidden}
         <button class="fleche-livres" type="button" id="fleche-droite" aria-label="Livres suivants">▶</button>
       </div>
       <div class="barre-liseuse" id="barre-liseuse" hidden>
-        <button class="btn" type="button" id="btn-liseuse" title="Ouvrir la liseuse TBL">📖 La Liseuse TBL - Livre complet</button>
+        <button class="btn" type="button" id="btn-liseuse" title="Ouvrir la liseuse TBL"><img class="logo-liseuse" src="data:image/webp;base64,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" alt="" width="28" height="28"><span>La Liseuse TBL - Livre complet</span></button>
         <p class="note" id="texte-choix-livre" role="status" aria-live="polite"></p>
       </div>
     </div>
@@ -442,9 +444,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// dc7b129 · 2026-11-21 06:47 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 5155b59 · 2026-11-21 06:49 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'dc7b129 · 2026-11-21 06:47';
+var VERSION_TBL = '5155b59 · 2026-11-21 06:49';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -890,13 +892,13 @@ function montrerLivreChoisi() {
 function majChoixLivre() {
   var choisi = listeVue().filter(function (l) { return l.id === etat.livreChoisi; })[0];
   if (etat.vueLivres === 'extraits') {
-    $('btn-liseuse').textContent = '📖 La Liseuse TBL - Un extrait';
+    $('btn-liseuse').querySelector('span').textContent = 'La Liseuse TBL - Un extrait';
     $('texte-choix-livre').textContent = choisi
       ? 'Extrait choisi : « ' + choisi.titre + ' ». Touchez-le de nouveau pour annuler.'
       : 'Touchez un livre pour lire gratuitement son début dans la liseuse.';
     return;
   }
-  $('btn-liseuse').textContent = '📖 La Liseuse TBL - Livre complet';
+  $('btn-liseuse').querySelector('span').textContent = 'La Liseuse TBL - Livre complet';
   $('texte-choix-livre').textContent = choisi
     ? 'Livre choisi : « ' + choisi.titre + ' »' + (choisi.liseuse === false ? ', pas offert en format EPUB' : '') + '. Touchez-le de nouveau pour annuler.'
     : 'Touchez un livre pour le choisir. Sans choix, la liseuse ouvrira le dernier livre que vous avez lu.';
