@@ -1925,6 +1925,8 @@ select:focus { outline: none; border-color: var(--accent); }
     com.overlay.hidden = true;
     document.body.style.overflow = '';
     document.getElementById('btn-commentaires').focus();
+    // Sortie de la fenêtre Commentaires : la pastille Admin de l'en-tête du site est recalculée (22 novembre 2026)
+    envoyerAuParent({ action: 'rafraichirEntete' });
   }
 
   function comFiltreAuteur() {
@@ -2199,6 +2201,8 @@ select:focus { outline: none; border-color: var(--accent); }
     apr.overlay.hidden = true;
     document.body.style.overflow = '';
     document.getElementById('btn-approbations').focus();
+    // Sortie de la fenêtre Approbations : la pastille Admin de l'en-tête du site est recalculée (22 novembre 2026)
+    envoyerAuParent({ action: 'rafraichirEntete' });
   }
   function aprArgent(montant) {
     return typeof montant === 'number' ? montant.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' }) : '—';
