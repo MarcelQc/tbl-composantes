@@ -314,6 +314,12 @@ body.v-rapport{background:#fff;color:#111}
 .rap th{background:#f2f2f2;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:#555}
 .rap img{max-width:160px;max-height:200px;display:block;border:1px solid #ccc}
 .rap tr.chg td{background:#fff8d6}
+.rap h2{display:flex;justify-content:space-between;gap:12px;font-size:1.05rem;margin:22px 0 6px;padding-bottom:4px;border-bottom:2px solid #111}
+.rap h2 span:last-child{font-weight:400;font-size:.9rem;color:#555}
+.rap .ancien{background:#fde2e2;text-decoration:line-through}
+.rap .nouveau{background:#ddf3dd;font-weight:700}
+.rap table.meta{width:auto;margin:8px 0 6px}
+.rap table.meta td:first-child{background:#f2f2f2;font-weight:700}
 .rap .barre-outils{display:flex;gap:10px;margin-bottom:16px}
 .rap .btn.sec{color:#111;border-color:#888}
 @media print{.rap .barre-outils{display:none}}
@@ -392,7 +398,7 @@ body.v-rapport{background:#fff;color:#111}
 <div id="vue-rapport" hidden></div>
 
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=0a967ff · 2026-11-22 15:28"></script>
+<script src="paiement-stripe.js?v=7fb2dc1 · 2026-11-22 15:53"></script>
 <script>
 (function () {
 'use strict';
@@ -583,7 +589,7 @@ function toast(texte, classe) {
 }
 
 /* ---------- Version publiée (ligne grise : numéro et date pour les administrateurs, date seulement pour les auteurs) ---------- */
-var VERSION_TBL = '0a967ff · 2026-11-22 15:28';
+var VERSION_TBL = '7fb2dc1 · 2026-11-22 15:53';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -605,7 +611,38 @@ function erreurPage(titre, texte) { $('etat-titre').textContent = titre; $('etat
 function verrou() { return (etat.d.etat === 'approbation' && !etat.d.admin) || !!etat.verrouPaiement; }
 function revueAdmin() { return etat.d.etat === 'approbation' && etat.d.admin; }
 function livresModifiables() { return !etat.d.dejaPublie && !verrou() && etat.d.etat !== 'approbation'; }
-function editable() { return !verrou(); }
+// Page « À corriger » avec des éléments refusés (demande de Marcel du 22 novembre 2026, comme l'EDL) : l'auteur ne peut changer
+// que ces éléments ; les autres sont acceptés et verrouillés. Sans liste (ancien refus) ou pour l'administrateur : tout est permis.
+var NOMS_ELEMENTS = {
+  prix: 'Prix du coffret', description: 'Description (boutique)', imageBoutique: 'Image du coffret (boutique)',
+  section1: 'Section 1 (présentation, images et image créée par TBL)', texteAchat: 'Texte du bouton d’achat',
+  texteDecouvrir: 'Bouton « Découvrir les livres »', accroche: 'Message (numérique et papier)', texteAcheter: 'Bouton « Acheter l’ensemble »',
+  section2: 'Section 2 (affichage, image et image créée par TBL)',
+  carte1: 'Livre 1 (titre court, accroche, mots clés)', carte2: 'Livre 2 (titre court, accroche, mots clés)',
+  carte3: 'Livre 3 (titre court, accroche, mots clés)', carte4: 'Livre 4 (titre court, accroche, mots clés)', vedettes: 'En vedette'
+};
+var ELEMENTS_ORDRE = ['prix', 'description', 'imageBoutique', 'section1', 'texteAchat', 'texteDecouvrir', 'accroche', 'texteAcheter', 'section2', 'carte1', 'carte2', 'carte3', 'carte4', 'vedettes'];
+// Champ de la page -> élément refusable (le titre et les livres n'y sont pas : ils restent verrouillés).
+var ELEMENT_DU_CHAMP = {
+  prix: 'prix', description: 'description', imageBoutique: 'imageBoutique',
+  presentation1: 'section1', demande1: 'section1', indic1: 'section1', image1Ord: 'section1', image1Mob: 'section1',
+  texteAchat: 'texteAchat', texteDecouvrir: 'texteDecouvrir', accroche: 'accroche', texteAcheter: 'texteAcheter',
+  section2: 'section2', demande2: 'section2', indic2: 'section2', image2: 'section2', image2Mob: 'section2',
+  vedette1: 'vedettes', vedette2: 'vedettes', vedette3: 'vedettes', vedette4: 'vedettes'
+};
+[1, 2, 3, 4].forEach(function (i) { ['Titre', 'Accroche', 'Mots'].forEach(function (x) { ELEMENT_DU_CHAMP['carte' + i + x] = 'carte' + i; }); });
+function restreintAuxRefuses() {
+  return !!etat.d && !etat.d.admin && etat.d.etat === 'corriger' && !!etat.d.refus && Array.isArray(etat.d.refus.elements) && etat.d.refus.elements.length > 0;
+}
+function elementPermis(k) {
+  if (!restreintAuxRefuses()) { return true; }
+  if (/^livre\d$/.test(k)) { return true; } // les livres sont verrouillés à part (livresModifiables)
+  var e = ELEMENT_DU_CHAMP[k];
+  return !!e && etat.d.refus.elements.indexOf(e) >= 0;
+}
+// k (facultatif) : champ de la page ; sans k, seul le verrou général compte.
+function editable(k) { return !verrou() && (k === undefined || elementPermis(k)); }
+function champsDeElement(e) { return Object.keys(ELEMENT_DU_CHAMP).filter(function (k) { return ELEMENT_DU_CHAMP[k] === e; }); }
 
 async function demarrer() {
   montrer('chargement');
@@ -645,14 +682,28 @@ function remplirParDefaut(c) {
 function valeur(c, k) { var v = c[k]; return v === undefined || v === null ? '' : v; }
 function change(k) { return String(valeur(etat.c, k)) !== String(valeur(etat.ref, k)); }
 function changements() { return CHAMPS.filter(function (f) { return f.t !== 'info' && change(f.k); }); }
+function factureZero() { return { lignes: [], sous: 0, frais: 0, gratuite: 0, tps: 0, tvq: 0, total: 0, renvoi: true }; }
+// Ce qui a changé, en une phrase (même texte que le serveur, coffrets-editeur.js, origineChangement).
+function origineChamp(f) {
+  var a = valeur(etat.ref, f.k), b = valeur(etat.c, f.k);
+  if (f.k === 'prix') { return 'Prix du coffret : ' + (prixTexte(a) || 'aucun') + ' → ' + (prixTexte(b) || 'aucun'); }
+  if (f.k === 'description') { return 'Description : ' + Math.round(tauxDescription() * 100) + ' % des mots modifiés'; }
+  if (f.t === 'image') { return 'Image remplacée ou retirée'; }
+  if (f.t === 'demande') { return 'Image créée par TBL'; }
+  if (f.t === 'vedette') { return 'Place en vedette changée'; }
+  if (f.t === 'autre') { return 'Réglage de la section changé'; }
+  return 'Texte modifié';
+}
 function facture() {
+  // Coffret « À corriger » : déjà payé à son premier envoi, le renvoi ne coûte rien (comme l'EDL).
+  if (etat.d.etat === 'corriger') { return factureZero(); }
   var lignes = [];
   if (!etat.d.dejaPublie) {
     lignes.push({ nom: 'Forfait Coffret (création, images par TBL et vedettes comprises)', montant: PRIX.forfait });
   } else {
     changements().forEach(function (f) {
       var m = coutChamp(f);
-      if (m) { lignes.push({ nom: f.nom + (f.k === 'description' ? ' (' + Math.round(tauxDescription() * 100) + ' % des mots)' : ''), montant: m }); }
+      if (m) { lignes.push({ nom: f.nom + (f.k === 'description' ? ' (' + Math.round(tauxDescription() * 100) + ' % des mots)' : ''), montant: m, origine: origineChamp(f) }); }
     });
   }
   var sous = lignes.reduce(function (s, l) { return s + l.montant; }, 0);
@@ -664,7 +715,7 @@ function facture() {
 }
 // Prix d'un champ modifié (coffret déjà publié). Le titre ne change plus ; les livres sont verrouillés.
 function coutChamp(f) {
-  if (!etat.d.dejaPublie || !change(f.k)) { return 0; }
+  if (!etat.d.dejaPublie || !change(f.k) || etat.d.etat === 'corriger') { return 0; } // renvoi après un refus : rien à payer
   if (f.k === 'titre' || f.t === 'livre' || f.t === 'info') { return 0; }
   if (f.k === 'prix') { return PRIX.prix; }
   if (f.k === 'description') { return tauxDescription() < SEUIL_DESCRIPTION ? PRIX.descPetit : PRIX.descGrand; }
@@ -789,7 +840,11 @@ function rendreTout() {
     ? 'Demande de ' + d.auteur.nom + ' en attente de validation. Vous pouvez la corriger, puis l’approuver et la publier, ou la refuser.'
     : 'Votre coffret est en attente de validation par l’équipe des Éditions TBL. Vous recevrez un courriel dès qu’il sera publié.';
   $('bandeau-refus').hidden = !(d.etat === 'corriger' && d.refus);
-  if (d.refus) { $('bandeau-refus').textContent = 'Demande refusée le ' + dateHeure(d.refus.date) + '.\nMotif : ' + d.refus.motif; }
+  if (d.refus) {
+    $('bandeau-refus').textContent = 'Demande refusée le ' + dateHeure(d.refus.date) + '.\nMotif : ' + d.refus.motif
+      + (restreintAuxRefuses() ? '\nÉléments à corriger : ' + d.refus.elements.map(function (e) { return NOMS_ELEMENTS[e] || e; }).join(', ') + '.\nLes autres éléments de votre demande sont acceptés : ils sont verrouillés.' : '')
+      + (d.etat === 'corriger' ? '\nCorrigez votre coffret puis renvoyez-le en approbation, sans nouveau paiement.' : '');
+  }
   rendreFiche();
   var hote = $('hote-edition'); hote.textContent = '';
   hote.appendChild(rendrePage(c, 'edition', 'ordinateur'));
@@ -810,7 +865,7 @@ function majOutils() {
   $('b-refuser').hidden = !admin;
   var raison = raisonRefusApprobation();
   $('b-appr').disabled = !!raison || etat.occupe;
-  $('b-appr').textContent = (etat.d.gratuit || f.total === 0) ? 'Envoyer en approbation' : 'Approuver / Payer';
+  $('b-appr').textContent = d.etat === 'corriger' ? 'Renvoyer en approbation (déjà payé)' : ((d.gratuit || f.total === 0) ? 'Envoyer en approbation' : 'Payer ' + argent(f.total) + ' et envoyer en approbation');
   $('b-valider').disabled = etat.dirty || etat.occupe;
   $('b-refuser').disabled = etat.dirty || etat.occupe;
   $('aide-appr').textContent = admin && etat.dirty ? 'Enregistrez vos corrections avant d’approuver ou de refuser.' : (raison || '');
@@ -872,10 +927,14 @@ function rendreFiche() {
   var somme = livresChoisis(c).reduce(function (s, id) { var l = livre(id); return s + (l ? l.prix : 0); }, 0);
   if (somme) { lp.appendChild(el('span', null, 'Total des livres achetés un par un : ' + somme.toFixed(2).replace('.', ',') + ' $. Le prix du coffret doit être plus bas.')); }
   col.appendChild(lp);
-  col.appendChild(editeurDescription(actif));
+  col.appendChild(editeurDescription(actif && editable('description')));
   g.appendChild(col);
   f.appendChild(g);
   f.querySelectorAll('input,textarea').forEach(function (x) { x.disabled = !actif; });
+  ['titre', 'prix'].forEach(function (k) {
+    var n = f.querySelector('[data-k="' + k + '"]');
+    if (n) { (n.matches('input,textarea') ? [n] : Array.prototype.slice.call(n.querySelectorAll('input,textarea'))).forEach(function (x) { x.disabled = !editable(k); }); }
+  });
   majPastillesPrix();
   if (etat.diff) { ['titre', 'prix', 'description', 'imageBoutique'].forEach(function (k) { var n = f.querySelector('[data-k="' + k + '"]'); if (n && change(k)) { n.classList.add('chg'); } }); }
 }
@@ -1001,7 +1060,7 @@ function blocImage(k, o) {
   if (v) { var img = el('img'); img.src = v; img.alt = o.vide; img.style.width = '100%'; img.style.borderRadius = '6px'; img.style.display = 'block'; boite.appendChild(img); }
   else if ((o.demande && etat.c[o.demande]) || (o.suitDemande && etat.c[o.suitDemande])) { var t = el('div', 'image-vide tbl'); t.style.aspectRatio = o.ratio; t.appendChild(el('strong', null, 'Image créée par TBL')); t.appendChild(el('span', null, 'L’équipe la prépare d’après vos indications.')); boite.appendChild(t); }
   else { var vd = el('div', 'image-vide'); vd.style.aspectRatio = o.ratio; vd.appendChild(el('strong', null, o.vide)); vd.appendChild(el('span', null, 'Aucune image pour le moment')); boite.appendChild(vd); }
-  if (!editable()) { return boite; }
+  if (!editable(k)) { return boite; }
   var ctl = el('div', 'controle-image');
   var rang = el('div', 'rang');
   var fichier = el('input'); fichier.type = 'file'; fichier.accept = 'image/png,image/jpeg,image/webp';
@@ -1064,7 +1123,7 @@ function reduireImage(fichier, maxL, maxH) {
 function texteEditable(tag, cls, k, vide, mode) {
   var n = el(tag, cls, etat.c && mode === 'edition' ? etat.c[k] : null);
   n.setAttribute('data-k', k);
-  if (mode === 'edition' && editable()) {
+  if (mode === 'edition' && editable(k)) {
     n.contentEditable = 'true'; n.spellcheck = true; n.setAttribute('data-vide', vide);
     n.addEventListener('input', function () { majChamp(k, n.textContent.replace(/\s+/g, ' ').trim(), false); });
     n.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
@@ -1092,7 +1151,7 @@ function rendrePage(c, mode, appareil) {
     ctl.appendChild(el('strong', null, 'Section 1 :'));
     var choix = el('div', 'choix-pres'); choix.setAttribute('role', 'group'); choix.setAttribute('aria-label', 'Présentation de la section 1');
     [['image', 'Image publicitaire'], ['gabarit', 'Présentation des livres']].forEach(function (x) {
-      var b = el('button', null, x[1]); b.type = 'button'; b.setAttribute('aria-pressed', c.presentation1 === x[0] ? 'true' : 'false'); b.disabled = !editable();
+      var b = el('button', null, x[1]); b.type = 'button'; b.setAttribute('aria-pressed', c.presentation1 === x[0] ? 'true' : 'false'); b.disabled = !editable('presentation1');
       b.addEventListener('click', function () { if (c.presentation1 !== x[0]) { majChamp('presentation1', x[0], true); } });
       choix.appendChild(b);
     });
@@ -1139,7 +1198,7 @@ function rendrePage(c, mode, appareil) {
     var choixAcc = el('div', 'choix-pres'); choixAcc.setAttribute('role', 'group'); choixAcc.setAttribute('aria-label', 'Message sous les boutons');
     ACCROCHES.forEach(function (texte) {
       var b = el('button', null, texte); b.type = 'button';
-      b.setAttribute('aria-pressed', (c.accroche || ACCROCHES[0]) === texte ? 'true' : 'false'); b.disabled = !editable();
+      b.setAttribute('aria-pressed', (c.accroche || ACCROCHES[0]) === texte ? 'true' : 'false'); b.disabled = !editable('accroche');
       b.addEventListener('click', function () { if ((c.accroche || ACCROCHES[0]) !== texte) { majChamp('accroche', texte, true); } });
       choixAcc.appendChild(b);
     });
@@ -1160,7 +1219,7 @@ function rendrePage(c, mode, appareil) {
   // ----- Section 2 (facultative) : une image supplémentaire, au choix de l'auteur (prix, ambiance, extrait…)
   if (ed) {
     var ctl2 = el('div', 'controle-section');
-    var lab = el('label', 'interrupteur'); var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!c.section2; cb.disabled = !editable();
+    var lab = el('label', 'interrupteur'); var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!c.section2; cb.disabled = !editable('section2');
     cb.addEventListener('change', function () { majChamp('section2', cb.checked, true); });
     lab.appendChild(cb); lab.appendChild(el('span', 'piste')); lab.appendChild(document.createTextNode('Section 2 : image supplémentaire'));
     ctl2.appendChild(lab); ctl2.appendChild(el('span', 'info-l', 'Facultative : une image de plus, à votre choix (le prix, une ambiance, un extrait…).'));
@@ -1352,7 +1411,7 @@ function placeVedette(c, v, mode) {
   else { contenu = el('div', 'vide-ved', 'Vedette de la semaine'); }
   var cap = el('figcaption', null, l ? l.titre : (sem ? sem.titre : 'Place libre'));
   if (!l) { cap.appendChild(el('small', null, 'Vedette de la semaine, choisie par TBL')); }
-  if (ed && editable()) {
+  if (ed && editable('vedette' + v)) {
     var b = el('button', 'place-ved'); b.type = 'button';
     b.disabled = !l && v > 1 && !c['vedette' + (v - 1)];
     b.title = b.disabled ? 'Remplissez d’abord la place ' + (v - 1) : 'Choisir le livre de cette place';
@@ -1491,9 +1550,25 @@ async function proposerFactureEnCours(fc) {
 
 // Envoi en approbation : auteur payant, le serveur crée la facture Stripe (coffrets-editeur.js, payerCoffret) et la
 // fenêtre de paiement s'affiche dans l'éditeur ; sinon (auteur gratuit, administrateur) envoi direct.
+// Facture du serveur (calculée sur la copie enregistrée, avec les prix de Stripe) au format de la page.
+function factureDuServeur(sf) {
+  return {
+    lignes: (sf.lignes || []).map(function (l) { return { nom: l.nom, montant: l.montant, origine: l.origine }; }),
+    sous: sf.sousTotal, frais: sf.frais, gratuite: sf.montantGratuite || 0, tps: sf.tps, tvq: sf.tvq, total: sf.total
+  };
+}
 async function lancerApprobation() {
   if (raisonRefusApprobation()) { return; }
   var f = facture();
+  // Montant relu au serveur juste avant la fenêtre de paiement : c'est lui qui fait foi (comme l'EDL).
+  if (!etat.d.admin) {
+    var s = await appeler('obtenir', { coffretId: etat.d.coffretId });
+    if (s && s.statut === 'ok') {
+      if (s.etat === 'corriger') { f = factureZero(); }
+      else if (s.facture) { f = factureDuServeur(s.facture); }
+      etat.d.paiementCommence = s.paiementCommence || null;
+    }
+  }
   var corps = el('div');
   corps.appendChild(el('p', null, f.total ? 'Après le paiement, l’équipe des Éditions TBL vérifie votre coffret puis le publie. Le formulaire de paiement par carte s’affiche ici même, sans quitter l’éditeur. Vous recevrez un courriel à chaque étape.' : 'Votre coffret est envoyé à l’équipe des Éditions TBL, qui le vérifie puis le publie.'));
   corps.appendChild(tableauFacture(f));
@@ -1550,22 +1625,60 @@ async function valider() {
   }
   demarrer();
 }
+// Éléments que l'administrateur peut refuser : ceux que la demande a modifiés, plus le prix et la description (toujours proposés).
+function elementsModifies() {
+  return ELEMENTS_ORDRE.filter(function (e) { return e === 'prix' || e === 'description' || champsDeElement(e).some(change); });
+}
+function libelleElementRefus(e) {
+  var nom = NOMS_ELEMENTS[e] || e;
+  if (e === 'prix') {
+    return nom + ' : ' + (prixTexte(valeur(etat.ref, 'prix')) || 'aucun') + ' → ' + (prixTexte(valeur(etat.c, 'prix')) || 'aucun') + (change('prix') ? '' : ' (inchangé)');
+  }
+  if (e === 'description') { return nom + (change('description') ? ' : modifiée' : ' (inchangée)'); }
+  return nom;
+}
 async function refuser() {
   var corps = el('div');
-  corps.appendChild(el('p', null, 'Expliquez à l’auteur ce qu’il doit corriger. Il recevra ce message par courriel et le coffret repassera à « À corriger ».'));
-  var ta = el('textarea'); ta.maxLength = 1000; ta.setAttribute('aria-label', 'Motif du refus'); corps.appendChild(ta);
-  var r = await modale({ titre: 'Refuser la demande', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Refuser et envoyer', principal: true, avant: function () { if (!ta.value.trim()) { ta.focus(); return false; } } }] });
+  corps.style.cssText = 'max-height:70vh;overflow-y:auto';
+  corps.appendChild(el('p', null, 'Expliquez à l’auteur ce qu’il doit corriger : le commentaire lui est envoyé par courriel et affiché en haut de sa page.'));
+  var ta = el('textarea'); ta.maxLength = 1000; ta.rows = 3; ta.style.minHeight = '72px'; ta.setAttribute('aria-label', 'Motif du refus'); corps.appendChild(ta);
+  var cpt = el('div', null, '0 / 1000'); cpt.style.cssText = 'font-size:.8rem;text-align:right;opacity:.7;margin-top:4px';
+  ta.addEventListener('input', function () { cpt.textContent = ta.value.length + ' / 1000'; });
+  corps.appendChild(cpt);
+  // Éléments à corriger : l'auteur ne pourra changer que ceux-là, sans payer de nouveau (décochés au départ)
+  var elements = elementsModifies(), cases = {};
+  var tete = el('p', null, 'Cochez les éléments à corriger (l’auteur ne pourra modifier que ceux-là, sans payer de nouveau) :'); tete.style.margin = '6px 0 4px';
+  corps.appendChild(tete);
+  var liste = el('div'); liste.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 14px;font-size:.92rem';
+  elements.forEach(function (e) {
+    var lab = el('label'); lab.style.cssText = 'display:block;padding:2px 0';
+    var cb = el('input'); cb.type = 'checkbox'; cb.checked = false; cases[e] = cb;
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + libelleElementRefus(e)));
+    liste.appendChild(lab);
+  });
+  corps.appendChild(liste);
+  var choisis = [];
+  var r = await modale({ titre: 'Refuser la demande', corps: corps, boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'ok', libelle: 'Refuser et envoyer', principal: true, avant: function () {
+    if (!ta.value.trim()) { ta.focus(); toast('Le commentaire pour l’auteur est obligatoire.', 'mal'); return false; }
+    choisis = elements.filter(function (e) { return cases[e].checked; });
+    if (!choisis.length) { toast('Cochez au moins un élément que l’auteur doit corriger.', 'mal'); return false; }
+  } }] });
   if (r !== 'ok') { return; }
-  var rep = await appeler('refuser', { coffretId: etat.d.coffretId, motif: ta.value.trim() });
+  var rep = await appeler('refuser', { coffretId: etat.d.coffretId, motif: ta.value.trim(), elements: choisis });
   if (!rep || !rep.ok) { toast((rep && rep.message) || 'Le refus a échoué.', 'mal'); return; }
   toast('Demande refusée, courriel envoyé à l’auteur.', 'ok');
   demarrer();
 }
 function tableauFacture(f) {
   var t = el('table');
-  function rang(nom, cents, total) { var tr = el('tr', total ? 'total' : ''); tr.appendChild(el('td', null, nom)); tr.appendChild(el('td', null, argent(cents))); t.appendChild(tr); }
+  function rang(nom, cents, total, origine) {
+    var tr = el('tr', total ? 'total' : ''); var td = el('td', null, nom);
+    if (origine) { var pt = el('div', 'origine-ligne', origine); pt.style.cssText = 'font-size:.8rem;opacity:.75;font-weight:400'; td.appendChild(pt); }
+    tr.appendChild(td); tr.appendChild(el('td', null, argent(cents))); t.appendChild(tr);
+  }
+  if (f.renvoi) { return el('p', null, 'Renvoi après un refus : vos services ont déjà été payés, aucuns nouveaux frais.'); }
   if (!f.lignes.length) { var p = el('p', null, 'Aucune modification à payer pour le moment.'); return p; }
-  f.lignes.forEach(function (l) { rang(l.nom, l.montant); });
+  f.lignes.forEach(function (l) { rang(l.nom, l.montant, false, l.origine); });
   rang('Frais de service (5 %)', f.frais);
   if (f.gratuite) { rang('Gratuité (services offerts)', f.gratuite); }
   rang('TPS', f.tps); rang('TVQ', f.tvq);
@@ -1630,25 +1743,75 @@ function ajusterCadre() {
   if (echelle < 1) { cadre.style.zoom = String(echelle); }
 }
 window.addEventListener('resize', ajusterCadre);
+// Comparaison mot à mot : mots retirés dans « Avant », mots ajoutés dans « Après » (même principe que le rapport de l'EDL).
+function jetonsRapport(texte) { return String(texte || '').split(/\s+/).filter(Boolean); }
+function texteSimple(html) { var d = document.createElement('div'); d.innerHTML = html || ''; return d.textContent || ''; }
+function diffMots(avant, apres) {
+  var a = jetonsRapport(avant), b = jetonsRapport(apres), n = a.length, m = b.length, i, j, t = [];
+  for (i = 0; i <= n; i += 1) { t.push(new Array(m + 1).fill(0)); }
+  for (i = n - 1; i >= 0; i -= 1) { for (j = m - 1; j >= 0; j -= 1) { t[i][j] = a[i] === b[j] ? t[i + 1][j + 1] + 1 : Math.max(t[i + 1][j], t[i][j + 1]); } }
+  var fa = document.createDocumentFragment(), fb = document.createDocumentFragment();
+  function mot(frag, texte, cls) { frag.appendChild(el('span', cls || null, texte + ' ')); }
+  i = 0; j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { mot(fa, a[i]); mot(fb, b[j]); i += 1; j += 1; }
+    else if (t[i + 1][j] >= t[i][j + 1]) { mot(fa, a[i], 'ancien'); i += 1; }
+    else { mot(fb, b[j], 'nouveau'); j += 1; }
+  }
+  while (i < n) { mot(fa, a[i], 'ancien'); i += 1; }
+  while (j < m) { mot(fb, b[j], 'nouveau'); j += 1; }
+  return { avant: fa, apres: fb };
+}
+var STATUTS_RAPPORT = { publie: 'Aucune copie : coffret publié', nouveau: 'Nouveau coffret (pas encore publié)', modifier: 'Copie en cours (non envoyée)', approbation: 'En attente de validation', corriger: 'À corriger après un refus' };
+// Une ligne du tableau d'un groupe : élément, avant, après (mots changés en couleur, comme l'EDL), montant du changement.
+function ligneRapport(f) {
+  var a = valeur(etat.ref, f.k), b = valeur(etat.c, f.k);
+  if ((a === '' && b === '') || ((f.t === 'demande' || f.t === 'autre') && !a && !b)) { return null; }
+  var chg = String(a) !== String(b), cout = chg && etat.d.etat !== 'corriger' ? coutChamp(f) : 0;
+  var tr = el('tr', chg ? 'chg' : '');
+  tr.appendChild(el('td', null, f.nom + (cout ? ' (' + argent(cout) + ')' : '')));
+  if (chg && f.t === 'texte' && f.k !== 'prix') {
+    var avant = f.k === 'description' ? texteSimple(a) : String(a), apres = f.k === 'description' ? texteSimple(b) : String(b);
+    var dm = diffMots(avant, apres), ta = el('td'), tb = el('td');
+    ta.appendChild(dm.avant); tb.appendChild(dm.apres); tr.appendChild(ta); tr.appendChild(tb);
+  } else {
+    tr.appendChild(celluleRapport(f, a)); tr.appendChild(celluleRapport(f, b));
+  }
+  return tr;
+}
 function ouvrirRapport() {
+  var d = etat.d, fac = facture();
   var v = $('vue-rapport'); v.textContent = '';
   var r = el('div', 'rap');
   var outils = el('div', 'barre-outils');
   var bRet = el('button', 'btn sec petit', '← Retour à l’éditeur'); bRet.type = 'button'; bRet.addEventListener('click', function () { montrer('vue-edition'); });
-  var bImp = el('button', 'btn sec petit', 'Imprimer'); bImp.type = 'button'; bImp.addEventListener('click', function () { window.print(); });
+  var bImp = el('button', 'btn sec petit', 'Imprimer / Enregistrer en PDF'); bImp.type = 'button'; bImp.addEventListener('click', function () { window.print(); });
   outils.appendChild(bRet); outils.appendChild(bImp); r.appendChild(outils);
-  r.appendChild(el('h1', null, 'Rapport Avant / Après : ' + (etat.c.titre || 'Nouveau coffret')));
-  r.appendChild(el('p', 'sous', etat.d.dejaPublie ? 'Comparaison de la version publiée et de vos modifications.' : 'Nouveau coffret : la colonne « Avant » est vide.'));
-  var t = el('table'); var tr = el('tr'); ['Élément', 'Avant (publié)', 'Après (vos modifications)'].forEach(function (h) { tr.appendChild(el('th', null, h)); }); t.appendChild(tr);
-  CHAMPS.forEach(function (f) {
-    var a = valeur(etat.ref, f.k), b = valeur(etat.c, f.k);
-    if (a === '' && b === '' || (f.t === 'demande' || f.t === 'autre') && !a && !b) { return; }
-    var ligne = el('tr', String(a) !== String(b) ? 'chg' : '');
-    ligne.appendChild(el('td', null, f.nom));
-    [a, b].forEach(function (x) { ligne.appendChild(celluleRapport(f, x)); });
-    t.appendChild(ligne);
+  r.appendChild(el('h1', null, 'Demande de modification de coffret'));
+  r.appendChild(el('p', 'sous', 'Les Éditions TBL · Rapport Avant / Après : ' + (etat.c.titre || 'Nouveau coffret')));
+  // Résumé : coffret, auteur, statut et montants (les mêmes que « Voir le détail »)
+  var meta = el('table', 'meta');
+  var lignesMeta = [['Coffret', etat.c.titre || 'Nouveau coffret'], ['Auteur', d.auteur && d.auteur.nom ? d.auteur.nom : ''], ['Statut', STATUTS_RAPPORT[d.etat] || d.etat],
+    [d.derniereModification ? 'Dernière modification' : 'Date du rapport', dateHeure(d.derniereModification || new Date().toISOString())]];
+  // Montants : le tableau des services plus bas détaille chaque ligne, les frais, les taxes et le total.
+  if (fac.renvoi) { lignesMeta.push(['Total à payer', 'Aucuns nouveaux frais (renvoi après un refus)']); }
+  else if (!fac.lignes.length) { lignesMeta.push(['Total à payer', argent(fac.total)]); }
+  lignesMeta.forEach(function (x) { var tr = el('tr'); tr.appendChild(el('td', null, x[0])); tr.appendChild(el('td', null, x[1])); meta.appendChild(tr); });
+  r.appendChild(meta);
+  if (fac.lignes.length) {
+    r.appendChild(tableauFacture(fac));
+  }
+  // Une section par groupe de la page, avec le montant des changements
+  Object.keys(GROUPES).forEach(function (g) {
+    var corps = el('table'); var tr0 = el('tr'); ['Élément', 'Avant (publié)', 'Après (vos modifications)'].forEach(function (h) { tr0.appendChild(el('th', null, h)); }); corps.appendChild(tr0);
+    var n = 0;
+    CHAMPS.filter(function (c) { return c.t !== 'info' && GROUPES[g].indexOf(c.k) >= 0; }).forEach(function (c) { var tr = ligneRapport(c); if (tr) { corps.appendChild(tr); n += 1; } });
+    var h2 = el('h2'); h2.appendChild(el('span', null, NOMS_GROUPES[g]));
+    var m = d.etat === 'corriger' ? 0 : coutGroupe(g), modif = groupeModifie(g);
+    h2.appendChild(el('span', null, modif ? 'Modifiée' + (m ? ' : ' + argent(m) : '') : 'Aucune modification'));
+    r.appendChild(h2);
+    if (n) { r.appendChild(corps); }
   });
-  r.appendChild(t);
   v.appendChild(r);
   montrer('vue-rapport'); window.scrollTo(0, 0);
 }
