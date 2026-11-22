@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=ae04bab · 2026-11-22 09:40"></script>
+<script src="paiement-stripe.js?v=76d9eaf · 2026-11-22 14:58"></script>
 <script>
 // ===== Version publiée =====
-// ae04bab · 2026-11-22 09:40 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 76d9eaf · 2026-11-22 14:58 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'ae04bab · 2026-11-22 09:40';
+var VERSION_TBL = '76d9eaf · 2026-11-22 14:58';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3228,8 +3228,9 @@ function elementsModifies() {
   ['image', 'image1Ord', 'image1Mob'].forEach(function (k) { if (C[k]) { l.push(k); } });
   if (C.photoAuteur || C.sansPhoto) { l.push('photoAuteur'); }
   if (C.extraitPdf) { l.push('extraitPdf'); }
-  if (etat.boutique && etat.chgB.prix) { l.push('fichePrix'); }
-  if (etat.boutique && etat.chgB.description) { l.push('ficheDescription'); }
+  // Fiche de la boutique : toujours proposée quand le livre a un produit, avec le prix avant et après (demande de Marcel
+  // du 22 novembre 2026 : le changement de prix manquait dans la fenêtre de refus).
+  if (etat.boutique) { l.push('fichePrix'); l.push('ficheDescription'); }
   if (C.afficheauteur) { l.push('auteur'); }
   if (C.affichecoffret || C.coffret) { l.push('coffret'); }
   if (C.email) { l.push('courriel'); }
@@ -3237,15 +3238,26 @@ function elementsModifies() {
   if (C.presentation1 || C.demande1 || C.indic1) { l.push('section1'); }
   return l;
 }
+// Texte d'une case de la fenêtre de refus : le prix de la boutique montre son changement.
+function libelleElementRefus(k) {
+  var nom = NOMS_ELEMENTS[k] || k;
+  if (k === 'fichePrix') {
+    return 'Prix de la boutique : ' + (etat.B.pub.prix || 'aucun') + NBSP + '$ → ' + (etat.B.work.prix || 'aucun') + NBSP + '$' + (etat.chgB.prix ? '' : ' (inchangé)');
+  }
+  if (k === 'ficheDescription') { return nom + (etat.chgB.description ? ' : modifiée' : ' (inchangée)'); }
+  return nom;
+}
 async function refuser() {
   if (!etat.revue) { return; }
   if (etat.dirty) { toast('Enregistrez vos modifications avant de refuser.', 'mal'); return; }
   var corps = document.createElement('div');
   var intro = document.createElement('p');
-  intro.textContent = 'Expliquez à l’auteur ce qu’il doit corriger. Ce commentaire lui sera envoyé par courriel et affiché en haut de sa page. Sa demande passera à « À corriger » : il pourra la corriger puis la soumettre à nouveau.';
+  intro.textContent = 'Expliquez à l’auteur ce qu’il doit corriger : le commentaire lui est envoyé par courriel et affiché en haut de sa page.';
+  corps.style.maxHeight = '70vh'; corps.style.overflowY = 'auto';
   corps.appendChild(intro);
   var zone = document.createElement('textarea');
   zone.className = 'motif-saisie';
+  zone.style.minHeight = '72px'; zone.rows = 3;
   zone.maxLength = MOTIF_MAX;
   zone.setAttribute('aria-label', 'Commentaire pour l’auteur');
   zone.placeholder = 'Commentaire pour l’auteur';
@@ -3259,14 +3271,15 @@ async function refuser() {
   // Éléments à corriger : l'auteur ne pourra changer que ceux-là, sans nouveau paiement
   var modifies = elementsModifies(), cases = {};
   if (modifies.length) {
-    var tete = document.createElement('p'); tete.style.marginBottom = '4px';
-    tete.textContent = 'Cochez les éléments que l’auteur doit corriger (il ne pourra modifier que ceux-là, sans payer de nouveau) :';
+    var tete = document.createElement('p'); tete.style.margin = '6px 0 4px';
+    tete.textContent = 'Cochez les éléments à corriger (l’auteur ne pourra modifier que ceux-là, sans payer de nouveau) :';
     corps.appendChild(tete);
     var liste = document.createElement('div');
+    liste.style.display = 'grid'; liste.style.gridTemplateColumns = 'repeat(auto-fit, minmax(240px, 1fr))'; liste.style.gap = '2px 14px'; liste.style.fontSize = '.92rem';
     modifies.forEach(function (k) {
-      var lab = document.createElement('label'); lab.className = 'case'; lab.style.display = 'block';
+      var lab = document.createElement('label'); lab.className = 'case'; lab.style.display = 'block'; lab.style.padding = '2px 0';
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = false; cases[k] = cb;
-      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + (NOMS_ELEMENTS[k] || k)));
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + libelleElementRefus(k)));
       liste.appendChild(lab);
     });
     corps.appendChild(liste);
