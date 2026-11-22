@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=1efcd88 · 2026-11-22 08:10"></script>
+<script src="paiement-stripe.js?v=54a7a9d · 2026-11-22 08:20"></script>
 <script>
 // ===== Version publiée =====
-// 1efcd88 · 2026-11-22 08:10 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 54a7a9d · 2026-11-22 08:20 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '1efcd88 · 2026-11-22 08:10';
+var VERSION_TBL = '54a7a9d · 2026-11-22 08:20';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3260,12 +3260,12 @@ async function refuser() {
   var modifies = elementsModifies(), cases = {};
   if (modifies.length) {
     var tete = document.createElement('p'); tete.style.marginBottom = '4px';
-    tete.textContent = 'Éléments à corriger (l’auteur ne pourra modifier que ceux-là, sans payer de nouveau) :';
+    tete.textContent = 'Cochez les éléments que l’auteur doit corriger (il ne pourra modifier que ceux-là, sans payer de nouveau) :';
     corps.appendChild(tete);
     var liste = document.createElement('div');
     modifies.forEach(function (k) {
       var lab = document.createElement('label'); lab.className = 'case'; lab.style.display = 'block';
-      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cases[k] = cb;
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = false; cases[k] = cb;
       lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + (NOMS_ELEMENTS[k] || k)));
       liste.appendChild(lab);
     });
