@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=780f82c · 2026-11-21 09:03"></script>
+<script src="paiement-stripe.js?v=a20c4dc · 2026-11-22 07:11"></script>
 <script>
 // ===== Version publiée =====
-// 780f82c · 2026-11-21 09:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// a20c4dc · 2026-11-22 07:11 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '780f82c · 2026-11-21 09:03';
+var VERSION_TBL = 'a20c4dc · 2026-11-22 07:11';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -3450,7 +3450,8 @@ function donneesCourantes() {
     livre: d.livre, etat: d.etat, dateCopie: d.dateCopie, gratuit: d.gratuit, enPlace: true, nonEnregistre: etat.dirty,
     publie: etat.pub, copie: etat.work,
     champsLivre: { publie: etat.L.pub, copie: etat.L.work },
-    boutique: etat.boutique, prixNumerique: etat.B.work.prix
+    boutique: etat.boutique, prixNumerique: etat.B.work.prix,
+    ficheTravail: etat.B.work   // prix et description de la boutique en cours de modification (peut-être pas encore enregistrés)
   };
 }
 function ouvrirVue(vue, appareil) {
@@ -3660,7 +3661,15 @@ document.addEventListener('click', function () { if (bulleOuverte) { fermerBulle
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fermerBulle(); } });
 
 // ===== Vue Rapport Avant / Après (contenu du futur PDF) =====
+// Fiche de la boutique du rapport : la version publiée du produit et la copie. Dans l'éditeur (enPlace), la copie est
+// la fiche en cours de modification, enregistrée ou non, comme le texte de la page.
+function boutiqueDuRapport(d) {
+  if (!d.boutique) { return null; }
+  if (!d.ficheTravail) { return d.boutique; }
+  return { publie: d.boutique.publie, copie: { prix: prixCentsFiche(d.ficheTravail.prix) / 100, description: d.ficheTravail.description } };
+}
 function montrerRapport(d) {
+  var BQ = boutiqueDuRapport(d);
   document.body.className = 'v-rapport';
   if (Array.isArray(d.coffrets)) { etat.coffrets = d.coffrets; }
   document.title = 'Rapport Avant / Après : ' + d.livre.titre;
@@ -3676,7 +3685,7 @@ function montrerRapport(d) {
   var fac = d.etat === 'corriger' ? null : factureCorrections(
     CHAMPS.map(function (c, i) { return { cle: c.cle, nom: c.nom, chg: chgs[i] || (c.cle === 'extrait' && pdfChg), taux: taux[i] }; }),
     IMAGES_PAYANTES.map(function (x) { return { cle: x[0], nom: x[1], chg: (LPr[x[0]] || '') !== (LCr[x[0]] || '') }; }),
-    d.gratuit, nbVed, lignesS1(LPr, LCr).concat(lignesBoutiqueRapport(d.boutique)));
+    d.gratuit, nbVed, lignesS1(LPr, LCr).concat(lignesBoutiqueRapport(BQ)));
   var racine = $('vue-rapport');
   racine.textContent = '';
   var rap = document.createElement('div');
@@ -3717,6 +3726,40 @@ function montrerRapport(d) {
     sec.appendChild(deux);
     rap.appendChild(sec);
   });
+  // Fiche du livre dans la boutique : prix du livre numérique et description du produit (demande de Marcel du
+  // 22 novembre 2026). Comptée dans la facture comme les textes de la page, mais absente de la page du livre.
+  if (BQ) {
+    var BP = versFiche(BQ.publie), BC = versFiche(BQ.copie || BQ.publie);
+    var chgPrixB = valB(BP.prix, 'prix') !== valB(BC.prix, 'prix');
+    var chgDescB = valB(BP.description, 'description') !== valB(BC.description, 'description');
+    var avD = blocsDepuisHtmlDescription(BP.description), apD = blocsDepuisHtmlDescription(BC.description);
+    var tauxDescB = tauxModification(avD, apD).taux;
+    var secB = el('section');
+    var hB = el('h2'); hB.appendChild(el('span', '', 'Fiche du livre dans la boutique'));
+    hB.appendChild(el('span', '', (chgPrixB || chgDescB) ? 'Modifiée' + (fac ? ' : ' + argent((chgPrixB ? PRIX_TEXTE_PETIT : 0) + (chgDescB ? prixTexte(true, tauxDescB) : 0)) : '') : 'Aucune modification'));
+    secB.appendChild(hB);
+    var tbB = el('table', 'autres');
+    var thB = el('tr'); ['Élément', 'Avant (version publiée)', 'Après (copie de l’auteur)'].forEach(function (t) { thB.appendChild(el('th', '', t)); });
+    tbB.appendChild(thB);
+    var trB = el('tr'); trB.appendChild(el('td', '', 'Prix du livre numérique' + (chgPrixB ? ' (' + argent(PRIX_TEXTE_PETIT) + ')' : '')));
+    var tdA = el('td'), tdB = el('td');
+    tdA.appendChild(el('span', chgPrixB ? 'ancien' : '', BP.prix ? BP.prix + NBSP + '$' : '(aucun)'));
+    tdB.appendChild(el('span', chgPrixB ? 'nouveau' : '', BC.prix ? BC.prix + NBSP + '$' : '(aucun)'));
+    trB.appendChild(tdA); trB.appendChild(tdB); tbB.appendChild(trB);
+    secB.appendChild(tbB);
+    var hD = el('h3', '', 'Description (boutique)' + (chgDescB ? ' : ' + (tauxDescB === 0 ? 'mise en forme' : 'modifiée') + (fac ? ' (' + argent(prixTexte(true, tauxDescB)) + ')' : '') : ' : aucune modification'));
+    secB.appendChild(hD);
+    var alD = alignerMots(avD, apD), deuxB = el('div', 'deux');
+    [['Avant (version publiée)', avD, alD && alD.avantCommun, 'retrait'], ['Après (copie de l’auteur)', apD, alD && alD.apresCommun, 'ajout']].forEach(function (col) {
+      var cB = el('div', 'col'); cB.appendChild(el('h3', '', col[0]));
+      var rtB = el('div', 'rt');
+      if (texteBrut(col[1]).trim() === '') { rtB.appendChild(el('span', 'vide', '(vide)')); }
+      else { rtB.appendChild(blocsVersDom(col[1], alD ? { flags: col[2], classeNon: col[3], couleurs: false } : { couleurs: false })); }
+      cB.appendChild(rtB); deuxB.appendChild(cB);
+    });
+    secB.appendChild(deuxB);
+    rap.appendChild(secB);
+  }
   var LP = d.champsLivre.publie, LC = d.champsLivre.copie || LP;
   var sec2 = el('section');
   var h2 = el('h2'); h2.appendChild(el('span', '', 'Autres éléments de la page'));
