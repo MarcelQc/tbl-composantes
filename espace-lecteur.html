@@ -444,9 +444,9 @@ function surEspace(msg) {
 function estAdmin() { return !!(etat.donnees && etat.donnees.membre && etat.donnees.membre.role === 'admin'); }
 
 // ===== Version publiée =====
-// a20c4dc · 2026-11-22 07:11 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 6b40ff1 · 2026-11-22 07:43 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Administrateur : le numéro et la date ; autres membres : la date seulement.
-var VERSION_TBL = 'a20c4dc · 2026-11-22 07:11';
+var VERSION_TBL = '6b40ff1 · 2026-11-22 07:43';
 function texteVersion(admin) {
   // Le repère est coupé en deux ici pour que l'Action ne le remplace pas dans ce test.
   if (VERSION_TBL.indexOf('__TBL_' + 'VERSION__') === 0) { return 'Version locale (non publiée)'; }
@@ -1139,6 +1139,7 @@ function carteLivre(l) {
   carte.appendChild(el('p', 'auteur-livre', l.auteur || ' '));
   var lignesEtat = 0;
   if (l.dateAchat) { carte.appendChild(el('p', 'achat-livre', 'Acheté le ' + fmtDate.format(new Date(l.dateAchat)))); lignesEtat += 1; }
+  else if (l.deLAuteur) { carte.appendChild(el('p', 'achat-livre', 'Votre livre')); lignesEtat += 1; } // auteur : ses livres sont là sans achat
   if (l.liseuse === false) { carte.appendChild(el('p', 'achat-livre', 'Pas en format EPUB')); lignesEtat += 1; }
   if (etat.vueLivres === 'extraits') { carte.appendChild(el('p', 'achat-livre', 'Extrait gratuit')); lignesEtat += 1; }
   if (!lignesEtat) { carte.appendChild(el('p', 'achat-livre', ' ')); }
