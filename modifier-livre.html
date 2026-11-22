@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=6b40ff1 · 2026-11-22 07:43"></script>
+<script src="paiement-stripe.js?v=1efcd88 · 2026-11-22 08:10"></script>
 <script>
 // ===== Version publiée =====
-// 6b40ff1 · 2026-11-22 07:43 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 1efcd88 · 2026-11-22 08:10 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '6b40ff1 · 2026-11-22 07:43';
+var VERSION_TBL = '1efcd88 · 2026-11-22 08:10';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1608,7 +1608,19 @@ function estBrut(cle) { return cle === CHAMP_TEXTE_BRUT; }
 var PLAINTEXT_OK = (function () { var d = document.createElement('div'); d.contentEditable = 'plaintext-only'; return d.contentEditable === 'plaintext-only'; })();
 function nomChamp(cle) { return CHAMPS.filter(function (c) { return c.cle === cle; })[0].nom; }
 function estLecture(cle) { return etat.lecture.indexOf(cle) >= 0; }
-function editable(cle) { return !etat.verrou && !estLecture(cle) && !etat.diff; }
+// Page « À corriger » avec des éléments refusés (demande de Marcel du 22 novembre 2026) : l'auteur ne peut changer que
+// ces éléments ; les autres sont acceptés et verrouillés. Sans liste (ancien refus) ou pour l'administrateur : tout est permis.
+var NOMS_ELEMENTS = {
+  desc_plan: 'Description (en-tête)', synopsis: 'Synopsis', bioAuteur: 'Note de l’auteur', extrait: 'Extrait',
+  image: 'Image du livre', photoAuteur: 'Portrait de l’auteur', image1Ord: 'Image publicitaire (ordinateur)', image1Mob: 'Image publicitaire (mobile)',
+  extraitPdf: 'Extrait en PDF', fichePrix: 'Prix du livre numérique (boutique)', ficheDescription: 'Description de la boutique',
+  auteur: 'Section Auteur', coffret: 'Section Coffret', courriel: 'Courriel de contact', vedettes: 'En vedette', section1: 'Section 1 (présentation)'
+};
+function restreintAuxRefuses() {
+  return !etat.admin && !!etat.d && etat.d.etat === 'corriger' && !!etat.refus && Array.isArray(etat.refus.elements) && etat.refus.elements.length > 0;
+}
+function elementPermis(cle) { return !restreintAuxRefuses() || etat.refus.elements.indexOf(cle) >= 0; }
+function editable(cle) { return !etat.verrou && !estLecture(cle) && !etat.diff && elementPermis(cle); }
 function rtDe(cle) { return etat.champs[cle].querySelector('.rt'); }
 
 function montrerEdition(d) {
@@ -1729,7 +1741,7 @@ function rendreChamp(cle) {
     }
   } else {
     rt.setAttribute('contenteditable', editable(cle) ? (estBrut(cle) && PLAINTEXT_OK ? 'plaintext-only' : 'true') : 'false');
-    if (estLecture(cle) || etat.verrou) { rt.classList.add('lecture'); }
+    if (estLecture(cle) || etat.verrou || !elementPermis(cle)) { rt.classList.add('lecture'); }
   }
   if (estBrut(cle) && !etat.diff) { rt.textContent = texteBrutDepuisBlocs(etat.work[cle]); return; }
   rt.appendChild(blocsVersDom(etat.work[cle]));
@@ -2136,7 +2148,7 @@ function appliquerLivre(page, L) {
   else { imgCoffret.removeAttribute('src'); }
   // En vedette : boutons de choix seulement dans l'édition, page déverrouillée et hors « Voir les changements »
   var edition = page.id === 'hote-edition';
-  remplirVedettes(page, L, edition && vedettesModifiables() && !etat.verrou && !etat.diff);
+  remplirVedettes(page, L, edition && vedettesModifiables() && !etat.verrou && !etat.diff && elementPermis('vedettes'));
 }
 // Ajustement automatique au gabarit : recadrage centré aux proportions de l'emplacement, puis mise à la taille
 // du gabarit. Une image plus petite que le gabarit n'est pas refusée : on avertit seulement que le rendu
@@ -2271,12 +2283,12 @@ function rendreLivre() {
   var swc = zoneLivre('affichecoffret'), selc = zoneLivre('choix-coffret');
   swc.checked = !!W.affichecoffret;
   selc.value = coffretDe(W.coffret) ? W.coffret : '';
-  swc.disabled = bloqueLivre(); selc.disabled = bloqueLivre();
+  swc.disabled = bloqueLivre() || !elementPermis('coffret'); selc.disabled = bloqueLivre() || !elementPermis('coffret');
   if (document.activeElement !== em) { em.value = W.email || ''; }
   var bloque = etat.verrou || etat.diff;
-  sw.disabled = bloque; em.disabled = bloque;
+  sw.disabled = bloque || !elementPermis('auteur'); em.disabled = bloque || !elementPermis('courriel');
   CLES_IMAGES.forEach(function (cle) {
-    ctl(cle).hidden = bloque;
+    ctl(cle).hidden = bloque || !elementPermis(cle);
     // « Téléverser » quand l'emplacement est vide, « Changer » quand il y a déjà une image
     ctl(cle).querySelector('[data-role="lib-img"]').textContent = imageSure(W[cle]) ? IMAGE_CONF[cle].changer : IMAGE_CONF[cle].bouton;
   });
@@ -2284,10 +2296,10 @@ function rendreLivre() {
   bRetirer.textContent = W.sansPhoto ? 'Remettre la photo' : 'Retirer la photo';
   bRetirer.hidden = !W.sansPhoto && !imageSure(W.photoAuteur);
   cpa.querySelector('[data-role="photo-fiche"]').hidden = !imageSure(etat.photoFiche) || W.photoAuteur === etat.photoFiche;
-  rendrePdf(bloque);
-  majControleS1(etat.verrou); // le choix de la section 1 reste utilisable en mode comparaison
+  rendrePdf(bloque || !elementPermis('extraitPdf'));
+  majControleS1(etat.verrou || !elementPermis('section1')); // le choix de la section 1 reste utilisable en mode comparaison
   var cv = $('hote-edition').querySelector('[data-controle-ved]');
-  if (cv) { cv.hidden = bloque; }
+  if (cv) { cv.hidden = bloque || !elementPermis('vedettes'); }
 }
 function remplirInfo(el, chg, ancien, nouveau, etqAncien, etqNouveau) {
   el.textContent = '';
@@ -2436,15 +2448,15 @@ function rendreFiche() {
   var lp = document.createElement('label'); lp.className = 'champ-f prix-f'; lp.setAttribute('data-fiche', 'prix');
   lp.appendChild(document.createTextNode('Prix du livre numérique ($)'));
   var ip = document.createElement('input'); ip.type = 'text'; ip.inputMode = 'decimal'; ip.maxLength = 8; ip.placeholder = 'Ex. : 8,99'; ip.value = etat.B.work.prix;
-  ip.readOnly = !B.prixModifiable; ip.disabled = !actif;
+  ip.readOnly = !B.prixModifiable; ip.disabled = !actif || !elementPermis('fichePrix');
   ip.addEventListener('input', function () { etat.B.work.prix = ip.value; recalculer(); });
   lp.appendChild(ip);
   var mp = document.createElement('span'); mp.className = 'msg'; mp.setAttribute('data-role', 'msg'); mp.hidden = true; lp.appendChild(mp);
   if (!B.prixModifiable) { lp.appendChild(document.createTextNode('Ce produit a plusieurs variantes : son prix se change dans la boutique.')); }
   var ipp = document.createElement('span'); ipp.className = 'info-pub'; ipp.setAttribute('data-role', 'info-pub'); ipp.hidden = true; lp.appendChild(ipp);
-  if (actif) { lp.appendChild(boutonRetablirB('prix')); }
+  if (actif && elementPermis('fichePrix')) { lp.appendChild(boutonRetablirB('prix')); }
   col.appendChild(lp);
-  col.appendChild(editeurDescription(actif));
+  col.appendChild(editeurDescription(actif && elementPermis('ficheDescription')));
   g.appendChild(col);
   f.appendChild(g);
   majFiche();
@@ -2801,16 +2813,17 @@ function majUI() {
     boite.querySelector('[data-role="fmt"]').hidden = true;
     // « Annuler les modifications » seulement s'il y a des modifications : par rapport au texte publié, ou au
     // dernier texte enregistré pour un livre Nouveau (qui n'a pas de version publiée).
-    boite.querySelector('[data-role="retablir"]').hidden = etat.verrou || estLecture(c.cle) || !aAnnuler(c.cle);
+    boite.querySelector('[data-role="retablir"]').hidden = etat.verrou || estLecture(c.cle) || !elementPermis(c.cle) || !aAnnuler(c.cle);
     var msg = boite.querySelector('.msg-url');
     msg.hidden = !etat.prob[c.cle];
     msg.textContent = etat.prob[c.cle];
     boite.classList.toggle('err', !!etat.prob[c.cle]);
     var note = boite.querySelector('[data-role="note"]');
     var deborde = estBrut(c.cle) && rtDe(c.cle).scrollHeight > rtDe(c.cle).clientHeight + 2;
-    note.hidden = !estLecture(c.cle) && !deborde;
+    var accepte = !elementPermis(c.cle);
+    note.hidden = !estLecture(c.cle) && !deborde && !accepte;
     note.textContent = estLecture(c.cle) ? 'Ce texte contient des éléments spéciaux que cet outil ne sait pas modifier sans les perdre. Écrivez-nous pour le faire modifier.'
-      : (deborde ? 'Le texte est plus long que la zone de l’en-tête, qui a une hauteur fixe : une barre de défilement apparaîtra sur la page. Un texte plus court se lit mieux.' : '');
+      : (accepte ? 'Accepté par l’équipe TBL : seuls les éléments refusés peuvent être corrigés.' : (deborde ? 'Le texte est plus long que la zone de l’en-tête, qui a une hauteur fixe : une barre de défilement apparaîtra sur la page. Un texte plus court se lit mieux.' : ''));
   });
   majLivre();
   majFiche();
@@ -2864,7 +2877,9 @@ function majUI() {
   var br = $('bandeau-refus');
   br.hidden = !etat.refus || etat.appr;
   if (etat.refus && !etat.appr) {
-    br.textContent = 'Votre demande du ' + fmtDate(etat.refus.date) + ' a été refusée. Commentaire de l’équipe :\n' + etat.refus.motif + '\nCorrigez votre copie puis soumettez-la à nouveau.';
+    br.textContent = 'Votre demande du ' + fmtDate(etat.refus.date) + ' a été refusée. Commentaire de l’équipe :\n' + etat.refus.motif
+      + (restreintAuxRefuses() ? '\nÉléments à corriger : ' + etat.refus.elements.map(function (k) { return NOMS_ELEMENTS[k] || k; }).join(', ') + '.\nLes autres éléments de votre demande sont acceptés : ils sont verrouillés.' : '')
+      + '\nCorrigez votre copie puis soumettez-la à nouveau, sans nouveau paiement.';
   }
   majOutils();
 }
@@ -3206,6 +3221,22 @@ async function ecrireCommentaire() {
   // Sortie de la fenêtre (envoyé ou annulé) : la page Wix recalcule la pastille Admin si elle est visible
   if (EN_WIX) { window.parent.postMessage({ type: 'rafraichirEntete' }, '*'); }
 }
+// Éléments que la demande a modifiés par rapport à la page publiée : ceux que l'administrateur peut refuser.
+function elementsModifies() {
+  var C = etat.chgL, l = [];
+  CHAMPS.forEach(function (c) { if (etat.chg[c.cle]) { l.push(c.cle); } });
+  ['image', 'image1Ord', 'image1Mob'].forEach(function (k) { if (C[k]) { l.push(k); } });
+  if (C.photoAuteur || C.sansPhoto) { l.push('photoAuteur'); }
+  if (C.extraitPdf) { l.push('extraitPdf'); }
+  if (etat.boutique && etat.chgB.prix) { l.push('fichePrix'); }
+  if (etat.boutique && etat.chgB.description) { l.push('ficheDescription'); }
+  if (C.afficheauteur) { l.push('auteur'); }
+  if (C.affichecoffret || C.coffret) { l.push('coffret'); }
+  if (C.email) { l.push('courriel'); }
+  if (C.vedettes) { l.push('vedettes'); }
+  if (C.presentation1 || C.demande1 || C.indic1) { l.push('section1'); }
+  return l;
+}
 async function refuser() {
   if (!etat.revue) { return; }
   if (etat.dirty) { toast('Enregistrez vos modifications avant de refuser.', 'mal'); return; }
@@ -3225,13 +3256,30 @@ async function refuser() {
   zone.addEventListener('input', majCompteur);
   majCompteur();
   corps.appendChild(cpt);
+  // Éléments à corriger : l'auteur ne pourra changer que ceux-là, sans nouveau paiement
+  var modifies = elementsModifies(), cases = {};
+  if (modifies.length) {
+    var tete = document.createElement('p'); tete.style.marginBottom = '4px';
+    tete.textContent = 'Éléments à corriger (l’auteur ne pourra modifier que ceux-là, sans payer de nouveau) :';
+    corps.appendChild(tete);
+    var liste = document.createElement('div');
+    modifies.forEach(function (k) {
+      var lab = document.createElement('label'); lab.className = 'case'; lab.style.display = 'block';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cases[k] = cb;
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + (NOMS_ELEMENTS[k] || k)));
+      liste.appendChild(lab);
+    });
+    corps.appendChild(liste);
+  }
   var res = null;
   var r = await modale({
     titre: 'Refuser la demande', corps: corps,
     boutons: [{ id: 'ok', libelle: 'Refuser et envoyer', principal: true, action: async function () {
       var motif = zone.value.trim();
       if (motif === '') { zone.focus(); throw new Error('Le commentaire pour l’auteur est obligatoire.'); }
-      res = await appeler('refuser', { livreId: LIVRE_ID, motif: motif });
+      var choisis = modifies.filter(function (k) { return cases[k] && cases[k].checked; });
+      if (modifies.length && !choisis.length) { throw new Error('Cochez au moins un élément que l’auteur doit corriger.'); }
+      res = await appeler('refuser', { livreId: LIVRE_ID, motif: motif, elements: modifies.length ? choisis : undefined });
       if (!res.ok) { throw new Error(res.message || 'Le refus a échoué.'); }
     } }, { id: 'non', libelle: 'Annuler' }]
   });
