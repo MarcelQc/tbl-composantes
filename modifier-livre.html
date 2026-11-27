@@ -716,13 +716,13 @@ body.v-rapport{background:#fff;color:#111}
   </div>
 </template>
 <!-- Fenêtre de paiement par carte (facture Stripe), commune aux éditeurs ; ?v= évite la copie en cache. -->
-<script src="paiement-stripe.js?v=33c3771 · 2026-11-27 09:03"></script>
+<script src="paiement-stripe.js?v=4fd6a0f · 2026-11-27 12:12"></script>
 <script>
 // ===== Version publiée =====
-// 33c3771 · 2026-11-27 09:03 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 4fd6a0f · 2026-11-27 12:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '33c3771 · 2026-11-27 09:03';
+var VERSION_TBL = '4fd6a0f · 2026-11-27 12:12';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2628,8 +2628,9 @@ var IMAGES_PAYANTES = [['image', 'Image du livre'], ['photoAuteur', 'Portrait de
 // Section 1, mêmes tarifs que l'EDC : changer de présentation 5 $, image publicitaire créée par TBL 20 $.
 var PRIX_CHOIX_S1 = 500;
 var PRIX_IMAGE_TBL = 2000;
-// Section « Découvrez notre coffret » : 10 $ pour l'activer, la désactiver ou changer de coffret (demande de Marcel
-// du 1er novembre 2026), compris dans le prix fixe d'un livre Nouveau.
+// Section « Découvrez notre coffret » : 10 $ pour choisir un autre coffret (demande de Marcel du 27 novembre 2026,
+// comme le serveur, livres-editeur.js) ; masquer la section, la réafficher avec le même coffret ou retirer le coffret
+// est gratuit. Compris dans le prix fixe d'un livre Nouveau.
 var PRIX_COFFRET = 1000;
 // Prix du catalogue Stripe envoyés par le serveur (obtenir → tarifs, en cents ; plan « Facturation_Stripe_Services »
 // du 9 novembre 2026) : ils remplacent les valeurs ci-dessus, qui ne servent plus qu'à l'affichage si Stripe ne
@@ -2649,7 +2650,8 @@ function lignesS1(P, W) {
   var l = [];
   if (valL(P.presentation1, 'presentation1') !== valL(W.presentation1, 'presentation1')) { l.push({ nom: 'Présentation de la section 1', montant: PRIX_CHOIX_S1, cle: 'ctl-s1', origine: 'Présentation : ' + valL(P.presentation1, 'presentation1') + ' (publié) → ' + valL(W.presentation1, 'presentation1') }); }
   if (W.demande1 && !P.demande1) { l.push({ nom: 'Image publicitaire créée par TBL', montant: PRIX_IMAGE_TBL, cle: 'demande1', origine: 'Demande d’image à TBL ajoutée' }); }
-  if (texteCoffret(P) !== texteCoffret(W)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret', origine: 'Section Coffret : « ' + texteCoffret(P) + ' » (publié) → « ' + texteCoffret(W) + ' »' }); }
+  var choisiW = coffretDe(W.coffret), choisiP = coffretDe(P.coffret);
+  if (choisiW && (!choisiP || choisiW.id !== choisiP.id)) { l.push({ nom: 'Section Coffret', montant: PRIX_COFFRET, cle: 'choix-coffret', origine: 'Coffret choisi : « ' + (choisiP ? choisiP.titre : 'aucun') + ' » (publié) → « ' + choisiW.titre + ' »' }); }
   return l;
 }
 // Fiche de la boutique (16 novembre 2026) : prix changé = 5 $ (comme un texte mineur) ; description facturée comme
