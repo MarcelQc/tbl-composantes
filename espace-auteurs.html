@@ -742,10 +742,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// dded231 · 2026-11-22 16:28 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 0f593fd · 2026-11-27 08:22 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = 'dded231 · 2026-11-22 16:28';
+var VERSION_TBL = '0f593fd · 2026-11-27 08:22';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -1467,7 +1467,11 @@ function rendreLivres() {
   // coffret, quel que soit son statut (demande de Marcel du 24 octobre 2026). Le service Forfait Coffret de
   // l'onglet Services reste offert.
   var aDejaUnCoffret = ((d && d.coffrets) || []).some(function (c) { return c.auteurId === (d && d.auteurId); });
-  $('offre-coffret').hidden = !offre.offerte || admin || aDejaUnCoffret;
+  // Un auteur qui n'a qu'un seul livre (ou aucun) ne voit ni le bandeau ni la section « Mes coffrets » : un coffret
+  // réunit plusieurs livres (demande de Marcel du 27 novembre 2026). Un coffret déjà créé reste visible.
+  var unSeulLivre = !admin && livres.length <= 1;
+  $('offre-coffret').hidden = !offre.offerte || admin || aDejaUnCoffret || unSeulLivre;
+  $('section-coffrets').hidden = unSeulLivre && coffrets.length === 0;
   $('btn-creer-coffret').textContent = offre.demandeEnCours ? 'Reprendre ma demande' : 'Créer un coffret';
   var note = $('note-coffret');
   if (!offre.offerte && !admin) {
