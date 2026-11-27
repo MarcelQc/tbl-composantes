@@ -232,7 +232,9 @@
       intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Annuler annule la facture, sans courriel.';
       payerBt.textContent = 'Payer ' + argent(rep.total || 0);
       lienSecours.href = rep.lienPaiement || '#';
-      secours.hidden = !rep.lienPaiement;
+      // Le lien « payer sur la page de Stripe » n'est plus affiché avec le formulaire (demande de Marcel du 27 novembre 2026).
+      // Il reste en secours : sansFormulaire() l'affiche en bouton si le formulaire de carte ne peut pas se charger.
+      secours.hidden = true;
       fermerBt.disabled = false;
       attenteTexte.textContent = 'Chargement du formulaire de paiement…';
       if (!(rep.secretPaiement && rep.clePublique)) { sansFormulaire(); return; }
