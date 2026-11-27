@@ -252,8 +252,8 @@
             }
           }
         });
-        // Google Pay retiré du formulaire (demande de Marcel du 27 novembre 2026) : seule la carte est offerte.
-        var carte = elements.create('payment', { layout: 'tabs', wallets: { googlePay: 'never' } });
+        // Google Pay et Apple Pay retirés du formulaire (demandes de Marcel du 27 novembre 2026) : seule la carte est offerte.
+        var carte = elements.create('payment', { layout: 'tabs', wallets: { googlePay: 'never', applePay: 'never' } });
         carte.on('ready', function () { finAttente(); payerBt.hidden = false; etatP.textContent = ''; trace('formulaire de carte prêt'); });
         carte.on('loaderror', function () { trace('formulaire de carte en erreur'); sansFormulaire(); });
         carte.mount(formulaire);
