@@ -19,6 +19,9 @@
  *   estAnnule(r), estAVerifier(r) : réponse « statut » qui met fin à l'attente (facultatif) ;
  *   surReussi(r), surAnnulee(r), surFin(r) : rappels (fenêtre payée, facture annulée, toute réponse utile) ;
  *   trace(texte) : journal de la console (facultatif).
+ *   sansAnnulation (facture saisie par l'administrateur, 28 novembre 2026) : Fermer ne demande aucune confirmation et
+ *     n'annule rien, la facture reste à payer ; surFermeture(rep) est alors rappelé. textes.intro(rep) remplace la phrase
+ *     d'introduction (qui parle d'annuler la facture).
  *   ancre : bouton de référence (élément) ; la fenêtre s'ouvre à sa hauteur. Sans ancre : le dernier bouton cliqué
  *     hors de la fenêtre. Même option pour TblPaiement.choisir({ titre, corps, boutons, ancre }).
  *
@@ -229,7 +232,9 @@
     function demarrer(r) {
       rep = r;
       titre.textContent = 'Votre facture est prête';
-      intro.textContent = 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Annuler annule la facture, sans courriel.';
+      intro.textContent = typeof textes.intro === 'function' ? textes.intro(rep)
+        : 'Facture ' + (rep.facture || '') + ' : ' + argent(rep.total || 0) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Annuler annule la facture, sans courriel.';
+      if (o.sansAnnulation) { fermerBt.textContent = 'Fermer'; }
       payerBt.textContent = 'Payer ' + argent(rep.total || 0);
       lienSecours.href = rep.lienPaiement || '#';
       // Le lien « payer sur la page de Stripe » n'est plus affiché avec le formulaire (demande de Marcel du 27 novembre 2026).
@@ -321,6 +326,7 @@
     fermerBt.addEventListener('click', function () {
       if (regle || !rep || paiementAccepte) { fermer(); return; }
       if (paiementEnCours || !confirm.hidden) { return; }
+      if (o.sansAnnulation) { fermer(); if (typeof o.surFermeture === 'function') { o.surFermeture(rep); } return; }
       demanderFermeture();
     });
 

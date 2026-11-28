@@ -1369,7 +1369,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
 /* Journal du site (plan des logs du 4 novembre 2026) : fenêtre « Voir les logs », liste des fichiers du dossier
    MEDIA System/Log et texte en lecture seule. */
-#btn-logs[hidden] { display: none; }
+#btn-logs[hidden], #btn-facturation[hidden] { display: none; }
 .modal-backdrop.logs-ouvert .modal-box { max-width: 1200px; }
 .logs-barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
 .logs-barre label { color: var(--text-dim); }
@@ -1501,6 +1501,120 @@ select:focus { outline: none; border-color: var(--accent); }
   .confirm-box { padding: 18px; }
 }
 
+
+/* ---------- Facturation de l'administrateur : onglet Documents et saisie d'une facture (28 novembre 2026) ----------
+   Style coloré du prototype (Prototype\Facturation) : bleu = entête, rouge TBL = détail et actions, orange = commentaires,
+   vert = argent. Uniquement les jetons --tbl-* ci-dessus. */
+.fa-aide { font-size: 0.78rem; color: var(--tbl-muted); }
+.fa-num { text-align: right; white-space: nowrap; }
+.fa-espace { flex: 1; }
+.fa-erreur { margin: 8px 0 0; padding: 8px 12px; border: 1px solid var(--tbl-accent); background: var(--tbl-accent-soft); color: #ff9aa1; border-radius: var(--tbl-radius-btn); font-size: 0.88rem; }
+.fa-erreur[hidden], .fa-ok[hidden] { display: none; }
+.fa-ok { margin: 8px 0 0; padding: 8px 12px; border: 1px solid var(--tbl-ok); background: #12301f; color: var(--tbl-ok); border-radius: var(--tbl-radius-btn); font-size: 0.88rem; }
+.fa-danger:hover:not(:disabled) { border-color: var(--tbl-accent); color: #ff9aa1; }
+.fa-ico-dollar { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: #fff; color: var(--tbl-accent); font-size: 13px; font-weight: 700; line-height: 1; vertical-align: -3px; }
+
+/* Badges */
+.fa-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+.fa-badge.fa-nouvelle { background: var(--tbl-blue); color: #06142b; border-color: var(--tbl-blue); }
+.fa-badge.fa-apayer { background: var(--tbl-orange); color: #2b1c00; border-color: var(--tbl-orange); }
+.fa-badge.fa-paye, .fa-badge.fa-gratuite { background: var(--tbl-ok); color: #06210f; border-color: var(--tbl-ok); }
+.fa-badge.fa-annulee, .fa-badge.fa-autre { background: transparent; color: var(--tbl-muted); border-color: var(--tbl-line); }
+.fa-badge.fa-averifier { background: var(--tbl-accent); color: #fff; border-color: var(--tbl-accent); }
+.fa-badge.fa-essai { background: #fff; color: var(--tbl-accent); border-color: #fff; margin-left: 6px; }
+.fa-prov { display: inline-block; min-width: 38px; text-align: center; padding: 2px 8px; border: 1px solid var(--tbl-blue); color: var(--tbl-blue); border-radius: 6px; font-weight: 700; font-size: 0.78rem; }
+
+/* Onglet Documents */
+.fa-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 14px 0; }
+.fa-carte { background: var(--tbl-paper-2); border: 1px solid var(--tbl-line); border-top: 3px solid var(--tbl-line); border-radius: var(--tbl-radius); padding: 14px 18px; }
+.fa-c-ok { border-top-color: var(--tbl-ok); }
+.fa-c-ok .fa-gros { color: var(--tbl-ok); }
+.fa-c-bleu { border-top-color: var(--tbl-blue); }
+.fa-gros { font-size: 1.7rem; font-weight: 700; margin: 4px 0; }
+.fa-filtres { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 16px 0 12px; }
+.fa-filtres label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--tbl-muted); }
+.fa-filtres select { min-width: 170px; }
+.fa-tableau { overflow-x: auto; border: 1px solid var(--tbl-line); border-radius: var(--tbl-radius); background: var(--tbl-paper-2); }
+.fa-grille { width: 100%; border-collapse: collapse; }
+.fa-grille th { background: var(--tbl-muted); color: #000; text-align: left; padding: 9px 12px; font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.fa-grille td { padding: 10px 12px; border-top: 1px solid var(--tbl-line); vertical-align: middle; font-size: 0.88rem; }
+.fa-grille tbody tr:hover td { background: var(--tbl-blue-soft); }
+.fa-grille td.fa-num { color: var(--tbl-ok); font-weight: 700; }
+.fa-act { white-space: nowrap; text-align: right; }
+.fa-act .btn, .fa-act .fa-icone { margin-left: 6px; }
+.fa-vide { text-align: center; color: var(--tbl-muted); padding: 24px !important; }
+.fa-icone { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--tbl-line); border-radius: var(--tbl-radius-btn); background: transparent; color: var(--text); cursor: pointer; vertical-align: middle; }
+.fa-icone:hover { border-color: var(--tbl-accent); }
+.fa-icone svg { width: 18px; height: 18px; }
+/* Icône $ : fond blanc = facture à payer (encaisser), fond noir = payée */
+.fa-icone.fa-encaisser { background: #fff; border-color: #fff; color: #000; }
+.fa-icone.fa-encaisser:hover { background: var(--tbl-orange); border-color: var(--tbl-orange); }
+.fa-icone.fa-paye { background: #000; border-color: var(--tbl-line); color: #fff; cursor: default; }
+.fa-icone.fa-encaisser svg, .fa-icone.fa-paye svg { width: 22px; height: 22px; }
+.fa-icone svg text { pointer-events: none; }
+.fa-csv { width: 100%; font-family: Consolas, monospace; font-size: 0.78rem; white-space: pre; }
+.fa-actions-modale { margin-top: 12px; display: flex; gap: 8px; align-items: center; }
+
+/* Saisie d'une facture */
+.fa-facture { background: var(--tbl-paper); border: 1px solid var(--tbl-line); border-top: 4px solid var(--tbl-accent); border-radius: var(--tbl-radius); overflow: hidden; margin-top: 18px; }
+.fa-bandeau { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: flex-start; padding: 22px 24px; border-bottom: 1px solid var(--tbl-line); background: linear-gradient(135deg, var(--tbl-accent-soft) 0%, var(--tbl-paper) 65%); }
+.fa-titre-ed { font-size: 1.25rem; font-weight: 700; color: #fff; }
+.fa-titre-ed::before { content: ""; display: inline-block; width: 10px; height: 22px; background: var(--tbl-accent); border-radius: 3px; margin-right: 10px; vertical-align: -4px; }
+.fa-meta { text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.fa-numero { font-size: 1.15rem; font-weight: 700; color: #fff; background: var(--tbl-accent); padding: 4px 12px; border-radius: var(--tbl-radius-btn); }
+.fa-meta input[type="date"] { width: auto; min-width: 160px; color-scheme: dark; }
+.fa-section { padding: 22px 24px; border-bottom: 1px solid var(--tbl-line); }
+.fa-section:last-of-type { border-bottom: 0; }
+.fa-s-entete { background: linear-gradient(180deg, var(--tbl-blue-soft) 0%, transparent 70%); }
+.fa-s-detail { background: linear-gradient(180deg, rgba(229,37,48,.10) 0%, transparent 60%); }
+.fa-s-bas { background: linear-gradient(180deg, rgba(76,195,138,.07) 0%, transparent 60%); }
+.fa-h2 { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 10px; color: var(--tbl-ink); }
+.fa-h2::before { content: ""; width: 8px; height: 18px; border-radius: 3px; background: var(--c, var(--tbl-accent)); }
+.fa-bleu { --c: var(--tbl-blue); } .fa-rouge { --c: var(--tbl-accent); } .fa-orange { --c: var(--tbl-orange); } .fa-vert { --c: var(--tbl-ok); }
+.fa-facture label { display: block; font-size: 0.8rem; color: var(--tbl-muted); margin-bottom: 4px; }
+.fa-facture input, .fa-facture select, .fa-facture textarea { width: 100%; }
+.fa-facture textarea { resize: vertical; min-height: 110px; }
+.fa-entete { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+.fa-lignes { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+.fa-lignes th { background: var(--tbl-muted); color: #000; padding: 8px 12px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; }
+.fa-lignes th:first-child { border-radius: var(--tbl-radius-btn) 0 0 var(--tbl-radius-btn); }
+.fa-lignes th:last-child { border-radius: 0 var(--tbl-radius-btn) var(--tbl-radius-btn) 0; }
+.fa-lignes th.fa-num { text-align: right; }
+.fa-lignes tr.fa-ligne td { background: var(--tbl-paper-2); border-top: 1px solid var(--tbl-line); border-bottom: 1px solid var(--tbl-line); padding: 10px 12px; vertical-align: middle; }
+.fa-lignes tr.fa-ligne td:first-child { border-left: 3px solid var(--tbl-accent); border-radius: var(--tbl-radius-btn) 0 0 var(--tbl-radius-btn); }
+.fa-lignes tr.fa-ligne td:last-child { border-right: 1px solid var(--tbl-line); border-radius: 0 var(--tbl-radius-btn) var(--tbl-radius-btn) 0; }
+.fa-lignes tr.fa-ligne:hover td { background: var(--tbl-blue-soft); }
+.fa-lignes td.fa-montant { color: var(--tbl-ok); font-weight: 700; }
+.fa-lignes tr.fa-saisie td { padding: 0 6px 0 0; }
+.fa-lignes tr.fa-saisie td.fa-montant { padding: 10px 12px; }
+.fa-lignes tr.fa-saisie input.fa-num { text-align: right; }
+.fa-lignes tr.fa-vide-ligne td { text-align: center; color: var(--tbl-muted); padding: 18px 12px; border: 1px dashed var(--tbl-line); border-radius: var(--tbl-radius-btn); background: var(--tbl-paper-2); }
+.fa-valide { background: var(--tbl-ok); border-color: var(--tbl-ok); color: #06210f; font-weight: 700; }
+.fa-ajout { margin-top: 6px; border-style: dashed; border-color: var(--tbl-accent); color: var(--tbl-accent); }
+.fa-ajout:hover:not(:disabled) { background: var(--tbl-accent-soft); color: #fff; }
+.fa-bas { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; }
+.fa-totaux { background: linear-gradient(180deg, #12301f 0%, var(--tbl-paper-2) 45%); border: 1px solid var(--tbl-ok); border-radius: var(--tbl-radius); padding: 14px 16px; margin-bottom: 6px; }
+.fa-rang { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.fa-rang.fa-fin { border-top: 2px solid var(--tbl-ok); margin-top: 6px; padding-top: 12px; font-size: 1.1rem; font-weight: 700; color: var(--tbl-ok); }
+.fa-rang.fa-fin span:last-child { font-size: 1.35rem; }
+.fa-case { display: flex !important; align-items: center; gap: 8px; cursor: pointer; color: var(--tbl-orange) !important; margin: 0 !important; }
+.fa-case input { width: auto !important; accent-color: var(--tbl-accent); }
+.fa-barre { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; padding: 18px 24px; background: linear-gradient(90deg, var(--tbl-paper-2) 0%, var(--tbl-accent-soft) 100%); border-top: 2px solid var(--tbl-accent); }
+.fa-barre .fa-erreur, .fa-barre .fa-ok { flex: 1 1 100%; margin: 0; }
+.fa-barre .btn:not(.btn-primary) { background: var(--tbl-paper); border-color: var(--tbl-blue); color: var(--tbl-blue); }
+.fa-barre .btn:not(.btn-primary):hover:not(:disabled) { background: var(--tbl-blue-soft); }
+.fa-barre .btn-primary { box-shadow: 0 4px 14px rgba(229,37,48,.45); }
+@media (max-width: 760px) {
+  .fa-entete, .fa-bas { grid-template-columns: 1fr; }
+  .fa-meta { text-align: left; align-items: flex-start; }
+  .fa-lignes thead { display: none; }
+  .fa-lignes, .fa-lignes tbody, .fa-lignes tr, .fa-lignes td { display: block; width: 100%; }
+  .fa-lignes tr { background: var(--tbl-paper-2); border: 1px solid var(--tbl-line); border-radius: var(--tbl-radius-btn); padding: 10px; margin-bottom: 8px; }
+  .fa-lignes tr.fa-ligne td { background: transparent; border: 0 !important; padding: 0 0 8px; }
+  .fa-lignes td::before { content: attr(data-lib); display: block; font-size: 0.72rem; color: var(--tbl-muted); }
+  .fa-lignes td.fa-act::before { display: none; }
+  .fa-lignes td.fa-num { text-align: left; }
+}
 </style>
 </head>
 <body>
@@ -1516,6 +1630,7 @@ select:focus { outline: none; border-color: var(--accent); }
   <button class="tabs-actualiser" type="button" id="btn-actualiser" title="Recharger le tableau de bord (seulement cette composante)">&#8635; Actualiser</button>
   <button class="tabs-actualiser" type="button" id="btn-commentaires" title="Lire les commentaires des auteurs et y répondre" hidden>&#128232; Commentaires <span class="com-pastille" id="nb-commentaires" hidden>0</span></button>
   <button class="tabs-actualiser" type="button" id="btn-approbations" title="Demandes des auteurs qui attendent une action de l’équipe TBL" hidden>&#9989; Approbations <span class="com-pastille" id="nb-approbations" hidden>0</span></button>
+  <button class="tabs-actualiser" type="button" id="btn-facturation" title="Facturer un ou plusieurs services à un auteur" hidden>$ Facturation</button>
   <button class="tabs-actualiser" type="button" id="btn-logs" title="Consulter les fichiers log du site (MEDIA, System/Log)" hidden>&#128196; Voir les logs</button>
 </header>
 
@@ -1529,6 +1644,7 @@ select:focus { outline: none; border-color: var(--accent); }
     <button class="tab-btn" data-tab="ventes-numeriques">Ventes numériques</button>
     <button class="tab-btn" data-tab="partner-id">PartnerID</button>
     <button class="tab-btn" data-tab="publicite">Publicité</button>
+    <button class="tab-btn" data-tab="documents">Documents</button>
 </nav>
 
 <main id="content" class="content">
@@ -1540,6 +1656,7 @@ select:focus { outline: none; border-color: var(--accent); }
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
+<script src="paiement-stripe.js?v=8e5b633 · 2026-11-28 09:35"></script>
 <script>
 (function () {
   'use strict';
@@ -1595,6 +1712,7 @@ select:focus { outline: none; border-color: var(--accent); }
       if (etat.admin) comDemarrer(); // bouton « Commentaires » et son nombre de non-lus
       if (etat.admin) aprDemarrer(); // bouton « Approbations » et son nombre de nouvelles
       if (etat.admin) document.getElementById('btn-logs').hidden = false; // bouton « Voir les logs »
+      if (etat.admin) document.getElementById('btn-facturation').hidden = false; // bouton « Facturation »
       return;
     }
     if (d.reqId && attentes[d.reqId]) {
@@ -1748,7 +1866,7 @@ select:focus { outline: none; border-color: var(--accent); }
 
   /* ===================== Navigation ===================== */
 
-  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'ventes', 'ventes-numeriques', 'partner-id', 'publicite'];
+  var ONGLETS = ['accueil', 'forum', 'rencontres', 'taches', 'manuscrits', 'ventes', 'ventes-numeriques', 'partner-id', 'publicite', 'documents', 'facturation'];
 
   function currentTab() {
     var t = location.hash.slice(1);
@@ -1785,6 +1903,8 @@ select:focus { outline: none; border-color: var(--accent); }
       else if (tab === 'ventes-numeriques') await initVentesNumeriques();
       else if (tab === 'partner-id') await initPartnerId();
       else if (tab === 'publicite') await initPublicite();
+      else if (tab === 'documents') await initDocuments();
+      else if (tab === 'facturation') await initFacturation();
       else await initTaches();
     } catch (e) {
       var message = '<p class="empty">Erreur de chargement : ' + esc(e.message) + '</p>';
@@ -2441,6 +2561,7 @@ select:focus { outline: none; border-color: var(--accent); }
   }
 
   document.getElementById('btn-logs').addEventListener('click', logsOuvrir);
+  document.getElementById('btn-facturation').addEventListener('click', function () { fa.modifier = null; if (location.hash === '#facturation') renderTab('facturation'); else location.hash = '#facturation'; });
 
   /* ===================== Accueil ===================== */
 
@@ -3933,6 +4054,495 @@ select:focus { outline: none; border-color: var(--accent); }
 
   // Résumé de l'onglet Dashboard du classeur Suivi_Publicités_Facebook.xlsx (lecture seule).
   // Mis à jour manuellement par le skill dashboard-export-publicite.
+  /* ===================== Facturation de l'administrateur ===================== */
+  // Plan « Facturation admin » (28 novembre 2026), prototype : Prototype\Facturation\facturation-admin.html.
+  // Deux vues : l'onglet « Documents » (toutes les factures, filtres, Encaisser, Annuler, rapport à recevoir pour le
+  // comptable) et la saisie d'une facture (bouton « Facturation » de l'en-tête, vue #facturation).
+  // Serveur : backend/facturation-admin.web.js (Auteurs.admin relu à chaque appel). Paiement : paiement-stripe.js.
+
+  var fa = { donnees: null, liste: null, filtres: { auteur: '', statut: '', provenance: '', essai: '' }, modifier: null };
+
+  function faArgent(cents) {
+    return (cents / 100).toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' });
+  }
+  function faEnCents(texte) {
+    var n = parseFloat(String(texte).replace(/\s/g, '').replace(',', '.'));
+    return isFinite(n) ? Math.round(n * 100) : null;
+  }
+  function faDollarSvg() {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" fill="currentColor">$</text></svg>';
+  }
+  var FA_STATUTS = { apayer: 'À payer', paye: 'Payée', gratuite: 'Gratuité', annulee: 'Annulée', averifier: 'À vérifier', autre: 'Autre' };
+  var FA_PROVENANCES = { EDA: 'Espace Auteurs', EDL: 'Éditeur de livre', EDC: 'Éditeur de coffret', EDF: 'Éditeur Facebook', FAC: 'Facturation admin' };
+
+  // Fenêtre de paiement (paiement-stripe.js) pour une facture à payer. surFin : appelée quand la facture est payée.
+  function faEncaisser(transactionId, totalAffiche, bouton, surPaye, surFermetureSansPayer) {
+    if (!window.TblPaiement) {
+      alert('Le module de paiement n’a pas pu se charger. Actualisez le tableau de bord et réessayez.');
+      return;
+    }
+    var fenetre = window.TblPaiement.ouvrir({
+      appeler: function (action, params, delai) {
+        if (action === 'statut') { return appeler('statutFactureAPayer', { transactionId: transactionId }).catch(function () { return null; }); }
+        return Promise.resolve({ ok: true, annulee: false }); // fermer la fenêtre n'annule jamais la facture
+      },
+      totalAffiche: totalAffiche,
+      ancre: bouton,
+      sansAnnulation: true,
+      retour: 'https://www.editionstbl.ca/dbadmin',
+      textes: {
+        intro: function (rep) { return 'Facture ' + (rep.facture || '') + ' : ' + faArgent(rep.total || 0) + '. Saisissez la carte de l’auteur : le paiement est traité de façon sécurisée par Stripe. Le bouton Fermer laisse la facture à payer.'; },
+        reussi: 'Paiement réussi. La facture est payée.',
+        reussiSub: 'Le PDF de la facture est ajouté aux documents de l’auteur, qui reçoit aussi un courriel.',
+        delai: 'La confirmation du paiement n’est pas encore arrivée. Actualisez la liste dans un moment.'
+      },
+      estAnnule: function (r) { return r.statut === 'Annulée'; },
+      surReussi: function () { if (surPaye) surPaye(); },
+      surFermeture: function () { if (surFermetureSansPayer) surFermetureSansPayer(); }
+    });
+    appeler('encaisserFactureAPayer', { transactionId: transactionId }).then(function (res) {
+      if (res && res.ok && res.paye) { fenetre.fermer(); if (surPaye) surPaye(); return; }
+      if (res && res.ok && res.paiement) { fenetre.demarrer(res); return; }
+      fenetre.fermer();
+      window.TblPaiement.choisir({ titre: 'Paiement impossible', corps: (res && res.message) || 'Le paiement n’a pas pu être préparé. Réessayez dans un moment.', boutons: [{ id: 'ok', libelle: 'Fermer', principal: true }], ancre: bouton });
+    }).catch(function (e) {
+      fenetre.fermer();
+      window.TblPaiement.choisir({ titre: 'Paiement impossible', corps: e.message, boutons: [{ id: 'ok', libelle: 'Fermer', principal: true }], ancre: bouton });
+    });
+  }
+
+  /* ----- Onglet Documents : liste des factures ----- */
+
+  function faFiltrer(liste) {
+    var f = fa.filtres;
+    return liste.filter(function (l) {
+      return (!f.auteur || l.auteurId === f.auteur) && (!f.statut || l.statut === f.statut) &&
+        (!f.provenance || l.provenance === f.provenance) && (!f.essai || (f.essai === 'essai') === l.essai);
+    });
+  }
+
+  function faOptions(valeurs, libelleTous, actuel, libelles) {
+    return '<option value="">' + esc(libelleTous) + '</option>' + valeurs.map(function (v) {
+      return '<option value="' + esc(v.valeur) + '"' + (v.valeur === actuel ? ' selected' : '') + '>' + esc(libelles ? libelles(v) : v.libelle) + '</option>';
+    }).join('');
+  }
+
+  // CSV (séparateur « ; », virgule décimale : s'ouvre directement dans Excel au Québec).
+  function faCsv(lignes) {
+    function nombre(c) { return c === null || c === undefined ? '' : (c / 100).toFixed(2).replace('.', ','); }
+    function texte(t) { return '"' + String(t === null || t === undefined ? '' : t).replace(/"/g, '""') + '"'; }
+    var entete = ['Numéro', 'Date', 'Auteur', 'Provenance', 'Statut', 'Mode', 'Sous-total', 'TPS', 'TVQ', 'Total'];
+    return [entete.map(texte).join(';')].concat(lignes.map(function (l) {
+      return [texte(l.numero), texte(l.date), texte(l.auteurNom), texte(l.provenance), texte(FA_STATUTS[l.statut] || l.statutTexte), texte(l.essai ? 'Essai' : 'Réel'),
+        nombre(l.sousTotal), nombre(l.tps), nombre(l.tvq), nombre(l.total)].join(';');
+    })).join('\r\n');
+  }
+
+  function faOuvrirExport(lignes, titre) {
+    var csv = faCsv(lignes);
+    openModal(titre, '<p class="lede">' + lignes.length + ' facture' + (lignes.length > 1 ? 's' : '') + ' (filtres actuels). Copiez le texte ou téléchargez le fichier, puis ouvrez-le dans Excel.</p>' +
+      '<textarea id="fa-csv" class="fa-csv" readonly rows="10"></textarea>' +
+      '<div class="fa-actions-modale"><button class="btn" id="fa-copier">Copier</button> ' +
+      '<a class="btn btn-primary" id="fa-telecharger" download="factures-tbl.csv">Télécharger le fichier</a> <span id="fa-copie-msg" class="fa-aide"></span></div>');
+    var zone = document.getElementById('fa-csv');
+    zone.value = csv;
+    document.getElementById('fa-telecharger').href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('﻿' + csv);
+    document.getElementById('fa-copier').addEventListener('click', function () {
+      zone.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.getElementById('fa-copie-msg').textContent = ok ? 'Copié.' : 'Sélectionné : faites Ctrl+C.';
+    });
+  }
+
+  // Ouvre le PDF d'une facture payée (fenêtre ouverte tout de suite, pour que le navigateur ne la bloque pas).
+  function faOuvrirPdf(transactionId, mode) {
+    var fenetre = window.open('', '_blank');
+    appeler('lienPdfFacture', { transactionId: transactionId }).then(function (r) {
+      var lien = r && r.ok ? (mode === 'voir' ? (r.urlVisualisation || r.url) : r.url) : null;
+      if (lien && fenetre) { fenetre.location.href = lien; return; }
+      if (fenetre) fenetre.close();
+      alert((r && r.message) || 'Le PDF n’est pas disponible pour le moment.');
+    }).catch(function (e) {
+      if (fenetre) fenetre.close();
+      alert(e.message);
+    });
+  }
+
+  function faRendreListe() {
+    var corps = document.getElementById('fa-corps');
+    if (!corps) return;
+    var lignes = faFiltrer(fa.liste.factures);
+    document.getElementById('fa-nb').textContent = lignes.length + ' facture' + (lignes.length > 1 ? 's' : '');
+    if (!lignes.length) {
+      corps.innerHTML = '<tr><td colspan="7" class="fa-vide">Aucune facture ne correspond à ces filtres.</td></tr>';
+      return;
+    }
+    corps.innerHTML = lignes.map(function (l) {
+      var actions = '';
+      if (l.statut === 'apayer') {
+        actions += '<button class="fa-icone fa-encaisser" data-act="encaisser" data-id="' + esc(l.id) + '" title="Encaisser cette facture" aria-label="Encaisser ' + esc(l.numero) + '">' + faDollarSvg() + '</button>';
+      } else if (l.statut === 'paye') {
+        actions += '<span class="fa-icone fa-paye" title="Facture payée">' + faDollarSvg() + '</span>';
+      }
+      if (l.pdf && (l.statut === 'paye' || l.statut === 'gratuite')) {
+        actions += '<button class="fa-icone" data-act="voir" data-id="' + esc(l.id) + '" title="Consulter" aria-label="Consulter ' + esc(l.numero) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>' +
+          '<button class="fa-icone" data-act="telecharger" data-id="' + esc(l.id) + '" title="Télécharger" aria-label="Télécharger ' + esc(l.numero) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg></button>';
+      }
+      if (l.modifiable) {
+        actions += '<button class="btn btn-sm" data-act="modifier" data-id="' + esc(l.id) + '">Modifier</button>';
+      }
+      if (l.statut === 'apayer') {
+        actions += '<button class="btn btn-sm fa-danger" data-act="annuler" data-id="' + esc(l.id) + '">Annuler</button>';
+      }
+      return '<tr>' +
+        '<td><strong>' + esc(l.numero) + '</strong>' + (l.essai ? ' <span class="fa-badge fa-essai">Essai</span>' : '') + (l.description ? '<div class="fa-aide">' + esc(l.description) + '</div>' : '') + '</td>' +
+        '<td>' + esc(l.auteurNom) + '</td>' +
+        '<td><span class="fa-prov" title="' + esc(FA_PROVENANCES[l.provenance] || l.service) + '">' + esc(l.provenance) + '</span></td>' +
+        '<td>' + esc(l.date ? formatDateLongue(l.date) : '') + '</td>' +
+        '<td><span class="fa-badge fa-' + esc(l.statut) + '">' + esc(FA_STATUTS[l.statut] || l.statutTexte) + '</span></td>' +
+        '<td class="fa-num">' + faArgent(l.total) + '</td>' +
+        '<td class="fa-act">' + actions + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  async function initDocuments() {
+    var content = document.getElementById('content');
+    var r = await appeler('listerFactures');
+    if (!r || r.ok === false) throw new Error((r && r.message) || 'Les factures sont indisponibles.');
+    fa.liste = r;
+    var auteurs = {};
+    r.factures.forEach(function (l) { if (l.auteurId) auteurs[l.auteurId] = l.auteurNom; });
+    var vauteurs = Object.keys(auteurs).sort(function (a, b) { return auteurs[a].localeCompare(auteurs[b], 'fr'); }).map(function (id) { return { valeur: id, libelle: auteurs[id] }; });
+    var ar = r.aRecevoir;
+    content.innerHTML =
+      '<h1>Documents</h1>' +
+      '<p class="lede">Toutes les factures, de la plus récente à la plus ancienne. <strong>Encaisser</strong> ouvre le paiement par carte ; <strong>Annuler</strong> annule une facture à payer chez Stripe (elle reste dans la liste).</p>' +
+      '<div class="fa-cartes">' +
+        '<div class="fa-carte fa-c-ok"><div class="fa-aide">À recevoir (factures réelles à payer)</div><div class="fa-gros">' + faArgent(ar.total) + '</div>' +
+          '<div class="fa-aide">' + ar.nb + ' facture' + (ar.nb > 1 ? 's' : '') + (ar.nb ? ' : sous-total ' + faArgent(ar.sousTotal) + ', TPS ' + faArgent(ar.tps) + ', TVQ ' + faArgent(ar.tvq) : '') + (ar.sansDetail ? ' (' + ar.sansDetail + ' sans détail de taxes)' : '') + '</div></div>' +
+        '<div class="fa-carte fa-c-bleu"><div class="fa-aide">Factures d’essai à payer</div><div class="fa-gros">' + r.essaisExclus + '</div><div class="fa-aide">Exclues du montant à recevoir</div></div>' +
+      '</div>' +
+      '<div class="fa-filtres">' +
+        '<label>Auteur<select id="fa-f-auteur">' + faOptions(vauteurs, 'Tous les auteurs', fa.filtres.auteur) + '</select></label>' +
+        '<label>Statut<select id="fa-f-statut">' + faOptions(['apayer', 'paye', 'gratuite', 'annulee', 'averifier'].map(function (s) { return { valeur: s, libelle: FA_STATUTS[s] }; }), 'Tous les statuts', fa.filtres.statut) + '</select></label>' +
+        '<label>Provenance<select id="fa-f-prov">' + faOptions(Object.keys(FA_PROVENANCES).map(function (p) { return { valeur: p, libelle: p + ' : ' + FA_PROVENANCES[p] }; }), 'Toutes les provenances', fa.filtres.provenance) + '</select></label>' +
+        '<label>Mode<select id="fa-f-essai">' + faOptions([{ valeur: 'reel', libelle: 'Réel' }, { valeur: 'essai', libelle: 'Essai' }], 'Réel et essai', fa.filtres.essai) + '</select></label>' +
+        '<span class="fa-espace"></span><span id="fa-nb" class="fa-aide"></span>' +
+        '<button class="btn" id="fa-export">Exporter (CSV)</button>' +
+        '<button class="btn btn-primary" id="fa-nouvelle"><span class="fa-ico-dollar" aria-hidden="true">$</span>Nouvelle facture</button>' +
+      '</div>' +
+      '<div class="fa-tableau"><table class="fa-grille"><thead><tr><th>Facture</th><th>Auteur</th><th>Prov.</th><th>Date</th><th>Statut</th><th class="fa-num">Montant</th><th class="fa-act">Actions</th></tr></thead><tbody id="fa-corps"></tbody></table></div>';
+    function lier(id, cle) {
+      document.getElementById(id).addEventListener('change', function () { fa.filtres[cle] = this.value; faRendreListe(); });
+    }
+    lier('fa-f-auteur', 'auteur'); lier('fa-f-statut', 'statut'); lier('fa-f-prov', 'provenance'); lier('fa-f-essai', 'essai');
+    document.getElementById('fa-nouvelle').addEventListener('click', function () { fa.modifier = null; location.hash = '#facturation'; });
+    document.getElementById('fa-export').addEventListener('click', function () { faOuvrirExport(faFiltrer(fa.liste.factures), 'Exporter les factures'); });
+    document.getElementById('fa-corps').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-act]');
+      if (!b) return;
+      var ligne = fa.liste.factures.filter(function (l) { return l.id === b.dataset.id; })[0];
+      if (!ligne) return;
+      var act = b.dataset.act;
+      if (act === 'voir' || act === 'telecharger') { faOuvrirPdf(ligne.id, act === 'voir' ? 'voir' : 'telecharger'); return; }
+      if (act === 'modifier') { fa.modifier = ligne.id; location.hash = '#facturation'; return; }
+      if (act === 'encaisser') { faEncaisser(ligne.id, faArgent(ligne.total), b, function () { renderTab('documents'); }, null); return; }
+      if (act === 'annuler') {
+        window.TblPaiement.choisir({
+          titre: 'Annuler la facture ' + ligne.numero + ' ?',
+          corps: 'La facture de ' + faArgent(ligne.total) + ' pour ' + ligne.auteurNom + ' sera annulée chez Stripe et ne pourra plus être payée. Elle reste dans la liste, avec le statut Annulée. Aucun courriel n’est envoyé.',
+          boutons: [{ id: 'non', libelle: 'Garder la facture' }, { id: 'oui', libelle: 'Annuler la facture', principal: true }],
+          ancre: b
+        }).then(function (choix) {
+          if (choix !== 'oui') return;
+          appeler('annulerFactureAPayer', { transactionId: ligne.id }).then(function (r) {
+            if (!r || r.ok === false) { alert((r && r.message) || 'L’annulation n’a pas pu être faite.'); }
+            else if (r.paye) { alert('Cette facture a été payée entre-temps : elle n’est pas annulée.'); }
+            else if (!r.annulee) { alert('Stripe a refusé l’annulation. Réessayez dans un moment.'); }
+            renderTab('documents');
+          }).catch(function (e) { alert(e.message); });
+        });
+      }
+    });
+    faRendreListe();
+  }
+
+  /* ----- Vue « Facturation » : saisie d'une facture ----- */
+
+  async function initFacturation() {
+    var content = document.getElementById('content');
+    var donnees = await appeler('obtenirFacturationAdmin');
+    if (!donnees || donnees.ok === false) throw new Error((donnees && donnees.message) || 'Le formulaire de facturation est indisponible.');
+    fa.donnees = donnees;
+    var ouverte = null;
+    if (fa.modifier) {
+      ouverte = await appeler('obtenirFacture', { transactionId: fa.modifier });
+      if (!ouverte || ouverte.ok === false) { fa.modifier = null; throw new Error((ouverte && ouverte.message) || 'Facture introuvable.'); }
+    }
+    // État de la saisie
+    var detail = [];       // [{ cle, description, quantite, cents }]
+    var edition = null;    // null ou { index } (-1 : nouvelle ligne)
+    var etatF = { statut: ouverte ? 'apayer' : 'nouvelle', transactionId: ouverte ? ouverte.transactionId : null, numero: ouverte ? ouverte.numero : '', verrou: false };
+    if (ouverte) {
+      detail = ouverte.lignes.map(function (l) { return { cle: l.cle, description: l.description, quantite: l.quantite, cents: l.cents }; });
+    }
+    function auteurChoisi() {
+      var id = document.getElementById('fa-auteur').value;
+      return donnees.auteurs.filter(function (a) { return a.id === id; })[0] || null;
+    }
+    function services() {
+      var a = auteurChoisi();
+      return (a && !a.essai) ? donnees.services.reel : donnees.services.essai;
+    }
+    function serviceDe(cle) { return services().filter(function (s) { return s.cle === cle; })[0] || donnees.services.essai.concat(donnees.services.reel).filter(function (s) { return s.cle === cle; })[0] || null; }
+    function prixTexte(c) { return c ? (c / 100).toFixed(2).replace('.', ',') : ''; }
+
+    content.innerHTML =
+      '<h1>Facturation</h1>' +
+      '<p class="lede">Facturez un ou plusieurs services à un auteur. <a href="#documents">Retour à la liste des factures</a></p>' +
+      '<section class="fa-facture" aria-label="Facture">' +
+        '<div class="fa-bandeau"><div><div class="fa-titre-ed">Les Éditions TBL</div><div class="fa-aide">Facture de services</div></div>' +
+          '<div class="fa-meta"><div class="fa-numero" id="fa-numero"></div>' +
+            '<label class="fa-aide" for="fa-date">Date de la facture</label><input type="date" id="fa-date">' +
+            '<div><span class="fa-badge fa-nouvelle" id="fa-badge">Nouvelle</span><span class="fa-badge fa-essai" id="fa-badge-essai" hidden>Essai</span></div></div></div>' +
+        '<div class="fa-section fa-s-entete"><h2 class="fa-h2 fa-bleu">Entête</h2><div class="fa-entete">' +
+          '<div><label for="fa-auteur">Auteur</label><select id="fa-auteur"></select><div class="fa-aide" id="fa-aide-auteur"></div></div>' +
+          '<div><label for="fa-description">Description de la facture</label><input type="text" id="fa-description" maxlength="140" placeholder="Ex. Services de mise en ligne du livre"></div></div></div>' +
+        '<div class="fa-section fa-s-detail"><h2 class="fa-h2 fa-rouge">Détail</h2>' +
+          '<table class="fa-lignes"><thead><tr><th>Service</th><th>Description</th><th class="fa-num">Qté</th><th class="fa-num">Prix</th><th class="fa-num">Montant</th><th>Actions</th></tr></thead><tbody id="fa-lignes"></tbody></table>' +
+          '<p class="fa-erreur" id="fa-erreur-ligne" role="alert" hidden></p>' +
+          '<button type="button" class="btn fa-ajout" id="fa-ajout">+ Ajouter une ligne</button></div>' +
+        '<div class="fa-section fa-s-bas"><div class="fa-bas">' +
+          '<div><h2 class="fa-h2 fa-orange">Commentaires</h2><div class="fa-aide">Ils figurent sur la facture (PDF) payée.</div><textarea id="fa-commentaires" rows="5" maxlength="2000" placeholder="Ex. Merci pour votre confiance."></textarea></div>' +
+          '<div><h2 class="fa-h2 fa-vert">Totaux</h2><div class="fa-totaux">' +
+            '<div class="fa-rang"><span>Sous-total</span><span id="fa-t-sous"></span></div>' +
+            '<div class="fa-rang"><label class="fa-case"><input type="checkbox" id="fa-frais"> Frais de service (5 %)</label><span id="fa-t-frais"></span></div>' +
+            '<div class="fa-rang"><span>TPS (5 %)</span><span id="fa-t-tps"></span></div>' +
+            '<div class="fa-rang"><span>TVQ (9,975 %)</span><span id="fa-t-tvq"></span></div>' +
+            '<div class="fa-rang fa-fin"><span>Total</span><span id="fa-t-total"></span></div></div>' +
+            '<div class="fa-aide">Les taxes sont calculées sur le sous-total plus les frais de service.</div></div></div></div>' +
+        '<div class="fa-barre"><p class="fa-erreur" id="fa-erreur" role="alert" hidden></p><p class="fa-ok" id="fa-ok" role="status" hidden></p>' +
+          '<button type="button" class="btn" id="fa-nouvelle-f" hidden>Nouvelle facture</button>' +
+          '<button type="button" class="btn" id="fa-enregistrer">Enregistrer</button>' +
+          '<button type="button" class="btn btn-primary" id="fa-encaisser"><span class="fa-ico-dollar" aria-hidden="true">$</span>Enregistrer / Encaisser</button></div>' +
+      '</section>';
+
+    var $ = function (id) { return document.getElementById(id); };
+    var sel = $('fa-auteur');
+    sel.innerHTML = '<option value="">Choisir un auteur</option>' + donnees.auteurs.map(function (a) { return '<option value="' + esc(a.id) + '">' + esc(a.nom) + (a.essai ? ' (essai)' : '') + '</option>'; }).join('');
+    $('fa-date').value = ouverte ? ouverte.date : donnees.aujourdhui;
+    $('fa-date').max = donnees.aujourdhui;
+    if (ouverte) {
+      sel.value = ouverte.auteurId; sel.disabled = true;
+      $('fa-description').value = ouverte.description; $('fa-commentaires').value = ouverte.commentaires; $('fa-frais').checked = ouverte.frais;
+    }
+
+    function erreurForm(t) { var e = $('fa-erreur'); e.textContent = t || ''; e.hidden = !t; if (t) $('fa-ok').hidden = true; }
+    function okForm(t) { var e = $('fa-ok'); e.textContent = t || ''; e.hidden = !t; if (t) $('fa-erreur').hidden = true; }
+    function erreurLigne(t) { var e = $('fa-erreur-ligne'); e.textContent = t || ''; e.hidden = !t; }
+
+    function calculer() {
+      var sous = 0;
+      detail.forEach(function (l) { sous += l.quantite * l.cents; });
+      var frais = $('fa-frais').checked ? Math.round(sous * 0.05) : 0;
+      var base = sous + frais;
+      var tps = Math.round(base * 0.05), tvq = Math.round(base * 0.09975);
+      return { sous: sous, frais: frais, tps: tps, tvq: tvq, total: base + tps + tvq };
+    }
+    function recalculer() {
+      var t = calculer();
+      $('fa-t-sous').textContent = faArgent(t.sous); $('fa-t-frais').textContent = faArgent(t.frais);
+      $('fa-t-tps').textContent = faArgent(t.tps); $('fa-t-tvq').textContent = faArgent(t.tvq); $('fa-t-total').textContent = faArgent(t.total);
+    }
+    function majEntete() {
+      var a = auteurChoisi();
+      $('fa-badge-essai').hidden = !(a && a.essai);
+      $('fa-aide-auteur').textContent = a ? (a.essai ? 'Auteur en essai : facture et paiement dans le bac à sable Stripe (numéro FAC-TEST-…).' : 'Vraie facture envoyée à ' + a.courriel + '.') : '';
+      $('fa-numero').textContent = etatF.numero || (a && a.essai ? 'FAC-TEST-…' : 'FAC-…');
+    }
+    function majStatut() {
+      var b = $('fa-badge');
+      var cls = { nouvelle: 'fa-nouvelle', apayer: 'fa-apayer', paye: 'fa-paye' }[etatF.statut];
+      b.className = 'fa-badge ' + cls;
+      b.textContent = { nouvelle: 'Nouvelle', apayer: 'À payer', paye: 'Payée' }[etatF.statut];
+      var payee = etatF.statut === 'paye';
+      $('fa-enregistrer').hidden = payee; $('fa-encaisser').hidden = payee; $('fa-nouvelle-f').hidden = !payee;
+      $('fa-numero').textContent = etatF.numero || $('fa-numero').textContent;
+    }
+
+    /* Grille : lignes en lecture, une seule ligne en saisie à la fois */
+    function cellule(tr, cls, lib, texte) { var c = document.createElement('td'); c.className = cls; c.setAttribute('data-lib', lib); if (texte !== undefined) c.textContent = texte; tr.appendChild(c); return c; }
+    function ligneLecture(l, i) {
+      var tr = document.createElement('tr'); tr.className = 'fa-ligne';
+      var s = serviceDe(l.cle);
+      cellule(tr, '', 'Service', s ? s.nom : l.cle); cellule(tr, '', 'Description', l.description);
+      cellule(tr, 'fa-num', 'Qté', String(l.quantite)); cellule(tr, 'fa-num', 'Prix', faArgent(l.cents));
+      var m = cellule(tr, 'fa-num fa-montant', 'Montant', faArgent(l.quantite * l.cents));
+      var act = cellule(tr, 'fa-act', '');
+      if (!etatF.verrou) {
+        var mod = document.createElement('button'); mod.type = 'button'; mod.className = 'btn btn-sm'; mod.textContent = 'Modifier';
+        var sup = document.createElement('button'); sup.type = 'button'; sup.className = 'btn btn-sm fa-danger'; sup.textContent = 'Supprimer';
+        mod.addEventListener('click', function () { edition = { index: i }; erreurLigne(''); erreurForm(''); rendreGrille(); });
+        sup.addEventListener('click', function () {
+          window.TblPaiement.choisir({ titre: 'Supprimer cette ligne ?', corps: (s ? s.nom : l.cle) + ' : ' + l.description + ' (' + faArgent(l.quantite * l.cents) + ')', boutons: [{ id: 'non', libelle: 'Annuler' }, { id: 'oui', libelle: 'Supprimer', principal: true }], ancre: sup }).then(function (c) {
+            if (c !== 'oui') return;
+            detail.splice(i, 1); if (edition && edition.index > i) edition.index--;
+            rendreGrille(); recalculer();
+          });
+        });
+        act.appendChild(mod); act.appendChild(sup);
+      }
+      return tr;
+    }
+    function ligneSaisie(index) {
+      var base = index >= 0 ? detail[index] : null;
+      var tr = document.createElement('tr'); tr.className = 'fa-saisie';
+      var select = document.createElement('select'); select.setAttribute('aria-label', 'Service');
+      select.innerHTML = '<option value="">Choisir un service</option>' + services().map(function (s) { return '<option value="' + esc(s.cle) + '">' + esc(s.nom) + '</option>'; }).join('');
+      cellule(tr, '', 'Service').appendChild(select);
+      var desc = document.createElement('input'); desc.type = 'text'; desc.maxLength = 140; desc.setAttribute('aria-label', 'Description'); cellule(tr, '', 'Description').appendChild(desc);
+      var qte = document.createElement('input'); qte.type = 'number'; qte.min = '1'; qte.step = '1'; qte.className = 'fa-num'; qte.setAttribute('aria-label', 'Quantité'); cellule(tr, '', 'Qté').appendChild(qte);
+      var prix = document.createElement('input'); prix.type = 'text'; prix.inputMode = 'decimal'; prix.className = 'fa-num'; prix.placeholder = '0,00'; prix.setAttribute('aria-label', 'Prix unitaire'); cellule(tr, '', 'Prix').appendChild(prix);
+      var mont = cellule(tr, 'fa-num fa-montant', 'Montant', faArgent(0));
+      var act = cellule(tr, 'fa-act', '');
+      var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'btn btn-sm fa-valide'; ok.textContent = 'Valider';
+      var ann = document.createElement('button'); ann.type = 'button'; ann.className = 'btn btn-sm'; ann.textContent = 'Annuler';
+      act.appendChild(ok); act.appendChild(ann);
+      if (base && !services().some(function (s) { return s.cle === base.cle; })) {
+        var o = document.createElement('option'); o.value = base.cle; o.textContent = base.cle; select.appendChild(o);
+      }
+      select.value = base ? base.cle : ''; desc.value = base ? base.description : ''; qte.value = base ? String(base.quantite) : '1'; prix.value = base ? prixTexte(base.cents) : '';
+      function lire() { return { cle: select.value, description: desc.value.trim(), quantite: parseInt(qte.value, 10), cents: faEnCents(prix.value) }; }
+      function majMontant() { var l = lire(); mont.textContent = faArgent(l.quantite > 0 && l.cents !== null && l.cents >= 0 ? l.quantite * l.cents : 0); erreurLigne(''); }
+      select.addEventListener('change', function () {
+        var s = services().filter(function (x) { return x.cle === select.value; })[0];
+        if (s) { desc.value = s.nom; prix.value = prixTexte(s.prix); }
+        majMontant();
+      });
+      [desc, qte, prix].forEach(function (c) { c.addEventListener('input', majMontant); });
+      majMontant();
+      function valider() {
+        var l = lire();
+        if (!l.cle) { erreurLigne('Choisissez un service.'); select.focus(); return; }
+        if (!l.description) { erreurLigne('La description ne peut pas être vide.'); desc.focus(); return; }
+        if (!(l.quantite > 0)) { erreurLigne('La quantité doit être d’au moins 1.'); qte.focus(); return; }
+        if (l.cents === null || l.cents < 0) { erreurLigne('Saisissez un prix valide (0 ou plus).'); prix.focus(); return; }
+        if (index >= 0) detail[index] = l; else detail.push(l);
+        edition = null; erreurLigne(''); rendreGrille(); recalculer();
+      }
+      function annuler() { edition = null; erreurLigne(''); rendreGrille(); recalculer(); }
+      ok.addEventListener('click', valider); ann.addEventListener('click', annuler);
+      tr.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' && ev.target.tagName !== 'SELECT') { ev.preventDefault(); valider(); }
+        else if (ev.key === 'Escape') { ev.stopPropagation(); annuler(); }
+      });
+      tr._focus = function () { (index >= 0 ? desc : select).focus({ preventScroll: true }); };
+      return tr;
+    }
+    function rendreGrille() {
+      var corps = $('fa-lignes'); corps.innerHTML = '';
+      var saisie = null;
+      detail.forEach(function (l, i) {
+        if (edition && edition.index === i) { saisie = ligneSaisie(i); corps.appendChild(saisie); } else { corps.appendChild(ligneLecture(l, i)); }
+      });
+      if (edition && edition.index === -1) { saisie = ligneSaisie(-1); corps.appendChild(saisie); }
+      if (!detail.length && !edition) {
+        var vide = document.createElement('tr'); vide.className = 'fa-vide-ligne';
+        var c = document.createElement('td'); c.colSpan = 6; c.textContent = 'Aucune ligne pour le moment. Cliquez sur « + Ajouter une ligne ».'; vide.appendChild(c); corps.appendChild(vide);
+      }
+      $('fa-ajout').disabled = etatF.verrou || !!edition; $('fa-ajout').hidden = etatF.verrou;
+      if (saisie) saisie._focus();
+    }
+
+    function verrouiller(oui) {
+      etatF.verrou = oui;
+      ['fa-description', 'fa-commentaires', 'fa-frais', 'fa-date'].forEach(function (id) { $(id).disabled = oui; });
+      if (oui) sel.disabled = true;
+      edition = null; rendreGrille();
+    }
+
+    /* Validation locale puis envoi au serveur (qui revalide tout) */
+    function verifier() {
+      if (!auteurChoisi()) return 'Choisissez l’auteur à facturer.';
+      if (!$('fa-description').value.trim()) return 'Saisissez une description pour la facture.';
+      if (!$('fa-date').value) return 'Saisissez la date de la facture.';
+      if ($('fa-date').value > donnees.aujourdhui) return 'La date de la facture ne peut pas être dans le futur.';
+      if (edition) return 'Validez ou annulez la ligne en cours de saisie avant d’enregistrer.';
+      if (!detail.length) return 'Ajoutez au moins une ligne de service.';
+      if (calculer().total <= 0) return 'Le total de la facture doit être supérieur à 0 $.';
+      return '';
+    }
+    function charge(encaisser) {
+      return {
+        auteurId: auteurChoisi().id, description: $('fa-description').value.trim(), date: $('fa-date').value,
+        lignes: detail.map(function (l) { return { cle: l.cle, description: l.description, quantite: l.quantite, cents: l.cents }; }),
+        frais: $('fa-frais').checked, commentaires: $('fa-commentaires').value, transactionId: etatF.transactionId || undefined, encaisser: !!encaisser
+      };
+    }
+    function envoi(encaisser, bouton) {
+      var m = verifier();
+      if (m) { erreurForm(m); return; }
+      erreurForm(''); okForm('');
+      $('fa-enregistrer').disabled = true; $('fa-encaisser').disabled = true;
+      var ancienNumero = etatF.numero;
+      appeler('enregistrerFacture', charge(encaisser)).then(function (r) {
+        $('fa-enregistrer').disabled = false; $('fa-encaisser').disabled = false;
+        if (!r || r.ok === false) { erreurForm((r && r.message) || 'La facture n’a pas pu être enregistrée.'); return; }
+        etatF.transactionId = r.transactionId; etatF.numero = r.numero; etatF.statut = 'apayer';
+        sel.disabled = true; fa.modifier = r.transactionId;
+        majStatut(); majEntete();
+        if (!encaisser) {
+          okForm('Facture ' + r.numero + (r.remplacee ? ' enregistrée (elle remplace ' + r.remplacee + ', annulée)' : ' enregistrée') + '. Elle est « À payer »' + (r.courrielEnvoye ? ' et un courriel est envoyé à l’auteur.' : '.'));
+          return;
+        }
+        // Enregistrer / Encaisser : la fenêtre de paiement s'ouvre avec la facture prête.
+        if (r.remplacee) okForm('Facture ' + r.numero + ' (elle remplace ' + r.remplacee + ', annulée).');
+        faEncaisserAvec(r, bouton);
+      }).catch(function (e) {
+        $('fa-enregistrer').disabled = false; $('fa-encaisser').disabled = false;
+        erreurForm(e.message);
+      });
+    }
+    // Fenêtre de paiement avec la réponse déjà reçue de l'enregistrement (secret de paiement compris).
+    function faEncaisserAvec(r, bouton) {
+      if (!window.TblPaiement) { erreurForm('Le module de paiement n’a pas pu se charger. Actualisez le tableau de bord.'); return; }
+      var fenetre = window.TblPaiement.ouvrir({
+        appeler: function (action) {
+          if (action === 'statut') return appeler('statutFactureAPayer', { transactionId: r.transactionId }).catch(function () { return null; });
+          return Promise.resolve({ ok: true, annulee: false });
+        },
+        totalAffiche: faArgent(r.total), ancre: bouton, sansAnnulation: true, retour: 'https://www.editionstbl.ca/dbadmin',
+        textes: {
+          intro: function (rep) { return 'Facture ' + (rep.facture || '') + ' : ' + faArgent(rep.total || 0) + '. Saisissez la carte de l’auteur : le paiement est traité de façon sécurisée par Stripe. Le bouton Fermer laisse la facture à payer et avise l’auteur par courriel.'; },
+          reussi: 'Paiement réussi. La facture est payée.',
+          reussiSub: 'Le PDF de la facture est ajouté aux documents de l’auteur, qui reçoit aussi un courriel.',
+          delai: 'La confirmation du paiement n’est pas encore arrivée. Consultez la liste des factures dans un moment.'
+        },
+        estAnnule: function (x) { return x.statut === 'Annulée'; },
+        surReussi: function () { etatF.statut = 'paye'; majStatut(); verrouiller(true); okForm('Facture ' + etatF.numero + ' payée.'); },
+        surFermeture: function () {
+          // Fermée sans payer : la facture reste à payer et l'auteur en est avisé par courriel.
+          appeler('aviserAuteurDeFacture', { transactionId: r.transactionId }).then(function (a) {
+            okForm('Facture ' + etatF.numero + ' enregistrée, « À payer »' + (a && a.avise ? ' : l’auteur en est avisé par courriel.' : '.'));
+          }).catch(function () {});
+        }
+      });
+      fenetre.demarrer(r);
+    }
+
+    sel.addEventListener('change', function () { majEntete(); erreurForm(''); });
+    $('fa-frais').addEventListener('change', recalculer);
+    $('fa-ajout').addEventListener('click', function () { edition = { index: -1 }; erreurLigne(''); erreurForm(''); rendreGrille(); });
+    $('fa-enregistrer').addEventListener('click', function () { envoi(false, this); });
+    $('fa-encaisser').addEventListener('click', function () { envoi(true, this); });
+    $('fa-nouvelle-f').addEventListener('click', function () { fa.modifier = null; renderTab('facturation'); });
+    ['fa-description', 'fa-commentaires', 'fa-date'].forEach(function (id) { $(id).addEventListener('input', function () { erreurForm(''); }); });
+    rendreGrille(); majEntete(); majStatut(); recalculer();
+    if (etatF.statut === 'apayer') { okForm('Facture ' + etatF.numero + ' « À payer » : si vous l’enregistrez de nouveau, elle est remplacée par une nouvelle facture (l’ancienne est annulée).'); }
+  }
+
   async function initPublicite() {
     var content = document.getElementById('content');
     var lignes = await appeler('getResumePublicite');

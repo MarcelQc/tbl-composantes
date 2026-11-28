@@ -140,6 +140,14 @@ select:focus,input:focus,textarea:focus{border-color:var(--or);outline:none}
 .lg-icone.principal:hover{filter:brightness(1.1)}
 .lg-icone[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
 .lg-icone svg{width:18px;height:18px}
+/* Icône $ d'une facture (28 novembre 2026) : fond blanc = à payer, on peut l'encaisser ; fond noir = payée. */
+.lg-icone.encaisser{background:#fff;border-color:#fff;color:#000}
+.lg-icone.encaisser:hover{background:var(--tbl-orange);border-color:var(--tbl-orange);color:#000}
+.lg-icone.paye{background:#000;border-color:var(--line);color:#fff;cursor:default}
+.lg-icone.encaisser svg,.lg-icone.paye svg{width:22px;height:22px}
+.lg-icone svg text{pointer-events:none}
+.zone-docs .c-action{width:152px}
+.zone-docs tbody td.c-action{overflow:visible}
 .zone-fixe tbody tr:last-child td{border-bottom:0}
 .zone-fixe tfoot td{position:sticky;bottom:0;height:var(--h-ligne);background:var(--card);border-top:1px solid var(--line);font-weight:bold}
 .zone-fixe td.n,.zone-fixe th.n{text-align:right}
@@ -593,6 +601,7 @@ textarea{min-height:96px;resize:vertical}
 
 </main>
 
+<script src="paiement-stripe.js?v=8e5b633 · 2026-11-28 09:35"></script>
 <script>
 (function () {
 'use strict';
@@ -676,6 +685,9 @@ function recevoir(msg) {
   else if (msg.type === 'resultatSupprimerCommentaire' || msg.type === 'resultatDetruireCommentaire') { surSupprimerCommentaire(msg); }
   else if (msg.type === 'resultatReponsesVues') { surReponsesVues(msg); }
   else if (msg.type === 'resultatSupprimerCoffret') { surSupprimerCoffret(msg); }
+  else if (msg.type === 'resultatEncaisserFacture') { surResultatFacture('encaisserFacture', msg); }
+  else if (msg.type === 'resultatStatutFacture') { surResultatFacture('statutFacture', msg); }
+  else if (msg.type === 'allerDocuments') { surAllerDocuments(msg); }
 }
 
 /* ---------- États de la page ---------- */
@@ -742,10 +754,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 4fd6a0f · 2026-11-27 12:12 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 8e5b633 · 2026-11-28 09:35 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '4fd6a0f · 2026-11-27 12:12';
+var VERSION_TBL = '8e5b633 · 2026-11-28 09:35';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
@@ -2207,12 +2219,84 @@ function creerLigneDoc(doc, avecMontant) {
   var action = el('div', 'action');
   var url = urlSure(doc.url);
   var urlVue = urlSure(doc.urlVisualisation); // fournie seulement pour les PDF
+  if (doc.paiement) { action.appendChild(boutonEncaisser(doc)); } // facture : à payer (blanc) ou payée (noir)
   if (urlVue) { action.appendChild(iconeDoc('visualiser', urlVue, doc.titre, !!url)); }
   action.appendChild(iconeDoc('telecharger', url, doc.titre, false));
   celluleAction.appendChild(action);
   tr.appendChild(celluleAction);
   return tr;
 }
+/* ---------- Encaisser une facture à payer (icône $, 28 novembre 2026) ---------- */
+// Facture saisie par l'administrateur (ADM, bouton Facturation) : elle attend son paiement dans l'onglet Documents,
+// sans PDF avant le paiement. L'icône $ ouvre la fenêtre de paiement (paiement-stripe.js) ; la fermer ne l'annule pas.
+var SVG_DOLLAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" fill="currentColor">$</text></svg>';
+var attentesFacture = {};
+function appelerFacture(type, transactionId, delaiMs) {
+  return new Promise(function (resoudre) {
+    var cle = type + ':' + transactionId;
+    var minuterie = setTimeout(function () { delete attentesFacture[cle]; resoudre(null); }, delaiMs || 20000);
+    attentesFacture[cle] = function (msg) { clearTimeout(minuterie); delete attentesFacture[cle]; resoudre(msg); };
+    envoyer({ type: type, transactionId: transactionId });
+  });
+}
+function surResultatFacture(type, msg) {
+  var rappel = attentesFacture[type + ':' + msg.transactionId];
+  if (rappel) { rappel(msg); }
+}
+function boutonEncaisser(doc) {
+  var paye = doc.paiement === 'paye';
+  var b = el('button', 'lg-icone ' + (paye ? 'paye' : 'encaisser'));
+  b.type = 'button';
+  b.innerHTML = SVG_DOLLAR;
+  b.title = paye ? 'Facture payée' : 'Encaisser cette facture';
+  b.setAttribute('aria-label', (paye ? 'Facture payée : ' : 'Encaisser : ') + doc.titre);
+  b.setAttribute('data-facture', doc.titre);
+  if (paye || !doc.transactionId) { b.setAttribute('aria-disabled', 'true'); b.tabIndex = -1; }
+  else { b.addEventListener('click', function () { encaisserFacture(doc, b); }); }
+  return b;
+}
+function messageFacture(texte, bouton) {
+  if (window.TblPaiement) { window.TblPaiement.choisir({ titre: 'Paiement impossible', corps: texte, boutons: [{ id: 'ok', libelle: 'Fermer', principal: true }], ancre: bouton }); }
+}
+function encaisserFacture(doc, bouton) {
+  tracer('document', { detail: 'encaisser' });
+  if (!window.TblPaiement) { messageFacture('Le module de paiement n’a pas pu se charger. Actualisez la page et réessayez.', bouton); return; }
+  var fenetre = window.TblPaiement.ouvrir({
+    appeler: function (action, params, delai) {
+      if (action === 'statut') { return appelerFacture('statutFacture', doc.transactionId, delai); }
+      return Promise.resolve({ ok: true, annulee: false }); // la facture n'est jamais annulée par la fenêtre
+    },
+    totalAffiche: doc.montant,
+    ancre: bouton,
+    sansAnnulation: true,
+    retour: 'https://www.editionstbl.ca/dashboardauteur?onglet=documents',
+    textes: {
+      intro: function (rep) { return 'Facture ' + (rep.facture || '') + ' : ' + fmtArgent.format((rep.total || 0) / 100) + '. Payez-la par carte ci-dessous : le paiement est traité de façon sécurisée par Stripe, notre partenaire de paiement. Le bouton Fermer laisse la facture à payer : vous pourrez la payer plus tard.'; },
+      reussi: 'Merci ! Votre facture est payée.',
+      reussiSub: 'Votre facture en PDF est maintenant dans cet onglet Documents.',
+      delai: 'Nous n’avons pas encore reçu la confirmation du paiement. Si vous avez payé, la facture sera marquée payée sous peu et vous recevrez un courriel.'
+    },
+    estAnnule: function (r) { return r.statut === 'Annulée'; },
+    surReussi: function () { envoyer({ type: 'pret' }); } // recharge les documents : la facture payée et son PDF
+  });
+  appelerFacture('encaisserFacture', doc.transactionId, 30000).then(function (res) {
+    if (res && res.ok && res.paye) { fenetre.fermer(); envoyer({ type: 'pret' }); return; }
+    if (res && res.ok && res.paiement) { fenetre.demarrer(res); return; }
+    fenetre.fermer();
+    messageFacture((res && res.message) || 'Le paiement n’a pas pu être préparé. Réessayez dans un moment.', bouton);
+  });
+}
+// Bouton du courriel « Votre facture à payer » (?onglet=documents&facture=FAC-…) : onglet Documents, puis la fenêtre de
+// paiement de cette facture.
+function surAllerDocuments(msg) {
+  choisirOnglet('documents', false);
+  if (!msg.facture) { return; }
+  setTimeout(function () {
+    var cible = document.querySelector('.lg-icone.encaisser[data-facture="Facture ' + msg.facture + '"]');
+    if (cible) { cible.scrollIntoView({ block: 'center' }); cible.click(); }
+  }, 400);
+}
+
 function remplirListe(idListe, idVide, docs) {
   var corps = $(idListe);
   vider(corps);
