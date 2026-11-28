@@ -1525,12 +1525,13 @@ select:focus { outline: none; border-color: var(--accent); }
 .fa-prov { display: inline-block; min-width: 38px; text-align: center; padding: 2px 8px; border: 1px solid var(--tbl-blue); color: var(--tbl-blue); border-radius: 6px; font-weight: 700; font-size: 0.78rem; }
 
 /* Onglet Documents */
-.fa-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 14px 0; }
-.fa-carte { background: var(--tbl-paper-2); border: 1px solid var(--tbl-line); border-top: 3px solid var(--tbl-line); border-radius: var(--tbl-radius); padding: 14px 18px; }
+.fa-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin: 10px 0 12px; }
+.fa-carte { background: var(--tbl-paper-2); border: 1px solid var(--tbl-line); border-top: 3px solid var(--tbl-line); border-radius: var(--tbl-radius); padding: 8px 16px 10px; }
+.fa-ligne-val { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
 .fa-c-ok { border-top-color: var(--tbl-ok); }
 .fa-c-ok .fa-gros { color: var(--tbl-ok); }
 .fa-c-bleu { border-top-color: var(--tbl-blue); }
-.fa-gros { font-size: 1.7rem; font-weight: 700; margin: 4px 0; }
+.fa-gros { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
 .fa-filtres { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 16px 0 12px; }
 .fa-filtres label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--tbl-muted); }
 .fa-filtres select { min-width: 170px; }
@@ -1728,7 +1729,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
-<script src="paiement-stripe.js?v=b0f3661 · 2026-11-28 10:34"></script>
+<script src="paiement-stripe.js?v=0333c43 · 2026-11-28 10:43"></script>
 <script>
 (function () {
   'use strict';
@@ -4304,9 +4305,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
         '<button class="btn btn-primary" id="fa-nouvelle">Nouvelle facture</button>' +
       '</div></div>' +
       '<div class="fa-cartes">' +
-        '<div class="fa-carte fa-c-ok"><div class="fa-aide">À recevoir (factures réelles à payer)</div><div class="fa-gros">' + faArgent(ar.total) + '</div>' +
-          '<div class="fa-aide">' + ar.nb + ' facture' + (ar.nb > 1 ? 's' : '') + (ar.nb ? ' : sous-total ' + faArgent(ar.sousTotal) + ', TPS ' + faArgent(ar.tps) + ', TVQ ' + faArgent(ar.tvq) : '') + (ar.sansDetail ? ' (' + ar.sansDetail + ' sans détail de taxes)' : '') + '</div></div>' +
-        '<div class="fa-carte fa-c-bleu"><div class="fa-aide">Factures d’essai à payer</div><div class="fa-gros">' + r.essaisExclus + '</div><div class="fa-aide">Exclues du montant à recevoir</div></div>' +
+        '<div class="fa-carte fa-c-ok"><div class="fa-aide">À recevoir (factures réelles à payer)</div><div class="fa-ligne-val"><span class="fa-gros">' + faArgent(ar.total) + '</span>' +
+          '<span class="fa-aide">' + ar.nb + ' facture' + (ar.nb > 1 ? 's' : '') + (ar.nb ? ' : sous-total ' + faArgent(ar.sousTotal) + ', TPS ' + faArgent(ar.tps) + ', TVQ ' + faArgent(ar.tvq) : '') + (ar.sansDetail ? ' (' + ar.sansDetail + ' sans détail de taxes)' : '') + '</span></div></div>' +
+        '<div class="fa-carte fa-c-bleu"><div class="fa-aide">Factures d’essai à payer</div><div class="fa-ligne-val"><span class="fa-gros">' + r.essaisExclus + '</span><span class="fa-aide">Exclues du montant à recevoir</span></div></div>' +
       '</div>' +
       '<div class="fa-filtres">' +
         '<label>Auteur<select id="fa-f-auteur">' + faOptions(vauteurs, 'Tous les auteurs', fa.filtres.auteur) + '</select></label>' +
