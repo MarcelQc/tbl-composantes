@@ -1534,7 +1534,11 @@ select:focus { outline: none; border-color: var(--accent); }
 .fa-filtres { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin: 16px 0 12px; }
 .fa-filtres label { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; color: var(--tbl-muted); }
 .fa-filtres select { min-width: 170px; }
-.fa-tableau { overflow-x: auto; border: 1px solid var(--tbl-line); border-radius: var(--tbl-radius); background: var(--tbl-paper-2); }
+.fa-tableau { overflow: auto; border: 1px solid var(--tbl-line); border-radius: var(--tbl-radius); background: var(--tbl-paper-2); scrollbar-width: thin; scrollbar-color: var(--tbl-line) transparent; }
+.fa-tableau thead th { position: sticky; top: 0; z-index: 1; }
+.fa-haut { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.fa-haut h1 { margin: 0; }
+.fa-haut-boutons { display: flex; flex-wrap: wrap; gap: 10px; }
 .fa-grille { width: 100%; border-collapse: collapse; }
 .fa-grille th { background: var(--tbl-muted); color: #000; text-align: left; padding: 9px 12px; font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; }
 .fa-grille td { padding: 10px 12px; border-top: 1px solid var(--tbl-line); vertical-align: middle; font-size: 0.88rem; }
@@ -1724,7 +1728,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
-<script src="paiement-stripe.js?v=1cd5526 · 2026-11-28 10:12"></script>
+<script src="paiement-stripe.js?v=b0f3661 · 2026-11-28 10:34"></script>
 <script>
 (function () {
   'use strict';
@@ -4238,11 +4242,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
     });
   }
 
+  var FA_LIGNES_VISIBLES = 15;
   function faRendreListe() {
     var corps = document.getElementById('fa-corps');
     if (!corps) return;
     var lignes = faFiltrer(fa.liste.factures);
     document.getElementById('fa-nb').textContent = lignes.length + ' facture' + (lignes.length > 1 ? 's' : '');
+    var zone = corps.closest('.fa-tableau');
+    if (zone) { zone.style.maxHeight = ''; }
     if (!lignes.length) {
       corps.innerHTML = '<tr><td colspan="7" class="fa-vide">Aucune facture ne correspond à ces filtres.</td></tr>';
       return;
@@ -4274,6 +4281,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
         '<td class="fa-act">' + actions + '</td>' +
       '</tr>';
     }).join('');
+    // Au plus FA_LIGNES_VISIBLES lignes avant que la grille défile (l'en-tête reste en haut).
+    if (zone && corps.children.length > FA_LIGNES_VISIBLES) {
+      var h = zone.querySelector('thead').offsetHeight + 2;
+      for (var i = 0; i < FA_LIGNES_VISIBLES; i += 1) { h += corps.children[i].offsetHeight; }
+      zone.style.maxHeight = h + 'px';
+    }
   }
 
   async function initDocuments() {
@@ -4286,8 +4299,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
     var vauteurs = Object.keys(auteurs).sort(function (a, b) { return auteurs[a].localeCompare(auteurs[b], 'fr'); }).map(function (id) { return { valeur: id, libelle: auteurs[id] }; });
     var ar = r.aRecevoir;
     content.innerHTML =
-      '<h1>Documents</h1>' +
-      '<p class="lede">Toutes les factures, de la plus récente à la plus ancienne. <strong>Encaisser</strong> ouvre le paiement par carte ; <strong>Annuler</strong> annule une facture à payer chez Stripe (elle reste dans la liste).</p>' +
+      '<div class="fa-haut"><h1>Documents</h1><div class="fa-haut-boutons">' +
+        '<button class="btn" id="fa-export">Exporter (CSV)</button>' +
+        '<button class="btn btn-primary" id="fa-nouvelle">Nouvelle facture</button>' +
+      '</div></div>' +
       '<div class="fa-cartes">' +
         '<div class="fa-carte fa-c-ok"><div class="fa-aide">À recevoir (factures réelles à payer)</div><div class="fa-gros">' + faArgent(ar.total) + '</div>' +
           '<div class="fa-aide">' + ar.nb + ' facture' + (ar.nb > 1 ? 's' : '') + (ar.nb ? ' : sous-total ' + faArgent(ar.sousTotal) + ', TPS ' + faArgent(ar.tps) + ', TVQ ' + faArgent(ar.tvq) : '') + (ar.sansDetail ? ' (' + ar.sansDetail + ' sans détail de taxes)' : '') + '</div></div>' +
@@ -4299,8 +4314,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
         '<label>Provenance<select id="fa-f-prov">' + faOptions(Object.keys(FA_PROVENANCES).map(function (p) { return { valeur: p, libelle: p + ' : ' + FA_PROVENANCES[p] }; }), 'Toutes les provenances', fa.filtres.provenance) + '</select></label>' +
         '<label>Mode<select id="fa-f-essai">' + faOptions([{ valeur: 'reel', libelle: 'Réel' }, { valeur: 'essai', libelle: 'Essai' }], 'Réel et essai', fa.filtres.essai) + '</select></label>' +
         '<span class="fa-espace"></span><span id="fa-nb" class="fa-aide"></span>' +
-        '<button class="btn" id="fa-export">Exporter (CSV)</button>' +
-        '<button class="btn btn-primary" id="fa-nouvelle"><span class="fa-ico-dollar" aria-hidden="true">$</span>Nouvelle facture</button>' +
       '</div>' +
       '<div class="fa-tableau"><table class="fa-grille"><thead><tr><th>Facture</th><th>Auteur</th><th>Prov.</th><th>Date</th><th>Statut</th><th class="fa-num">Montant</th><th class="fa-act">Actions</th></tr></thead><tbody id="fa-corps"></tbody></table></div>';
     function lier(id, cle) {
