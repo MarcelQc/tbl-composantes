@@ -1521,6 +1521,7 @@ select:focus { outline: none; border-color: var(--accent); }
 .fa-badge.fa-paye, .fa-badge.fa-gratuite { background: var(--tbl-ok); color: #06210f; border-color: var(--tbl-ok); }
 .fa-badge.fa-annulee, .fa-badge.fa-autre { background: transparent; color: var(--tbl-muted); border-color: var(--tbl-line); }
 .fa-badge.fa-averifier { background: var(--tbl-accent); color: #fff; border-color: var(--tbl-accent); }
+.fa-badge[hidden] { display: none; }
 .fa-badge.fa-essai { background: #fff; color: var(--tbl-accent); border-color: #fff; margin-left: 6px; }
 .fa-prov { display: inline-block; min-width: 38px; text-align: center; padding: 2px 8px; border: 1px solid var(--tbl-blue); color: var(--tbl-blue); border-radius: 6px; font-weight: 700; font-size: 0.78rem; }
 
@@ -1539,6 +1540,11 @@ select:focus { outline: none; border-color: var(--accent); }
 .fa-tableau thead th { position: sticky; top: 0; z-index: 1; }
 .fa-haut { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .fa-haut h1 { margin: 0; }
+.fa-haut-compact { margin-bottom: 6px; }
+.fa-haut-compact h1 { font-size: 1.3rem; }
+.fa-haut-compact h1::before { height: 0.9em; width: 7px; }
+.fa-retour { color: var(--tbl-blue); font-size: 0.9rem; text-decoration: none; }
+.fa-retour:hover { text-decoration: underline; }
 .fa-haut-boutons { display: flex; flex-wrap: wrap; gap: 10px; }
 .fa-grille { width: 100%; border-collapse: collapse; }
 .fa-grille th { background: var(--tbl-muted); color: #000; text-align: left; padding: 9px 12px; font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -1729,7 +1735,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
-<script src="paiement-stripe.js?v=0333c43 · 2026-11-28 10:43"></script>
+<script src="paiement-stripe.js?v=24893ba · 2026-11-28 11:00"></script>
 <script>
 (function () {
   'use strict';
@@ -4383,11 +4389,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
     function prixTexte(c) { return c ? (c / 100).toFixed(2).replace('.', ',') : ''; }
 
     content.innerHTML =
-      '<h1>Facturation</h1>' +
-      '<p class="lede">Facturez un ou plusieurs services à un auteur. <a href="#documents">Retour à la liste des factures</a></p>' +
+      '<div class="fa-haut fa-haut-compact"><h1>' + (ouverte ? 'Modifier la facture' : 'Nouvelle facture') + '</h1><a href="#documents" class="fa-retour">Retour à la liste des factures</a></div>' +
       '<section class="fa-facture" aria-label="Facture">' +
         '<div class="fa-bandeau"><div><div class="fa-titre-ed">Les Éditions TBL</div><div class="fa-aide">Facture de services</div></div>' +
-          '<div class="fa-meta"><div class="fa-numero" id="fa-numero"></div>' +
+          '<div class="fa-meta"><div class="fa-aide" id="fa-numero-lib">Prochaine facture</div><div class="fa-numero" id="fa-numero"></div>' +
             '<label class="fa-aide" for="fa-date">Date de la facture</label><input type="date" id="fa-date">' +
             '<div><span class="fa-badge fa-nouvelle" id="fa-badge">Nouvelle</span><span class="fa-badge fa-essai" id="fa-badge-essai" hidden>Essai</span></div></div></div>' +
         '<div class="fa-section fa-s-entete"><h2 class="fa-h2 fa-bleu">Entête</h2><div class="fa-entete">' +
@@ -4408,8 +4413,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
             '<div class="fa-aide">Les taxes sont calculées sur le sous-total plus les frais de service.</div></div></div></div>' +
         '<div class="fa-barre"><p class="fa-erreur" id="fa-erreur" role="alert" hidden></p><p class="fa-ok" id="fa-ok" role="status" hidden></p>' +
           '<button type="button" class="btn" id="fa-nouvelle-f" hidden>Nouvelle facture</button>' +
+          '<button type="button" class="btn" id="fa-annuler-f">Annuler</button>' +
           '<button type="button" class="btn" id="fa-enregistrer">Enregistrer</button>' +
-          '<button type="button" class="btn btn-primary" id="fa-encaisser"><span class="fa-ico-dollar" aria-hidden="true">$</span>Enregistrer / Encaisser</button></div>' +
+          '<button type="button" class="btn btn-primary" id="fa-encaisser">Enregistrer / Encaisser</button></div>' +
       '</section>';
 
     var $ = function (id) { return document.getElementById(id); };
@@ -4443,7 +4449,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
       var a = auteurChoisi();
       $('fa-badge-essai').hidden = !(a && a.essai);
       $('fa-aide-auteur').textContent = a ? (a.essai ? 'Auteur en essai : facture et paiement dans le bac à sable Stripe (numéro FAC-TEST-…).' : 'Vraie facture envoyée à ' + a.courriel + '.') : '';
-      $('fa-numero').textContent = etatF.numero || (a && a.essai ? 'FAC-TEST-…' : 'FAC-…');
+      var prochains = donnees.prochains || {};
+      $('fa-numero').textContent = etatF.numero || (a && a.essai ? (prochains.essai || 'FAC-TEST-…') : (prochains.reel || 'FAC-…'));
+      $('fa-numero-lib').textContent = etatF.numero ? 'Facture' : 'Prochaine facture';
     }
     function majStatut() {
       var b = $('fa-badge');
@@ -4451,8 +4459,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
       b.className = 'fa-badge ' + cls;
       b.textContent = { nouvelle: 'Nouvelle', apayer: 'À payer', paye: 'Payée' }[etatF.statut];
       var payee = etatF.statut === 'paye';
-      $('fa-enregistrer').hidden = payee; $('fa-encaisser').hidden = payee; $('fa-nouvelle-f').hidden = !payee;
+      $('fa-enregistrer').hidden = payee; $('fa-encaisser').hidden = payee; $('fa-annuler-f').hidden = payee; $('fa-nouvelle-f').hidden = !payee;
       $('fa-numero').textContent = etatF.numero || $('fa-numero').textContent;
+      $('fa-numero-lib').textContent = etatF.numero ? 'Facture' : 'Prochaine facture';
     }
 
     /* Grille : lignes en lecture, une seule ligne en saisie à la fois */
@@ -4621,6 +4630,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
     $('fa-enregistrer').addEventListener('click', function () { envoi(false, this); });
     $('fa-encaisser').addEventListener('click', function () { envoi(true, this); });
     $('fa-nouvelle-f').addEventListener('click', function () { fa.modifier = null; renderTab('facturation'); });
+    // Annuler : retour à la liste. Une saisie jamais enregistrée demande une confirmation ; une facture déjà enregistrée
+    // (« À payer ») n'est pas annulée pour autant, elle reste dans la liste.
+    $('fa-annuler-f').addEventListener('click', function () {
+      var bouton = this;
+      var saisie = etatF.statut === 'nouvelle' && (detail.length || edition || sel.value || $('fa-description').value.trim() || $('fa-commentaires').value.trim());
+      if (!saisie) { fa.modifier = null; location.hash = '#documents'; return; }
+      window.TblPaiement.choisir({
+        titre: 'Abandonner cette facture ?',
+        corps: 'Rien n’a été enregistré : ce que vous avez saisi sera perdu.',
+        boutons: [{ id: 'non', libelle: 'Continuer la saisie' }, { id: 'oui', libelle: 'Abandonner', principal: true }],
+        ancre: bouton
+      }).then(function (choix) { if (choix === 'oui') { fa.modifier = null; location.hash = '#documents'; } });
+    });
     ['fa-description', 'fa-commentaires', 'fa-date'].forEach(function (id) { $(id).addEventListener('input', function () { erreurForm(''); }); });
     rendreGrille(); majEntete(); majStatut(); recalculer();
     if (etatF.statut === 'apayer') { okForm('Facture ' + etatF.numero + ' « À payer » : si vous l’enregistrez de nouveau, elle est remplacée par une nouvelle facture (l’ancienne est annulée).'); }
