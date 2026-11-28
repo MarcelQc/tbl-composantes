@@ -1615,6 +1615,71 @@ select:focus { outline: none; border-color: var(--accent); }
   .fa-lignes td.fa-act::before { display: none; }
   .fa-lignes td.fa-num { text-align: left; }
 }
+
+/* ---------- Style coloré (28 novembre 2026) : même style que l'Espace Auteurs, demandé par Marcel ----------
+   Bleu = identité, rouge TBL = actions, orange = attente, vert = argent. Les jetons ajoutés ci-dessous sont ceux proposés
+   pour Templates\tokens.css (Prototype\Style-colore\couleurs-tbl.css) ; ce fichier n'est pas modifié sans l'accord de l'équipe. */
+:root {
+  --tbl-ok-soft: #12301f;
+  --tbl-accent-text: #ffb3b8;
+  --tbl-on-ok: #06210f;
+  --tbl-on-orange: #2b1c00;
+  --tbl-on-blue: #06142b;
+  --tbl-glow-accent: 0 4px 14px rgba(229,37,48,.45);
+  --tbl-wash-accent: rgba(229,37,48,.10);
+  --tbl-wash-ok: rgba(76,195,138,.08);
+}
+/* Entête : carte rouge foncé à filet rouge */
+.app-header { padding: 16px 20px 0; margin-bottom: 14px; border: 1px solid var(--tbl-line); border-top: 4px solid var(--tbl-accent); border-radius: var(--tbl-radius); background: linear-gradient(135deg, var(--tbl-accent-soft) 0%, var(--tbl-paper) 65%); }
+.brand-title { color: #fff; }
+.brand-subtitle { color: var(--tbl-accent-text); }
+.app-header .tabs-actualiser { border-color: var(--tbl-blue); color: var(--tbl-blue); background: var(--tbl-paper); }
+.app-header .tabs-actualiser:hover { background: var(--tbl-blue-soft); }
+/* Onglets : une couleur par onglet (la page en prend la teinte, voir renderTab) */
+.tab-btn[data-tab="accueil"], .content[data-tab="accueil"] { --couleur: var(--tbl-blue); }
+.tab-btn[data-tab="forum"], .content[data-tab="forum"] { --couleur: var(--tbl-orange); }
+.tab-btn[data-tab="rencontres"], .content[data-tab="rencontres"] { --couleur: var(--tbl-blue); }
+.tab-btn[data-tab="taches"], .content[data-tab="taches"] { --couleur: var(--tbl-accent); }
+.tab-btn[data-tab="manuscrits"], .content[data-tab="manuscrits"] { --couleur: var(--tbl-orange); }
+.tab-btn[data-tab="ventes"], .content[data-tab="ventes"] { --couleur: var(--tbl-ok); }
+.tab-btn[data-tab="ventes-numeriques"], .content[data-tab="ventes-numeriques"] { --couleur: var(--tbl-ok); }
+.tab-btn[data-tab="partner-id"], .content[data-tab="partner-id"] { --couleur: var(--tbl-blue); }
+.tab-btn[data-tab="publicite"], .content[data-tab="publicite"] { --couleur: var(--tbl-orange); }
+.tab-btn[data-tab="documents"], .content[data-tab="documents"], .content[data-tab="facturation"] { --couleur: var(--tbl-ok); }
+.tab-btn { border-top: 3px solid var(--couleur, var(--tbl-line)); }
+.tab-btn.active { box-shadow: none; border-top-color: var(--couleur, var(--tbl-accent)); background: linear-gradient(180deg, rgba(255,255,255,.06), var(--tbl-paper) 60%); color: #fff; }
+/* Page de l'onglet : voile de la couleur de l'onglet, titres et panneaux marqués */
+.content { background: linear-gradient(180deg, color-mix(in srgb, var(--couleur, var(--tbl-accent)) 14%, transparent) 0, transparent 150px), var(--tbl-paper); }
+.content h1 { display: flex; align-items: center; gap: 12px; }
+.content h1::before { content: ""; flex: 0 0 auto; width: 9px; height: 1.05em; border-radius: 3px; background: var(--couleur, var(--tbl-accent)); }
+.panel { border-top: 3px solid var(--couleur, var(--tbl-accent)); }
+.panel h2 { display: flex; align-items: center; gap: 10px; }
+.panel h2::before { content: ""; flex: 0 0 auto; width: 7px; height: 1em; border-radius: 3px; background: var(--couleur, var(--tbl-accent)); }
+/* Indicateurs et cartes de chiffres */
+.indicateur-carte { border-left-color: var(--tbl-accent); }
+.indicateur-carte.indicateur-depense .indicateur-valeur { color: var(--tbl-blue); }
+.stat-card { border-top: 3px solid var(--tbl-accent); }
+.stat-card:nth-child(4n+2) { border-top-color: var(--tbl-blue); }
+.stat-card:nth-child(4n+2) .stat-value { color: var(--tbl-blue); }
+.stat-card:nth-child(4n+3) { border-top-color: var(--tbl-orange); }
+.stat-card:nth-child(4n+3) .stat-value { color: var(--tbl-orange); }
+.stat-card:nth-child(4n) { border-top-color: var(--tbl-ok); }
+.stat-card:nth-child(4n) .stat-value { color: var(--tbl-ok); }
+/* En-têtes de grille : fond gris, lettrage noir (demande de Marcel du 28 novembre 2026) */
+.partner-id-table th, .arbre-entete { background: var(--tbl-muted); color: #000; border-bottom: 0; font-weight: 700; }
+.partner-id-table tbody tr:hover td { background: var(--tbl-blue-soft); }
+/* Statuts pleins */
+.rencontre-status.en-cours, .pbi-statut.en_cours { background: var(--tbl-orange); color: var(--tbl-on-orange); }
+.rencontre-status.terminee, .pbi-statut.termine { background: var(--tbl-ok); color: var(--tbl-on-ok); }
+.rencontre-status.a-venir, .pbi-statut.nouveau { background: var(--tbl-blue); color: var(--tbl-on-blue); }
+/* Boutons : secondaires en bleu, principal avec lueur */
+.btn:not(.btn-primary):not(.fa-danger):not(.fa-valide) { border-color: var(--tbl-blue); color: var(--tbl-blue); background: var(--tbl-paper); }
+.btn:not(.btn-primary):not(.fa-danger):not(.fa-valide):hover:not(:disabled) { background: var(--tbl-blue-soft); border-color: var(--tbl-blue); }
+.btn-primary { box-shadow: var(--tbl-glow-accent); }
+.btn-primary:disabled { box-shadow: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outline: none; box-shadow: 0 0 0 2px var(--tbl-blue-soft); }
+/* Fenêtres */
+.modal-box, .confirm-box { border-top: 4px solid var(--tbl-accent); }
 </style>
 </head>
 <body>
@@ -1656,7 +1721,7 @@ select:focus { outline: none; border-color: var(--accent); }
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
-<script src="paiement-stripe.js?v=8e5b633 · 2026-11-28 09:35"></script>
+<script src="paiement-stripe.js?v=9a616ee · 2026-11-28 09:50"></script>
 <script>
 (function () {
   'use strict';
@@ -1885,6 +1950,7 @@ select:focus { outline: none; border-color: var(--accent); }
     setActiveTab(tab);
     var content = document.getElementById('content');
     content.classList.toggle('content-taches', tab === 'taches');
+    content.dataset.tab = tab; // la page prend la couleur de l'onglet (style coloré)
 
     if (!etat.admin) {
       content.innerHTML = '<h1>Accès réservé</h1>' +

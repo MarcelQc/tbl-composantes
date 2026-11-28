@@ -304,6 +304,105 @@ textarea{min-height:96px;resize:vertical}
   .panneau{padding:12px}
   .livre{padding:10px;gap:10px}
 }
+
+/* ---------- Style coloré (28 novembre 2026), même style que la facture : voir Prototype\Style-colore\couleurs-tbl.css. Les jetons ci-dessous sont ceux proposés pour Templates\tokens.css (non modifié sans l'accord de l'équipe). ---------- */
+/* ---------- 1. Jetons proposés pour Templates\tokens.css ---------- */
+:root{
+  --tbl-ok-soft:      #12301f;   /* fond vert atténué (carte de totaux, succès) */
+  --tbl-accent-text:  #ffb3b8;   /* texte clair sur fond rouge atténué */
+  --tbl-on-ok:        #06210f;   /* texte sombre sur fond vert plein */
+  --tbl-on-orange:    #2b1c00;   /* texte sombre sur fond orange plein */
+  --tbl-on-blue:      #06142b;   /* texte sombre sur fond bleu plein */
+  --tbl-glow-accent:  0 4px 14px rgba(229,37,48,.45); /* ombre du bouton principal */
+  --tbl-wash-accent:  rgba(229,37,48,.10);  /* voile rouge en tête d'une section */
+  --tbl-wash-ok:      rgba(76,195,138,.08); /* voile vert en tête d'une section */
+}
+
+/* ---------- 2a. EDA : Espace Auteurs (espace-auteurs.html) ---------- */
+/* Entête */
+.titre-espace{color:#fff}
+.entete{position:relative;padding:18px 20px;border:1px solid var(--tbl-line);border-top:4px solid var(--tbl-accent);border-radius:var(--tbl-radius);background:linear-gradient(135deg,var(--tbl-accent-soft) 0%,var(--tbl-paper) 65%)}
+.entete .sub{color:var(--tbl-accent-text)}
+.actions-haut .btn{box-shadow:var(--tbl-glow-accent)}
+
+/* Onglets : une couleur par onglet (barre en haut de l'onglet actif, pastille du nombre) */
+#onglet-ventes{--couleur:var(--tbl-ok)}
+#onglet-auteur{--couleur:var(--tbl-blue)}
+#onglet-livres{--couleur:var(--tbl-accent)}
+#onglet-services{--couleur:var(--tbl-orange)}
+#onglet-documents{--couleur:var(--tbl-blue)}
+#onglet-commentaires{--couleur:var(--tbl-orange)}
+.onglet{border-top:3px solid var(--couleur,var(--tbl-line));color:var(--tbl-muted)}
+.onglet:hover{color:var(--tbl-ink)}
+.onglet[aria-selected="true"]{box-shadow:none;border-top-color:var(--couleur);background:linear-gradient(180deg,rgba(255,255,255,.06),var(--tbl-paper) 60%);color:#fff}
+.pastille-nb{background:var(--couleur,var(--tbl-accent-soft));color:var(--tbl-on-blue)}
+#onglet-ventes .pastille-nb{color:var(--tbl-on-ok)}
+#onglet-services .pastille-nb,#onglet-commentaires .pastille-nb{color:var(--tbl-on-orange)}
+#onglet-livres .pastille-nb{color:#fff}
+
+/* Panneaux : filet de couleur et voile en tête, titres avec pastille */
+.panneau{border-top:0;background:linear-gradient(180deg,var(--tbl-wash-accent) 0,transparent 140px),var(--tbl-paper)}
+#panneau-ventes{background:linear-gradient(180deg,var(--tbl-wash-ok) 0,transparent 140px),var(--tbl-paper)}
+#panneau-auteur,#panneau-documents{background:linear-gradient(180deg,var(--tbl-blue-soft) 0,transparent 140px),var(--tbl-paper)}
+#panneau-services,#panneau-commentaires{background:linear-gradient(180deg,var(--tbl-orange-soft) 0,transparent 140px),var(--tbl-paper)}
+.panneau h2,.panneau h3{display:flex;align-items:center;gap:10px}
+.panneau h2::before,.panneau h3::before{content:"";flex:0 0 auto;width:8px;height:1.05em;border-radius:3px;background:var(--couleur-panneau,var(--tbl-accent))}
+#panneau-ventes{--couleur-panneau:var(--tbl-ok)}
+#panneau-auteur,#panneau-documents{--couleur-panneau:var(--tbl-blue)}
+#panneau-livres{--couleur-panneau:var(--tbl-accent)}
+#panneau-services,#panneau-commentaires{--couleur-panneau:var(--tbl-orange)}
+
+/* Cartes et indicateurs de vente (KPI) */
+.panneau .card{border-top:3px solid var(--couleur-panneau,var(--tbl-accent))}
+.kpis .kpi:nth-child(1){border-top-color:var(--tbl-ok)}
+.kpis .kpi:nth-child(2){border-top-color:var(--tbl-blue)}
+.kpis .kpi:nth-child(3){border-top-color:var(--tbl-orange)}
+.kpis .kpi:nth-child(1) .valeur{color:var(--tbl-ok)}
+.kpis .kpi:nth-child(2) .valeur{color:var(--tbl-blue)}
+.kpis .kpi:nth-child(3) .valeur{color:var(--tbl-orange)}
+.barre rect{fill:var(--tbl-blue-soft)}
+.barre:hover rect,.barre:focus rect{fill:var(--tbl-blue)}
+.barre.actif rect{fill:var(--tbl-ok)}
+
+/* Tableaux : en-têtes colorés, survol bleu, totaux en vert */
+.zone-fixe{border-color:var(--tbl-line)}
+/* En-têtes de grille : fond gris, lettrage noir (demande de Marcel du 28 novembre 2026) */
+.zone-fixe thead th,.zone-fixe thead th.c-montant{background:var(--tbl-muted);color:#000;border-bottom:0;text-transform:uppercase;letter-spacing:.05em;font-size:.78rem;font-weight:700}
+.zone-fixe tbody tr:hover td{background:var(--tbl-blue-soft)}
+.zone-fixe tfoot td{color:var(--tbl-ok);font-weight:700;border-top:2px solid var(--tbl-ok)}
+.zone-fixe td.n{color:var(--tbl-ink)}
+.zone-docs .c-montant,.zone-fixe tbody td.c-montant{color:var(--tbl-ok);font-weight:700}
+
+/* Icône $ de la ligne d'une facture dans la grille Documents :
+   fond blanc = facture à payer (on peut l'encaisser), fond noir = facture payée. */
+.lg-icone.encaisser{background:#fff;border-color:#fff;color:#000;box-shadow:0 0 0 3px rgba(255,255,255,.12)}
+.lg-icone.encaisser:hover{background:var(--tbl-orange);border-color:var(--tbl-orange);color:#000}
+.lg-icone.paye{background:#000;border-color:var(--tbl-line);color:#fff;cursor:default;opacity:1}
+.lg-icone svg text{pointer-events:none}
+.lg-icone.encaisser svg,.lg-icone.paye svg{width:22px;height:22px}
+/* Trois icônes d'action ($, consulter, télécharger) : la colonne Actions s'élargit (104 px pour deux icônes avant). */
+.zone-docs .c-action{width:152px}
+.zone-docs tbody td.c-action{overflow:visible}
+
+/* Pastilles de statut pleines */
+.pastille{font-weight:700}
+.pastille.ok{background:var(--tbl-ok);color:var(--tbl-on-ok);border-color:var(--tbl-ok)}
+.pastille.attente{background:var(--tbl-orange);color:var(--tbl-on-orange);border-color:var(--tbl-orange)}
+.pastille.rouge{background:var(--tbl-accent);color:#fff;border-color:var(--tbl-accent)}
+
+/* Boutons secondaires en bleu, principal avec lueur */
+.btn.sec{border-color:var(--tbl-blue);color:var(--tbl-blue);background:var(--tbl-paper)}
+.btn.sec:hover:not(:disabled){background:var(--tbl-blue-soft);border-color:var(--tbl-blue)}
+.btn:not(.sec){box-shadow:var(--tbl-glow-accent)}
+.btn:not(.sec):disabled{box-shadow:none}
+
+/* Champs : focus bleu */
+select:focus,input:focus,textarea:focus{border-color:var(--tbl-blue);outline:none;box-shadow:0 0 0 2px var(--tbl-blue-soft)}
+
+/* Fenêtres */
+.modale .boite,.fenetre,dialog{border-top:4px solid var(--tbl-accent)}
+
+
 </style>
 </head>
 <body>
@@ -601,7 +700,7 @@ textarea{min-height:96px;resize:vertical}
 
 </main>
 
-<script src="paiement-stripe.js?v=8e5b633 · 2026-11-28 09:35"></script>
+<script src="paiement-stripe.js?v=9a616ee · 2026-11-28 09:50"></script>
 <script>
 (function () {
 'use strict';
@@ -754,10 +853,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 8e5b633 · 2026-11-28 09:35 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// 9a616ee · 2026-11-28 09:50 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '8e5b633 · 2026-11-28 09:35';
+var VERSION_TBL = '9a616ee · 2026-11-28 09:50';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
