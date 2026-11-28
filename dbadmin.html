@@ -1680,6 +1680,9 @@ select:focus { outline: none; border-color: var(--accent); }
 input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outline: none; box-shadow: 0 0 0 2px var(--tbl-blue-soft); }
 /* Fenêtres */
 .modal-box, .confirm-box { border-top: 4px solid var(--tbl-accent); }
+/* Onglets : la liste passe d'elle-même sur 2 lignes (ou plus) quand elle ne tient pas dans la largeur (demande de Marcel du 28 novembre 2026) */
+.tabs { flex-wrap: wrap; overflow-x: visible; row-gap: 4px; }
+.tab-btn { padding-left: 14px; padding-right: 14px; }
 </style>
 </head>
 <body>
@@ -1721,7 +1724,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--tbl-blue); outli
   <span>Tableau de bord en ligne. Accès réservé aux administrateurs des Éditions TBL.</span>
 </footer>
 
-<script src="paiement-stripe.js?v=cb354d2 · 2026-11-28 10:01"></script>
+<script src="paiement-stripe.js?v=1cd5526 · 2026-11-28 10:12"></script>
 <script>
 (function () {
   'use strict';
