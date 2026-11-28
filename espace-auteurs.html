@@ -700,13 +700,19 @@ select:focus,input:focus,textarea:focus{border-color:var(--tbl-blue);outline:non
 
 </main>
 
-<script src="paiement-stripe.js?v=9a616ee · 2026-11-28 09:50"></script>
+<script src="paiement-stripe.js?v=cb354d2 · 2026-11-28 10:01"></script>
 <script>
 (function () {
 'use strict';
 
 // Dans Wix la page est un iframe https. Ouverte directement (file:) elle passe en mode test local.
 var EN_WIX = true;
+// Ouverte dans l'éditeur Wix en mode design, la composante s'affiche sans que le code de la page tourne : aucune donnée
+// n'arrive. Après DELAI_EDITEUR_MS sans réponse, on montre une démonstration au lieu de « Un petit problème de chargement »
+// (même principe que l'éditeur de livre et l'éditeur de coffret).
+function originesParent() { try { return Array.prototype.slice.call(location.ancestorOrigins || []).join(' ') + ' ' + document.referrer; } catch (e) { return document.referrer || ''; } }
+var DANS_EDITEUR = EN_WIX && /editor\.wix\.com|wixstudio\.com|editorx\.com/i.test(originesParent());
+var DELAI_EDITEUR_MS = 3000;
 var DELAI_REPONSE_MS = 10000;
 var RELANCE_MS = 1500;
 var COURRIEL_TBL = 'info@editionstbl.ca';
@@ -749,6 +755,7 @@ function pluriel(n, un, plusieurs) { return n + ' ' + (n > 1 ? plusieurs : un); 
 
 /* ---------- Pont avec la page Wix ---------- */
 function envoyer(message) {
+  if (etat.demo) { return; } // démonstration dans l'éditeur Wix : rien n'est jamais envoyé
   if (EN_WIX) { window.parent.postMessage(message, '*'); }
 
 }
@@ -771,6 +778,7 @@ window.addEventListener('message', function (e) {
 });
 function recevoir(msg) {
   if (!msg || typeof msg !== 'object') { return; }
+  if (etat.demo && msg.type === 'espace') { etat.demo = false; } // vraie réponse après la démonstration : elle la remplace
   if (msg.type === 'espace') { surEspace(msg); }
   else if (msg.type === 'ventes') { surVentes(msg); }
   else if (msg.type === 'resultatProfil') { surResultatProfil(msg); }
@@ -815,7 +823,7 @@ function accesBloque(msg) {
 // Attente de la réponse du serveur : le message « pret » est renvoyé toutes les 1,5 s (au cas où le code
 // de la page Wix n'était pas encore prêt à l'écouter quand le premier est parti) jusqu'à la réponse
 // ou jusqu'à l'abandon après DELAI_REPONSE_MS. Le code de la page ignore les doublons.
-function arreterAttente() { clearTimeout(etat.minuterie); clearInterval(etat.relance); }
+function arreterAttente() { clearTimeout(etat.minuterie); clearInterval(etat.relance); clearTimeout(etat.minuterieDemo); }
 function demarrer() {
   montrer('chargement');
   $('texte-chargement').textContent = 'Chargement de votre espace…';
@@ -823,6 +831,41 @@ function demarrer() {
   etat.minuterie = setTimeout(function () { arreterAttente(); montrer('erreur'); }, DELAI_REPONSE_MS);
   etat.relance = setInterval(function () { envoyer({ type: 'pret' }); }, RELANCE_MS);
   envoyer({ type: 'pret' });
+  if (DANS_EDITEUR) { etat.minuterieDemo = setTimeout(demonstration, DELAI_EDITEUR_MS); }
+}
+/* ---------- Démonstration dans l'éditeur Wix (mode design) ---------- */
+function demonstration() {
+  if (etat.donnees) { return; }
+  etat.demo = true;
+  arreterAttente();
+  var jour = function (n) { var d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+  surEspace({
+    type: 'espace', statut: 'ok', auteurId: 'demo-1',
+    auteur: { nom: 'Marcel Turgeon', courriel: 'marcel@exemple.ca', telephone: '', adresse: '', note: '', photoUrl: '', admin: true },
+    auteursActifs: [{ id: 'demo-1', nom: 'Marcel Turgeon' }, { id: 'demo-2', nom: 'Martin Couture' }],
+    livres: [
+      { id: 'demo-l1', titre: 'Les Ombres du temps', statut: 'Publier', auteurId: 'demo-1', auteurNom: 'Marcel Turgeon', miniature: '', page: '', copie: null },
+      { id: 'demo-l2', titre: 'Les plumes du silence', statut: 'Publier', auteurId: 'demo-2', auteurNom: 'Martin Couture', miniature: '', page: '', copie: { statut: 'En attente de validation' } }
+    ],
+    coffrets: [], offreCoffret: { offerte: false },
+    documents: {
+      generaux: [{ titre: 'Guide de l’auteur', type: 'Guide', date: jour(40), url: null, urlVisualisation: null }],
+      auteur: [
+        { titre: 'Facture FAC-20261125002', type: 'Facture', date: jour(3), url: null, urlVisualisation: null, auteurNom: 'Marcel Turgeon', montant: '247,48 $', paiement: 'apayer' },
+        { titre: 'Facture FAC-20261120001', type: 'Facture', date: jour(8), url: null, urlVisualisation: null, auteurNom: 'Marcel Turgeon', montant: '149,47 $', paiement: 'paye' }
+      ]
+    }
+  });
+  var mois12 = [];
+  for (var i = -11; i <= 0; i++) { mois12.push({ mois: moisUtc(i), ventesBrutes: [120, 90, 210, 160, 300, 260, 180, 340, 280, 410, 380, 450][i + 11] }); }
+  surVentes({
+    type: 'ventes', statut: 'ok', mois: etat.mois, prcCommission: 70, plusieursAuteurs: false,
+    courant: { ventesBrutes: 450, exemplaires: 31, partAuteur: 315 }, mois12: mois12, totaux: [],
+    parLivre: [{ titre: 'Les Ombres du temps', exemplaires: 20, ventesBrutes: 300, viaLiens: 6 }, { titre: 'Les plumes du silence', exemplaires: 11, ventesBrutes: 150, viaLiens: 3 }],
+    debutHistorique: '', source: 'commandes'
+  });
+  var note = document.getElementById('version-tbl');
+  if (note) { note.textContent = 'Démonstration (mode design de l’éditeur Wix) : données fictives'; }
 }
 function surEspace(msg) {
   arreterAttente();
@@ -853,10 +896,10 @@ function surEspace(msg) {
 }
 
 // ===== Version publiée =====
-// 9a616ee · 2026-11-28 09:50 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
+// cb354d2 · 2026-11-28 10:01 est remplacé à la publication par l'Action GitHub publier-composantes (numéro du commit
 // et date, heure du Québec). Permet de vérifier que la version en ligne est bien la dernière (et non une copie
 // en cache). Ligne visible pour les administrateurs seulement ; numéro dans la console pour tous.
-var VERSION_TBL = '9a616ee · 2026-11-28 09:50';
+var VERSION_TBL = 'cb354d2 · 2026-11-28 10:01';
 // Version publiée : « hash · AAAA-MM-JJ HH:MM ». Administrateur : les deux ; auteur : la date et l'heure seulement
 // (demande de Marcel du 24 octobre 2026).
 function texteVersion(admin) {
